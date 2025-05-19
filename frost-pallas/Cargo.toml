@@ -1,0 +1,7 @@
+[package]
+name = "frost-pallas"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+frost-core.workspace = true

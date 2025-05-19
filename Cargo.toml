@@ -1,0 +1,6 @@
+[workspace]
+resolver = "2"
+members = ["frost-pallas"]
+
+[workspace.dependencies]
+frost-core = "2.1.0"
