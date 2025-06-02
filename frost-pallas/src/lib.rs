@@ -64,10 +64,10 @@ impl Group for PallasGroup {
     type Serialization = [u8; 32 * 3]; // Projective Pallas is a struct with 3 of PallasScalarField
 
     fn cofactor() -> <Self::Field as Field>::Scalar {
-        unimplemented!()
+        Self::Field::one()
     }
     fn identity() -> Self::Element {
-        <Self::Element as Zero>::zero()
+        Self::Element::zero()
     }
     fn generator() -> Self::Element {
         <Self::Element as ArkGroup>::generator()
