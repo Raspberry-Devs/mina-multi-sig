@@ -15,7 +15,7 @@
 //! implementation of `frost-core`.
 use ark_ec::{models::CurveConfig, Group as ArkGroup};
 
-use ark_ff::fields::Field as ArkField;
+use ark_ff::{fields::Field as ArkField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError, Scalar};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
@@ -45,7 +45,7 @@ impl frost_core::Field for PallasScalarField {
         <Self::Scalar as ArkField>::inverse(scalar).ok_or(FieldError::InvalidZeroScalar)
     }
     fn random<R: RngCore + CryptoRng>(rng: &mut R) -> Self::Scalar {
-        unimplemented!()
+        Self::Scalar::rand(rng)
     }
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
         unimplemented!()
@@ -131,9 +131,9 @@ impl Ciphersuite for PallasPoseidon {
     const ID: &'static str = CONTEXT_STRING;
 
     type Group = PallasGroup;
-    type HashOutput = [u8; HASH_SIZE]; // probably wrong
+    type HashOutput = [u8; HASH_SIZE];
 
-    type SignatureSerialization = [u8; HASH_SIZE]; // probably wrong
+    type SignatureSerialization = [u8; HASH_SIZE];
     fn H1(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
         blake2b_hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"rho", m])
     }
