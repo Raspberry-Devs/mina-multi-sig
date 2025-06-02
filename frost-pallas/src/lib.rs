@@ -103,12 +103,14 @@ const CONTEXT_STRING: &str = "FROST-PALLAS-POSEIDON-BLAKE2b-v1";
 const HASH_SIZE: usize = 32; // Blake2b output size
 
 fn blake2b_hash_to_array(input: &[&[u8]]) -> [u8; HASH_SIZE] {
-    let mut hasher = Blake2bVar::new(HASH_SIZE).expect("Blake2bVar should be initialized with a valid size");
+    let mut hasher =
+        Blake2bVar::new(HASH_SIZE).expect("Blake2bVar should be initialized with a valid size");
     for i in input {
         hasher.update(i);
     }
     let mut output = [0u8; HASH_SIZE];
-    hasher.finalize_variable(&mut output)
+    hasher
+        .finalize_variable(&mut output)
         .expect("Blake2bVar should finalize without error");
     output
 }
