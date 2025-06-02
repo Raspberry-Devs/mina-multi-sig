@@ -17,12 +17,17 @@ use ark_ec::{models::CurveConfig, Group as ArkGroup};
 
 use ark_ff::fields::Field as ArkField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError};
+use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError, Scalar};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
 use num_traits::identities::Zero;
 use rand_core::{CryptoRng, RngCore};
 
 pub type Error = frost_core::Error<PallasPoseidon>;
+
+use blake2::{
+    digest::{Update, VariableOutput},
+    Blake2bVar,
+};
 
 #[derive(Clone, Copy)]
 pub struct PallasScalarField;
@@ -92,29 +97,58 @@ impl Group for PallasGroup {
     }
 }
 
+// Define the ciphersuite for Pallas with Poseidon and Blake2b as the hash function
+// https://github.com/MinaProtocol/mina/blob/master/docs/specs/signatures/description.md
+const CONTEXT_STRING: &str = "FROST-PALLAS-POSEIDON-BLAKE2b-v1";
+const HASH_SIZE: usize = 32; // Blake2b output size
+
+fn blake2b_hash_to_array(input: &[&[u8]]) -> [u8; HASH_SIZE] {
+    let mut hasher = Blake2bVar::new(HASH_SIZE).expect("Blake2bVar should be initialized with a valid size");
+    for i in input {
+        hasher.update(i);
+    }
+    let mut output = [0u8; HASH_SIZE];
+    hasher.finalize_variable(&mut output)
+        .expect("Blake2bVar should finalize without error");
+    output
+}
+
+fn blake2b_hash_to_scalar(input: &[&[u8]]) -> <<PallasGroup as Group>::Field as Field>::Scalar {
+    let mut output = blake2b_hash_to_array(input);
+    // Copied from https://github.com/o1-labs/proof-systems/blob/55219b0fc6ec589041545ae9470dd1edb29e3e02/signer/src/schnorr.rs#L131C9-L135C14
+
+    output[output.len() - 1] &= 0b0011_1111;
+
+    // Deserialize the output into a scalar field element
+    <PallasScalarField as Field>::deserialize(&output)
+        .expect("Blake2b output should be a valid scalar")
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PallasPoseidon;
 
 impl Ciphersuite for PallasPoseidon {
-    const ID: &'static str = "FROST(Pallas, Poseidon)";
+    const ID: &'static str = CONTEXT_STRING;
 
     type Group = PallasGroup;
-    type HashOutput = [u8; 64]; // probably wrong
+    type HashOutput = [u8; HASH_SIZE]; // probably wrong
 
-    type SignatureSerialization = [u8; 64]; // probably wrong
+    type SignatureSerialization = [u8; HASH_SIZE]; // probably wrong
     fn H1(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
-        unimplemented!()
+        blake2b_hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"rho", m])
     }
     fn H2(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
-        unimplemented!()
+        // THIS WILL NEED TO BE CHANGED
+        // to use Poseidon hash function
+        blake2b_hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"chal", m])
     }
     fn H3(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
-        unimplemented!()
+        blake2b_hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"nonce", m])
     }
     fn H4(m: &[u8]) -> Self::HashOutput {
-        unimplemented!()
+        blake2b_hash_to_array(&[CONTEXT_STRING.as_bytes(), b"msg", m])
     }
     fn H5(m: &[u8]) -> Self::HashOutput {
-        unimplemented!()
+        blake2b_hash_to_array(&[CONTEXT_STRING.as_bytes(), b"com", m])
     }
 }
