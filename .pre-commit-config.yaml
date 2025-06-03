@@ -1,0 +1,26 @@
+repos:
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        types: [file, rust]
+        files: ^src/.*\.rs$
+      - id: cargo-check
+        types: [file, rust]
+        files: ^src/.*\.rs$
+
+  - repo: local
+    hooks:
+      - id: rust-clippy
+        name: Rust clippy
+        description: Run cargo clippy on files included in the commit. clippy should be installed before-hand.
+        entry: cargo clippy --all-targets --all-features -- -Dclippy::all -Wclippy::too_many_arguments
+        pass_filenames: false
+        types: [file, rust]
+        language: system
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer

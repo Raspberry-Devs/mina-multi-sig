@@ -17,12 +17,12 @@ use ark_ec::{models::CurveConfig, Group as ArkGroup};
 
 use ark_ff::{fields::Field as ArkField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError, Scalar};
+use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
 use num_traits::identities::Zero;
 use rand_core::{CryptoRng, RngCore};
 
-pub type Error = frost_core::Error<PallasPoseidon>;
+pub type Error = frost_core::Error<PallasPoseidonBlake2b>;
 
 use blake2::{
     digest::{Update, VariableOutput},
@@ -32,7 +32,7 @@ use blake2::{
 #[derive(Clone, Copy)]
 pub struct PallasScalarField;
 
-impl frost_core::Field for PallasScalarField {
+impl Field for PallasScalarField {
     type Scalar = <PallasParameters as CurveConfig>::ScalarField;
     type Serialization = [u8; 32];
     fn zero() -> Self::Scalar {
@@ -89,7 +89,7 @@ impl Group for PallasGroup {
 
         // TODO for some reason redpallas implmenetation disallows serialization of identity
         // But this is fine in the projective representation?
-        return Ok(buf);
+        Ok(buf)
     }
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, GroupError> {
         <Self::Element as CanonicalDeserialize>::deserialize_compressed(&buf[..])
@@ -118,18 +118,17 @@ fn blake2b_hash_to_array(input: &[&[u8]]) -> [u8; HASH_SIZE] {
 fn blake2b_hash_to_scalar(input: &[&[u8]]) -> <<PallasGroup as Group>::Field as Field>::Scalar {
     let mut output = blake2b_hash_to_array(input);
     // Copied from https://github.com/o1-labs/proof-systems/blob/55219b0fc6ec589041545ae9470dd1edb29e3e02/signer/src/schnorr.rs#L131C9-L135C14
-
     output[output.len() - 1] &= 0b0011_1111;
 
     // Deserialize the output into a scalar field element
-    <PallasScalarField as Field>::deserialize(&output)
+    PallasScalarField::deserialize(&output)
         .expect("Blake2b output should be a valid scalar")
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct PallasPoseidon;
+pub struct PallasPoseidonBlake2b;
 
-impl Ciphersuite for PallasPoseidon {
+impl Ciphersuite for PallasPoseidonBlake2b {
     const ID: &'static str = CONTEXT_STRING;
 
     type Group = PallasGroup;
@@ -152,5 +151,13 @@ impl Ciphersuite for PallasPoseidon {
     }
     fn H5(m: &[u8]) -> Self::HashOutput {
         blake2b_hash_to_array(&[CONTEXT_STRING.as_bytes(), b"com", m])
+    }
+
+    fn HDKG(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
+        Some(blake2b_hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"dkg", m]))
+    }
+
+    fn HID(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
+        Some(blake2b_hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"id", m]))
     }
 }
