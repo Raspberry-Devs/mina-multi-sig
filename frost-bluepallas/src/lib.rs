@@ -13,9 +13,12 @@
 //! verify it with the `signer`'s verify method. We do not use `signer` at all in our
 //! implementation. We do use `hasher` which provides the hash functions used by `signer` and our
 //! implementation of `frost-core`.
+
+extern crate alloc;
+
 use ark_ec::{models::CurveConfig, Group as ArkGroup};
 
-use ark_ff::{fields::Field as ArkField, UniformRand};
+use ark_ff::{fields::Field as ArkField, BigInteger, PrimeField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
@@ -48,15 +51,25 @@ impl Field for PallasScalarField {
         Self::Scalar::rand(rng)
     }
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        unimplemented!()
+        // Convert the field element to its big integer representation …
+        let bytes_be = scalar.into_bigint().to_bytes_be();
+        // … and left-pad to a full 32-byte array.
+        let mut out = [0u8; 32];
+        out[32 - bytes_be.len()..].copy_from_slice(&bytes_be);
+        out
     }
 
     fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        unimplemented!()
+        let bytes_le = scalar.into_bigint().to_bytes_le();
+        let mut out = [0u8; 32];
+        out[..bytes_le.len()].copy_from_slice(&bytes_le);
+        out
     }
 
+    // Parse the canonical 32-byte big-endian form back into a field element,
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
-        unimplemented!()
+        let scalar = <Self::Scalar as PrimeField>::from_be_bytes_mod_order(buf);
+        Ok(scalar)
     }
 }
 
@@ -78,22 +91,31 @@ impl Group for PallasGroup {
         <Self::Element as ArkGroup>::generator()
     }
     fn serialize(element: &Self::Element) -> Result<Self::Serialization, GroupError> {
+        // Ensure that the element is not the identity element
+        // The FROST protocol requires that the identity element is never serialized or used in computations
+        if element.is_zero() {
+            return Err(GroupError::InvalidIdentityElement);
+        }
+
         let mut buf: Self::Serialization = [0u8; 96];
         // Does the size reduce below 96 bytes for compressed serialize, though that's probably
         // fine? Could try switching to compressed (de)serialize
         element
             .serialize_compressed(&mut buf[..])
             .map_err(|_| GroupError::MalformedElement)?;
-        // realistically an error never occurs so I just picked the most sensible variant of the
-        // `GroupError` enum
 
-        // TODO for some reason redpallas implmenetation disallows serialization of identity
-        // But this is fine in the projective representation?
         Ok(buf)
     }
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, GroupError> {
-        <Self::Element as CanonicalDeserialize>::deserialize_compressed(&buf[..])
-            .map_err(|_| GroupError::MalformedElement)
+        let point = <Self::Element as CanonicalDeserialize>::deserialize_compressed(&buf[..])
+            .map_err(|_| GroupError::MalformedElement);
+
+        // Ensure that the deserialized point is not the identity element
+        match point {
+            Ok(p) if p.is_zero() => Err(GroupError::InvalidIdentityElement),
+            Ok(p) => Ok(p),
+            Err(_) => Err(GroupError::MalformedElement),
+        }
     }
 }
 

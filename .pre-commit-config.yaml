@@ -18,6 +18,13 @@ repos:
         pass_filenames: false
         types: [file, rust]
         language: system
+      - id: rustfmt
+        name: Rust fmt
+        description: Run cargo fmt on files included in the commit. fmt should be installed before-hand.
+        entry: cargo fmt --all -- --check
+        pass_filenames: false
+        types: [file, rust]
+        language: system
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
