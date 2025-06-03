@@ -15,7 +15,7 @@
 //! implementation of `frost-core`.
 use ark_ec::{models::CurveConfig, Group as ArkGroup};
 
-use ark_ff::{fields::Field as ArkField, UniformRand};
+use ark_ff::{fields::Field as ArkField, UniformRand, PrimeField, BigInteger};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
@@ -48,15 +48,31 @@ impl Field for PallasScalarField {
         Self::Scalar::rand(rng)
     }
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        unimplemented!()
+        // Convert the field element to its big integer representation …
+        let bytes_be = scalar.into_bigint().to_bytes_be();
+        // … and left-pad to a full 32-byte array.
+        let mut out = [0u8; 32];
+        out[32 - bytes_be.len()..].copy_from_slice(&bytes_be);
+        out
     }
 
     fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        unimplemented!()
+        let bytes_le = scalar.into_bigint().to_bytes_le();
+        let mut out = [0u8; 32];
+        out[..bytes_le.len()].copy_from_slice(&bytes_le);
+        out
     }
 
+    /// Parse the canonical 32-byte big-endian form back into a field element,
+    /// rejecting the all-zero value (FROST forbids 0 as a private or group
+    /// element).
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
-        unimplemented!()
+        let scalar = <Self::Scalar as PrimeField>::from_be_bytes_mod_order(buf);
+        if scalar.is_zero() {
+            Err(FieldError::InvalidZeroScalar)
+        } else {
+            Ok(scalar)
+        }
     }
 }
 
