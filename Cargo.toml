@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["frost-pallas"]
+members = ["frost-bluepallas"]
 
 [workspace.dependencies]
 blake2 = "0.10.0"

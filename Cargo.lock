@@ -305,6 +305,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
+name = "frost-bluepallas"
+version = "0.0.0"
+dependencies = [
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "blake2",
+ "frost-core",
+ "mina-curves",
+ "num-traits",
+ "rand_core",
+]
+
+[[package]]
 name = "frost-core"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -325,20 +339,6 @@ dependencies = [
  "thiserror-nostd-notrait",
  "visibility",
  "zeroize",
-]
-
-[[package]]
-name = "frost-pallas"
-version = "0.0.0"
-dependencies = [
- "ark-ec",
- "ark-ff",
- "ark-serialize",
- "blake2",
- "frost-core",
- "mina-curves",
- "num-traits",
- "rand_core",
 ]
 
 [[package]]
