@@ -18,7 +18,7 @@ extern crate alloc;
 
 use ark_ec::{models::CurveConfig, Group as ArkGroup};
 
-use ark_ff::{fields::Field as ArkField, UniformRand, PrimeField, BigInteger};
+use ark_ff::{fields::Field as ArkField, BigInteger, PrimeField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use frost_core::{Ciphersuite, Field, FieldError, Group, GroupError};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
@@ -107,7 +107,7 @@ impl Group for PallasGroup {
         Ok(buf)
     }
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Element, GroupError> {
-        let point  = <Self::Element as CanonicalDeserialize>::deserialize_compressed(&buf[..])
+        let point = <Self::Element as CanonicalDeserialize>::deserialize_compressed(&buf[..])
             .map_err(|_| GroupError::MalformedElement);
 
         // Ensure that the deserialized point is not the identity element
