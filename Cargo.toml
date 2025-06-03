@@ -5,7 +5,6 @@ members = ["frost-bluepallas"]
 [workspace.dependencies]
 blake2 = "0.10.0"
 frost-core = "2.1.0"
-mina-hasher = { git = "https://github.com/o1-labs/proof-systems.git" }
 mina-curves = { git = "https://github.com/o1-labs/proof-systems.git" }
 ark-ec = "0.4.2"
 ark-ff = "0.4.2"
