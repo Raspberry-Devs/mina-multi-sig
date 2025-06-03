@@ -82,7 +82,7 @@ impl Group for PallasGroup {
         // Does the size reduce below 96 bytes for compressed serialize, though that's probably
         // fine? Could try switching to compressed (de)serialize
         element
-            .serialize_uncompressed(&mut buf[..])
+            .serialize_compressed(&mut buf[..])
             .map_err(|_| GroupError::MalformedElement)?;
         // realistically an error never occurs so I just picked the most sensible variant of the
         // `GroupError` enum
