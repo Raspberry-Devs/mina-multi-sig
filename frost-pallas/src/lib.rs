@@ -121,8 +121,7 @@ fn blake2b_hash_to_scalar(input: &[&[u8]]) -> <<PallasGroup as Group>::Field as 
     output[output.len() - 1] &= 0b0011_1111;
 
     // Deserialize the output into a scalar field element
-    PallasScalarField::deserialize(&output)
-        .expect("Blake2b output should be a valid scalar")
+    PallasScalarField::deserialize(&output).expect("Blake2b output should be a valid scalar")
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -154,10 +153,18 @@ impl Ciphersuite for PallasPoseidonBlake2b {
     }
 
     fn HDKG(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
-        Some(blake2b_hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"dkg", m]))
+        Some(blake2b_hash_to_scalar(&[
+            CONTEXT_STRING.as_bytes(),
+            b"dkg",
+            m,
+        ]))
     }
 
     fn HID(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
-        Some(blake2b_hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"id", m]))
+        Some(blake2b_hash_to_scalar(&[
+            CONTEXT_STRING.as_bytes(),
+            b"id",
+            m,
+        ]))
     }
 }
