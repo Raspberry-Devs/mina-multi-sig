@@ -3,9 +3,9 @@ resolver = "2"
 members = ["frost-bluepallas"]
 
 [workspace.dependencies]
-blake2 = "0.10.0"
 frost-core = "2.1.0"
-mina-curves = { git = "https://github.com/o1-labs/proof-systems.git" }
+mina-curves = { git = "https://github.com/o1-labs/proof-systems.git", rev = "6d2ac796205456d314d7ea2a3db6e0e816d60a99"}
+mina-hasher = { git = "https://github.com/o1-labs/proof-systems.git", rev = "6d2ac796205456d314d7ea2a3db6e0e816d60a99"}
 ark-ec = "0.4.2"
 ark-ff = "0.4.2"
 #rand_core = "0.9.1"
