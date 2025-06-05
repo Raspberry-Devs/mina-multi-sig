@@ -4,9 +4,10 @@ members = ["frost-bluepallas"]
 
 [workspace.dependencies]
 frost-core = "2.1.0"
-mina-curves = { git = "https://github.com/o1-labs/proof-systems.git", rev = "6d2ac796205456d314d7ea2a3db6e0e816d60a99"}
-mina-hasher = { git = "https://github.com/o1-labs/proof-systems.git", rev = "6d2ac796205456d314d7ea2a3db6e0e816d60a99"}
+mina-hasher = { git = "https://github.com/o1-labs/proof-systems.git", rev = "15139e422f" }
+mina-curves = { git = "https://github.com/o1-labs/proof-systems.git", rev = "15139e422f" }
+mina-signer = { git = "https://github.com/o1-labs/proof-systems.git", rev = "15139e422f" }
 ark-ec = "0.4.2"
 ark-ff = "0.4.2"
-#rand_core = "0.9.1"
+ark-serialize = "0.4.2"
 num-traits = "0.2.19"

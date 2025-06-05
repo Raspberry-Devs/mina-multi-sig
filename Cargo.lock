@@ -200,12 +200,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake2"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46502ad458c9a52b69d4d4d32775c788b7a1b85e8bc9d482d92250fc0e3f8efe"
+dependencies = [
+ "digest",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3078c7629b62d3f0439517fa394996acacc5cbc91c5a20d8c658e77abd503a71"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "bs58"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf88ba1141d185c399bee5288d850d63b8369520c1eafc32a0430b5b6c287bf4"
+dependencies = [
+ "tinyvec",
 ]
 
 [[package]]
@@ -397,6 +415,7 @@ checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer",
  "crypto-common",
+ "subtle",
 ]
 
 [[package]]
@@ -448,6 +467,7 @@ dependencies = [
  "frost-core",
  "mina-curves",
  "mina-hasher",
+ "mina-signer",
  "num-traits",
  "rand_core",
 ]
@@ -655,9 +675,9 @@ checksum = "b4ce301924b7887e9d637144fdade93f9dfff9b60981d4ac161db09720d39aa5"
 
 [[package]]
 name = "lock_api"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07af8b9cdd281b7915f413fa73f29ebd5d55d0d3f0155584dade1ff18cea1b17"
+checksum = "96936507f153605bddfcda068dd804796c84324ed2510809e5b2a624c81da765"
 dependencies = [
  "autocfg",
  "scopeguard",
@@ -670,15 +690,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 
 [[package]]
-name = "memchr"
-version = "2.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
-
-[[package]]
 name = "mina-curves"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems.git?rev=6d2ac796205456d314d7ea2a3db6e0e816d60a99#6d2ac796205456d314d7ea2a3db6e0e816d60a99"
+source = "git+https://github.com/o1-labs/proof-systems.git?rev=15139e422f#15139e422f8edb6ca1e71536d5488f39369493dd"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -689,7 +703,7 @@ dependencies = [
 [[package]]
 name = "mina-hasher"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems.git?rev=6d2ac796205456d314d7ea2a3db6e0e816d60a99#6d2ac796205456d314d7ea2a3db6e0e816d60a99"
+source = "git+https://github.com/o1-labs/proof-systems.git?rev=15139e422f#15139e422f8edb6ca1e71536d5488f39369493dd"
 dependencies = [
  "ark-ff",
  "bitvec",
@@ -702,7 +716,7 @@ dependencies = [
 [[package]]
 name = "mina-poseidon"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems.git?rev=6d2ac796205456d314d7ea2a3db6e0e816d60a99#6d2ac796205456d314d7ea2a3db6e0e816d60a99"
+source = "git+https://github.com/o1-labs/proof-systems.git?rev=15139e422f#15139e422f8edb6ca1e71536d5488f39369493dd"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -715,6 +729,25 @@ dependencies = [
  "rayon",
  "serde",
  "serde_with",
+]
+
+[[package]]
+name = "mina-signer"
+version = "0.1.0"
+source = "git+https://github.com/o1-labs/proof-systems.git?rev=15139e422f#15139e422f8edb6ca1e71536d5488f39369493dd"
+dependencies = [
+ "ark-ec",
+ "ark-ff",
+ "bitvec",
+ "blake2",
+ "bs58",
+ "hex",
+ "mina-curves",
+ "mina-hasher",
+ "o1-utils",
+ "rand",
+ "sha2",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -756,7 +789,7 @@ dependencies = [
 [[package]]
 name = "o1-utils"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems.git?rev=6d2ac796205456d314d7ea2a3db6e0e816d60a99#6d2ac796205456d314d7ea2a3db6e0e816d60a99"
+source = "git+https://github.com/o1-labs/proof-systems.git?rev=15139e422f#15139e422f8edb6ca1e71536d5488f39369493dd"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -970,12 +1003,11 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.140"
+version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
+checksum = "cb0652c533506ad7a2e353cce269330d6afd8bdfb6d75e0ace5b35aacbd7b9e9"
 dependencies = [
  "itoa",
- "memchr",
  "ryu",
  "serde",
 ]
@@ -1057,6 +1089,12 @@ name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
+
+[[package]]
+name = "subtle"
+version = "2.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
@@ -1207,6 +1245,21 @@ dependencies = [
  "num-conv",
  "time-core",
 ]
+
+[[package]]
+name = "tinyvec"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09b3661f17e86524eccd4371ab0429194e0d7c008abb45f7a7495b1719463c71"
+dependencies = [
+ "tinyvec_macros",
+]
+
+[[package]]
+name = "tinyvec_macros"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "typenum"

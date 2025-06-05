@@ -33,6 +33,7 @@ pub type Error = frost_core::Error<PallasPoseidon>;
 use crate::hasher::{hash_to_array, hash_to_scalar};
 
 mod hasher;
+mod translate;
 
 #[derive(Clone, Copy)]
 pub struct PallasScalarField;
