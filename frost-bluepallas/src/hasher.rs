@@ -1,4 +1,4 @@
-use ark_ff::{BigInteger, PrimeField};
+use ark_ff::PrimeField;
 use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
 
@@ -43,10 +43,8 @@ pub fn hash_to_scalar(input: &[&[u8]]) -> Fq {
 }
 
 // Maps poseidon hash of input to a 32-byte array
-pub fn hash_to_array(input: &[&[u8]]) -> [u8; 32] {
+pub fn hash_to_array(input: &[&[u8]]) -> <PallasScalarField as frost_core::Field>::Serialization {
     let scalar = hash_to_scalar(input);
 
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&scalar.into_bigint().to_bytes_be());
-    out
+    PallasScalarField::serialize(&scalar)
 }
