@@ -7,8 +7,8 @@
 use crate::PallasPoseidon;
 use ark_ec::short_weierstrass::{Affine, Projective};
 use frost_core::{Ciphersuite, Group, Signature as FrSig, VerifyingKey};
-use mina_curves::pasta::{PallasParameters, ProjectivePallas};
-use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, CurvePoint};
+use mina_curves::pasta::PallasParameters;
+use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig};
 
 // temporary till we sort out proper error messages
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;

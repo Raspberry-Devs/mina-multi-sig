@@ -3,7 +3,6 @@ resolver = "2"
 members = ["frost-bluepallas"]
 
 [workspace.dependencies]
-blake2 = "0.10.0"
 frost-core = "2.1.0"
 mina-hasher = { git = "https://github.com/o1-labs/proof-systems.git", rev = "15139e422f" }
 mina-curves = { git = "https://github.com/o1-labs/proof-systems.git", rev = "15139e422f" }
