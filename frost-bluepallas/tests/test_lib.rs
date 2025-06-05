@@ -6,6 +6,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     // code snippets from https://frost.zfnd.org/tutorial.html
+    #[allow(clippy::needless_borrows_for_generic_args)]
     #[test]
     fn it_works() -> Result<(), Box<dyn std::error::Error>> {
         let mut rng = rand_core::OsRng;
@@ -15,7 +16,7 @@ mod tests {
             max_signers,
             min_signers,
             frost::keys::IdentifierList::Default,
-            rng,
+            &mut rng,
         )?;
 
         // Verifies the secret shares from the dealer and store them in a BTreeMap.

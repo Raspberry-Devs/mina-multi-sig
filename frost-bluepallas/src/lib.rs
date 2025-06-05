@@ -181,7 +181,7 @@ pub mod keys {
     ///
     /// # Security
     ///
-    /// To derive a FROST(Pallas, Posiedon) keypair, the receiver of the [`SecretShare`] *must* call
+    /// To derive a FROST(Pallas, Poseidon) keypair, the receiver of the [`SecretShare`] *must* call
     /// .into(), which under the hood also performs validation.
     pub type SecretShare = frost::keys::SecretShare<P>;
 
