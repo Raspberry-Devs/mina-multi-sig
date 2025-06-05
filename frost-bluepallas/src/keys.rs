@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use frost_core as frost;
+use frost_core::{self as frost, Ciphersuite, Group};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::{Error, Identifier, VerifyingKey, P};
+use crate::{Error, Identifier, PallasPoseidon, VerifyingKey, P};
 
 pub type IdentifierList<'a> = frost::keys::IdentifierList<'a, P>;
 
@@ -57,6 +57,7 @@ pub fn generate_with_dealer<RNG: RngCore + CryptoRng>(
     mut rng: RNG,
 ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
     frost::keys::generate_with_dealer(max_signers, min_signers, identifiers, &mut rng)
+        .map(into_even_y)
 }
 
 /// Copied from https://github.com/ZcashFoundation/reddsa/blob/main/src/frost/redpallas.rs
@@ -102,4 +103,81 @@ impl EvenY for PublicKeyPackage {
             self
         }
     }
+}
+
+impl EvenY for SecretShare {
+    fn has_even_y(&self) -> bool {
+        let key_package: KeyPackage = self
+            .clone()
+            .try_into()
+            .expect("Should work; expected to be called in freshly generated SecretShares");
+        key_package.has_even_y()
+    }
+
+    fn into_even_y(self, is_even: Option<bool>) -> Self {
+        let is_even = is_even.unwrap_or_else(|| self.has_even_y());
+        if !is_even {
+            // Negate SigningShare
+            let signing_share = SigningShare::new(-self.signing_share().to_scalar());
+            // Negate VerifiableSecretSharingCommitment by negating each
+            // coefficient in it. TODO: remove serialization roundtrip
+            // workaround after required functions are added to frost-core
+            let coefficients: Vec<_> = self
+                .commitment()
+                .coefficients()
+                .iter()
+                .map(|e| {
+                    <PallasPoseidon as Ciphersuite>::Group::serialize(&-e.value())
+                        .expect("none of the coefficient commitments are the identity")
+                })
+                .collect();
+            let commitments = VerifiableSecretSharingCommitment::deserialize(coefficients)
+                .expect("Should work since they were just serialized");
+            SecretShare::new(*self.identifier(), signing_share, commitments)
+        } else {
+            self
+        }
+    }
+}
+
+impl EvenY for KeyPackage {
+    fn has_even_y(&self) -> bool {
+        let pubkey = self.verifying_key();
+        match pubkey.serialize() {
+            Ok(pubkey_serialized) => pubkey_serialized[31] & 0x80 == 0,
+            // If serialization fails then it's the identity point, which has even Y
+            Err(_) => true,
+        }
+    }
+
+    fn into_even_y(self, is_even: Option<bool>) -> Self {
+        let is_even = is_even.unwrap_or_else(|| self.has_even_y());
+        if !is_even {
+            // Negate all components
+            let verifying_key = VerifyingKey::new(-self.verifying_key().to_element());
+            let signing_share = SigningShare::new(-self.signing_share().to_scalar());
+            let verifying_share = VerifyingShare::new(-self.verifying_share().to_element());
+            KeyPackage::new(
+                *self.identifier(),
+                signing_share,
+                verifying_share,
+                verifying_key,
+                *self.min_signers(),
+            )
+        } else {
+            self
+        }
+    }
+}
+
+pub(crate) fn into_even_y(
+    (secret_shares, public_key_package): (BTreeMap<Identifier, SecretShare>, PublicKeyPackage),
+) -> (BTreeMap<Identifier, SecretShare>, PublicKeyPackage) {
+    let is_even = public_key_package.has_even_y();
+    let public_key_package = public_key_package.into_even_y(Some(is_even));
+    let secret_shares = secret_shares
+        .iter()
+        .map(|(i, s)| (*i, s.clone().into_even_y(Some(is_even))))
+        .collect();
+    (secret_shares, public_key_package)
 }
