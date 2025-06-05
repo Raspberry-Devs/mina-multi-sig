@@ -6,9 +6,10 @@ edition = "2021"
 [dependencies]
 ark-ec.workspace = true
 ark-ff.workspace = true
-ark-serialize = "0.4.2"
+ark-serialize.workspace = true
 frost-core.workspace = true
 mina-curves.workspace = true
+mina-signer.workspace = true
 blake2.workspace = true
 num-traits.workspace = true
 rand_core = { version = "0.6.4", features = ["getrandom"] }
