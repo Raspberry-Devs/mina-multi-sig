@@ -46,7 +46,8 @@ pub fn hash_to_scalar(input: &[&[u8]]) -> Fq {
 pub fn hash_to_array(input: &[&[u8]]) -> [u8; 32] {
     let scalar = hash_to_scalar(input);
 
+    let bytes_be = scalar.into_bigint().to_bytes_be();
     let mut out = [0u8; 32];
-    out.copy_from_slice(&scalar.into_bigint().to_bytes_be());
+    out[32 - bytes_be.len()..].copy_from_slice(&bytes_be);
     out
 }
