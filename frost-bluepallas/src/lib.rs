@@ -34,6 +34,8 @@ use blake2::{
     Blake2bVar,
 };
 
+mod translate;
+
 #[derive(Clone, Copy)]
 pub struct PallasScalarField;
 
