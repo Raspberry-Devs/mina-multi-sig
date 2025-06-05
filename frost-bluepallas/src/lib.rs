@@ -22,7 +22,7 @@ use ark_ec::{models::CurveConfig, Group as ArkGroup};
 
 use ark_ff::{fields::Field as ArkField, BigInteger, PrimeField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-use frost_core::{self as frost, Ciphersuite, Field, FieldError, Group, GroupError};
+pub use frost_core::{self as frost, Ciphersuite, Field, FieldError, Group, GroupError};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
 
 use num_traits::identities::Zero;
@@ -226,6 +226,51 @@ pub mod keys {
         mut rng: RNG,
     ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
         frost::keys::generate_with_dealer(max_signers, min_signers, identifiers, &mut rng)
+    }
+
+    /// Copied from https://github.com/ZcashFoundation/reddsa/blob/main/src/frost/redpallas.rs
+    pub trait EvenY {
+        /// Return if the given type has a group public key with an even Y
+        /// coordinate.
+        fn has_even_y(&self) -> bool;
+
+        /// Convert the given type to make sure the group public key has an even
+        /// Y coordinate. `is_even` can be specified if evenness was already
+        /// determined beforehand. Returns a boolean indicating if the original
+        /// type had an even Y, and a (possibly converted) value with even Y.
+        fn into_even_y(self, is_even: Option<bool>) -> Self;
+    }
+
+    impl EvenY for PublicKeyPackage {
+        fn has_even_y(&self) -> bool {
+            let verifying_key = self.verifying_key();
+            match verifying_key.serialize() {
+                Ok(verifying_key_serialized) => verifying_key_serialized[31] & 0x80 == 0,
+                // If serialization fails then it's the identity point, which has even Y
+                Err(_) => true,
+            }
+        }
+
+        fn into_even_y(self, is_even: Option<bool>) -> Self {
+            let is_even = is_even.unwrap_or_else(|| self.has_even_y());
+            if !is_even {
+                // Negate verifying key
+                let verifying_key = VerifyingKey::new(-self.verifying_key().to_element());
+                // Recreate verifying share map with negated VerifyingShares
+                // values.
+                let verifying_shares: BTreeMap<_, _> = self
+                    .verifying_shares()
+                    .iter()
+                    .map(|(i, vs)| {
+                        let vs = VerifyingShare::new(-vs.to_element());
+                        (*i, vs)
+                    })
+                    .collect();
+                PublicKeyPackage::new(verifying_shares, verifying_key)
+            } else {
+                self
+            }
+        }
     }
 }
 
