@@ -35,7 +35,7 @@ use crate::hasher::{hash_to_array, hash_to_scalar};
 pub mod keys;
 
 mod hasher;
-mod translate;
+pub mod translate;
 
 #[derive(Clone, Copy)]
 pub struct PallasScalarField;
@@ -82,7 +82,7 @@ pub struct PallasGroup {}
 impl Group for PallasGroup {
     type Element = ProjectivePallas;
     type Field = PallasScalarField;
-    type Serialization = [u8; 32 * 3]; // Projective Pallas is a struct with 3 of PallasScalarField
+    type Serialization = [u8; 32 * 3]; // Projective Pallas is a struct with 3 of PallasBaseField
 
     fn cofactor() -> <Self::Field as Field>::Scalar {
         Self::Field::one()
