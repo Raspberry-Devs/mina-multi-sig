@@ -25,7 +25,7 @@ pub type SigningShare = frost::keys::SigningShare<P>;
 /// A public group element that represents a single signer's public verification share.
 pub type VerifyingShare = frost::keys::VerifyingShare<P>;
 
-/// A FROST(Pallas, Posiedon) keypair, which can be generated either by a trusted dealer or using
+/// A FROST(Pallas, Poseidon) keypair, which can be generated either by a trusted dealer or using
 /// a DKG.
 ///
 /// When using a central dealer, [`SecretShare`]s are distributed to
