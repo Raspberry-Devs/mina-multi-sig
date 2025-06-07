@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 
-use frost_core::{self as frost, Ciphersuite, Group};
+use ark_ff::{BigInteger, PrimeField};
+use frost_core::{self as frost, keys::CoefficientCommitment};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::{Error, Identifier, PallasPoseidon, VerifyingKey, P};
+use crate::{Error, Identifier, VerifyingKey, P};
 
 pub mod dkg;
 
@@ -77,12 +78,7 @@ pub trait EvenY {
 
 impl EvenY for PublicKeyPackage {
     fn has_even_y(&self) -> bool {
-        let verifying_key = self.verifying_key();
-        match verifying_key.serialize() {
-            Ok(verifying_key_serialized) => verifying_key_serialized[31] & 0x80 == 0,
-            // If serialization fails then it's the identity point, which has even Y
-            Err(_) => true,
-        }
+        self.verifying_key().to_element().y.into_bigint().is_even()
     }
 
     fn into_even_y(self, is_even: Option<bool>) -> Self {
@@ -122,19 +118,14 @@ impl EvenY for SecretShare {
             // Negate SigningShare
             let signing_share = SigningShare::new(-self.signing_share().to_scalar());
             // Negate VerifiableSecretSharingCommitment by negating each
-            // coefficient in it. TODO: remove serialization roundtrip
-            // workaround after required functions are added to frost-core
+            // coefficient in it
             let coefficients: Vec<_> = self
                 .commitment()
                 .coefficients()
                 .iter()
-                .map(|e| {
-                    <PallasPoseidon as Ciphersuite>::Group::serialize(&-e.value())
-                        .expect("none of the coefficient commitments are the identity")
-                })
+                .map(|e| CoefficientCommitment::new(-e.value()))
                 .collect();
-            let commitments = VerifiableSecretSharingCommitment::deserialize(coefficients)
-                .expect("Should work since they were just serialized");
+            let commitments = VerifiableSecretSharingCommitment::new(coefficients);
             SecretShare::new(*self.identifier(), signing_share, commitments)
         } else {
             self
@@ -144,12 +135,7 @@ impl EvenY for SecretShare {
 
 impl EvenY for KeyPackage {
     fn has_even_y(&self) -> bool {
-        let pubkey = self.verifying_key();
-        match pubkey.serialize() {
-            Ok(pubkey_serialized) => pubkey_serialized[31] & 0x80 == 0,
-            // If serialization fails then it's the identity point, which has even Y
-            Err(_) => true,
-        }
+        self.verifying_key().to_element().y.into_bigint().is_even()
     }
 
     fn into_even_y(self, is_even: Option<bool>) -> Self {

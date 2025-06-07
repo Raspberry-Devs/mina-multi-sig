@@ -18,7 +18,7 @@ fn deserialize_field_element() {
     let field_element =
         PallasScalarField::deserialize(&bytes).expect("Failed to deserialize group element");
 
-    assert_eq!(field_element.into_bigint().to_bytes_be(), bytes);
+    assert_eq!(field_element.into_bigint().to_bytes_le(), bytes);
 }
 
 #[test]

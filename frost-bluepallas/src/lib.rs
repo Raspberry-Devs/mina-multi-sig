@@ -56,25 +56,22 @@ impl Field for PallasScalarField {
     fn random<R: RngCore + CryptoRng>(rng: &mut R) -> Self::Scalar {
         Self::Scalar::rand(rng)
     }
-    fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        // Convert the field element to its big integer representation …
-        let bytes_be = scalar.into_bigint().to_bytes_be();
-        // … and left-pad to a full 32-byte array.
-        let mut out = [0u8; 32];
-        out[32 - bytes_be.len()..].copy_from_slice(&bytes_be);
-        out
-    }
 
-    fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
+    fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
+        // Perform little endian serialization of the scalar field element
         let bytes_le = scalar.into_bigint().to_bytes_le();
         let mut out = [0u8; 32];
         out[..bytes_le.len()].copy_from_slice(&bytes_le);
         out
     }
 
+    fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
+        Self::serialize(scalar)
+    }
+
     // Parse the canonical 32-byte big-endian form back into a field element,
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
-        let scalar = <Self::Scalar as PrimeField>::from_be_bytes_mod_order(buf);
+        let scalar = <Self::Scalar as PrimeField>::from_le_bytes_mod_order(buf);
         Ok(scalar)
     }
 }
