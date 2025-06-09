@@ -1066,6 +1066,7 @@ dependencies = [
  "clap",
  "dirs",
  "eyre",
+ "frost-bluepallas",
  "frost-core",
  "frost-ed25519",
  "frost-rerandomized",

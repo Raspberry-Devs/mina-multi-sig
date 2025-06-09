@@ -63,6 +63,22 @@ impl MaybeIntoEvenY for reddsa::frost::redpallas::PallasBlake2b512 {
     }
 }
 
+// -- bp --
+impl MaybeIntoEvenY for frost_bluepallas::PallasPoseidon {
+    fn into_even_y(
+        (secret_shares, public_key_package): (
+            BTreeMap<Identifier<Self>, SecretShare<Self>>,
+            PublicKeyPackage<Self>,
+        ),
+    ) -> (
+        BTreeMap<Identifier<Self>, SecretShare<Self>>,
+        PublicKeyPackage<Self>,
+    ) {
+        frost_bluepallas::keys::into_even_y((secret_shares, public_key_package))
+    }
+}
+// -- bp end --
+
 #[allow(clippy::type_complexity)]
 pub fn trusted_dealer<C: Ciphersuite + 'static + MaybeIntoEvenY, R: RngCore + CryptoRng>(
     config: &Config,

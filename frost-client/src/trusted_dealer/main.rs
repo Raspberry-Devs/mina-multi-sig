@@ -14,7 +14,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         cli::<frost_ed25519::Ed25519Sha512>(&args, &mut reader, &mut logger)?;
     } else if args.ciphersuite == "redpallas" {
         cli::<reddsa::frost::redpallas::PallasBlake2b512>(&args, &mut reader, &mut logger)?;
+    // -- bp --
+    } else if args.ciphersuite == "bluepallas" {
+        cli::<frost_bluepallas::PallasPoseidon>(&args, &mut reader, &mut logger)?;
+    } else {
+        return Err(format!("Unsupported ciphersuite: {}", args.ciphersuite).into());
     }
+    // -- bp end --
 
     Ok(())
 }
