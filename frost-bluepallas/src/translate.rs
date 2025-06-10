@@ -67,7 +67,7 @@ impl Hashable for PallasMessage {
         // Domain strings must have length <= 20
         match network_id {
             NetworkId::MAINNET => "MinaSignatureMainnet",
-            NetworkId::TESTNET => "CodaSignature", //"FROST-PALLAS-POSEIDON",
+            NetworkId::TESTNET => "CodaSignature", //"bluepallas",
         }
         .to_string()
         .into()

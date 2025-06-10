@@ -8,6 +8,10 @@ use frost_core::{
 use frost_ed25519::Ed25519Sha512;
 use reddsa::frost::redpallas::PallasBlake2b512;
 
+// -- bp --
+use frost_bluepallas::PallasPoseidon;
+// -- bp end --
+
 /// Additional information about a group, derived from the key packages.
 #[derive(Debug, Clone)]
 pub struct GroupInfo {
@@ -50,6 +54,10 @@ pub(crate) fn ciphersuite_helper(
     } else if ciphersuite_id == PallasBlake2b512::ID {
         return Ok(Box::new(
             CiphersuiteHelperImpl::<PallasBlake2b512>::default(),
+        ));
+    } else if ciphersuite_id == PallasPoseidon::ID {
+        return Ok(Box::new(
+            CiphersuiteHelperImpl::<PallasPoseidon>::default(),
         ));
     }
     Err(eyre!("invalid ciphersuite ID").into())

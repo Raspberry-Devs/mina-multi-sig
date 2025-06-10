@@ -124,7 +124,7 @@ impl Group for PallasGroup {
 
 // Define the ciphersuite for Pallas with Poseidon as the hash function
 // https://github.com/MinaProtocol/mina/blob/master/docs/specs/signatures/description.md
-const CONTEXT_STRING: &str = "FROST-PALLAS-POSEIDON";
+const CONTEXT_STRING: &str = "bluepallas";
 const HASH_SIZE: usize = 32; // Posiedon hash output size
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
