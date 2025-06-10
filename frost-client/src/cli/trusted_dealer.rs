@@ -5,11 +5,7 @@ use itertools::izip;
 use rand::thread_rng;
 
 use frost_core::{keys::KeyPackage, Ciphersuite};
-use frost_ed25519::Ed25519Sha512;
-
-// -- bp --
 use frost_bluepallas::PallasPoseidon;
-// -- bp end --
 
 use super::{
     args::Command,
@@ -25,14 +21,8 @@ pub fn trusted_dealer(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    if ciphersuite == "ed25519" {
-        trusted_dealer_for_ciphersuite::<Ed25519Sha512>(args)
-    } else if ciphersuite == "redpallas" {
-        trusted_dealer_for_ciphersuite::<reddsa::frost::redpallas::PallasBlake2b512>(args)
-    // -- bp --
-    } else if ciphersuite == "bluepallas" {
+    if ciphersuite == "bluepallas" {
         trusted_dealer_for_ciphersuite::<PallasPoseidon>(args)
-    // -- bp end --
     } else {
         Err(eyre!("unsupported ciphersuite").into())
     }

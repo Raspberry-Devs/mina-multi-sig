@@ -1,6 +1,6 @@
 mod helpers;
 
-use frost_ed25519 as frost;
+use frost_bluepallas as frost;
 
 use frost::aggregate;
 use frost::keys::IdentifierList;

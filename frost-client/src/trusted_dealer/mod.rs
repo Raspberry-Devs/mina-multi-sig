@@ -14,7 +14,6 @@ use std::collections::BTreeMap;
 
 use frost_core::keys::{IdentifierList, PublicKeyPackage, SecretShare};
 use frost_core::{Ciphersuite, Identifier};
-use reddsa::frost::redpallas::keys::EvenY;
 
 use trusted_dealer_keygen::{split_secret, trusted_dealer_keygen};
 
@@ -40,30 +39,6 @@ pub trait MaybeIntoEvenY: Ciphersuite {
     }
 }
 
-// A ciphersuite that does not need the conversion.
-impl MaybeIntoEvenY for frost_ed25519::Ed25519Sha512 {}
-
-impl MaybeIntoEvenY for reddsa::frost::redpallas::PallasBlake2b512 {
-    fn into_even_y(
-        (secret_shares, public_key_package): (
-            BTreeMap<Identifier<Self>, SecretShare<Self>>,
-            PublicKeyPackage<Self>,
-        ),
-    ) -> (
-        BTreeMap<Identifier<Self>, SecretShare<Self>>,
-        PublicKeyPackage<Self>,
-    ) {
-        let is_even = public_key_package.has_even_y();
-        let public_key_package = public_key_package.into_even_y(Some(is_even));
-        let secret_shares = secret_shares
-            .iter()
-            .map(|(i, s)| (*i, s.clone().into_even_y(Some(is_even))))
-            .collect();
-        (secret_shares, public_key_package)
-    }
-}
-
-// -- bp --
 impl MaybeIntoEvenY for frost_bluepallas::PallasPoseidon {
     fn into_even_y(
         (secret_shares, public_key_package): (
@@ -77,7 +52,6 @@ impl MaybeIntoEvenY for frost_bluepallas::PallasPoseidon {
         frost_bluepallas::keys::into_even_y((secret_shares, public_key_package))
     }
 }
-// -- bp end --
 
 #[allow(clippy::type_complexity)]
 pub fn trusted_dealer<C: Ciphersuite + 'static + MaybeIntoEvenY, R: RngCore + CryptoRng>(

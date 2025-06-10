@@ -1,4 +1,4 @@
-use frost_ed25519 as frost;
+use frost_bluepallas as frost;
 
 use frost::keys::{IdentifierList, PublicKeyPackage, SecretShare};
 use frost::Identifier;

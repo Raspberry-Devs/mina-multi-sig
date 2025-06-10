@@ -95,8 +95,8 @@ pub enum Command {
         /// config file.
         #[arg(short, long)]
         server_url: Option<String>,
-        /// The ciphersuite to use (ed25519, redpallas, or bluepallas).
-        #[arg(short = 'C', long, default_value = "ed25519")]
+        /// The ciphersuite to use (only bluepallas is supported).
+        #[arg(short = 'C', long, default_value = "bluepallas")]
         ciphersuite: String,
         /// The threshold (minimum number of signers).
         #[arg(short = 't', long, default_value_t = 2)]

@@ -4,9 +4,9 @@ Forked from https://github.com/ZcashFoundation/frost-zcash-demo/tree/main/frost-
 # Zcash Foundation original documentation
 https://frost.zfnd.org/zcash/ywallet-demo.html
 
-# Examples
+# Trusted Dealer
 
-## Trusted Dealer Example
+## Example
 Located in `examples/trusted_dealer_example/`, this example demonstrates how to:
 1. Initialize configs for multiple users
 2. Generate FROST key shares using the trusted dealer approach with bluepallas
@@ -18,3 +18,14 @@ cd examples/trusted_dealer_example
 ```
 
 The script will create a `generated` directory containing the config files for each user. Note that this directory is gitignored to prevent committing sensitive key material.
+
+## Tests
+To run all tests for the trusted dealer module:
+```bash
+cargo test --package frost-client --lib trusted_dealer -- --nocapture
+```
+
+# Run all tests in the codebase
+```
+cargo test --package frost-client --lib -- --nocapture
+```

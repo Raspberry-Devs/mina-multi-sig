@@ -3,8 +3,8 @@ use clap::Parser;
 #[derive(Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// The ciphersuite to use. Supported values: ed25519, redpallas, bluepallas
-    #[arg(short = 'C', long, default_value = "ed25519")]
+    /// The ciphersuite to use. Supported values: bluepallas
+    #[arg(short = 'C', long, default_value = "bluepallas")]
     pub ciphersuite: String,
 
     /// CLI mode. If enabled, it will prompt for inputs from stdin

@@ -5,12 +5,9 @@ use frost_core::{
     keys::{KeyPackage, PublicKeyPackage},
     Ciphersuite,
 };
-use frost_ed25519::Ed25519Sha512;
-use reddsa::frost::redpallas::PallasBlake2b512;
 
-// -- bp --
 use frost_bluepallas::PallasPoseidon;
-// -- bp end --
+
 
 /// Additional information about a group, derived from the key packages.
 #[derive(Debug, Clone)]
@@ -49,13 +46,7 @@ where
 pub(crate) fn ciphersuite_helper(
     ciphersuite_id: &str,
 ) -> Result<Box<dyn CiphersuiteHelper>, Box<dyn Error>> {
-    if ciphersuite_id == Ed25519Sha512::ID {
-        return Ok(Box::new(CiphersuiteHelperImpl::<Ed25519Sha512>::default()));
-    } else if ciphersuite_id == PallasBlake2b512::ID {
-        return Ok(Box::new(
-            CiphersuiteHelperImpl::<PallasBlake2b512>::default(),
-        ));
-    } else if ciphersuite_id == PallasPoseidon::ID {
+    if ciphersuite_id == PallasPoseidon::ID {
         return Ok(Box::new(
             CiphersuiteHelperImpl::<PallasPoseidon>::default(),
         ));
