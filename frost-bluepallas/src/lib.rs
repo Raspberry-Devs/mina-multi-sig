@@ -30,11 +30,10 @@ use rand_core::{CryptoRng, RngCore};
 
 pub type Error = frost_core::Error<PallasPoseidon>;
 
-use crate::hasher::{hash_to_array, hash_to_scalar};
+use crate::hasher::{hash_challenge, hash_to_array, hash_to_scalar};
 
+pub mod hasher;
 pub mod keys;
-
-mod hasher;
 pub mod translate;
 
 #[derive(Clone, Copy)]
@@ -128,7 +127,7 @@ const CONTEXT_STRING: &str = "FROST-PALLAS-POSEIDON";
 const HASH_SIZE: usize = 32; // Posiedon hash output size
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct PallasPoseidon;
+pub struct PallasPoseidon {}
 
 impl Ciphersuite for PallasPoseidon {
     const ID: &'static str = CONTEXT_STRING;
@@ -140,10 +139,8 @@ impl Ciphersuite for PallasPoseidon {
     fn H1(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
         hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"rho", m])
     }
-    fn H2(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
-        // TODO: Modify the hash to include the mainnet context string
-        // This will ensure that the hash corresponds to mina signatures
-        hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"chal", m])
+    fn H2(_m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
+        unimplemented!("H2 is not implemented on purpose, please see the `challenge` function");
     }
     fn H3(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
         hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"nonce", m])
@@ -161,6 +158,17 @@ impl Ciphersuite for PallasPoseidon {
 
     fn HID(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
         Some(hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"id", m]))
+    }
+
+    #[allow(non_snake_case)]
+    fn challenge(
+        R: &frost_core::Element<Self>,
+        verifying_key: &frost_core::VerifyingKey<Self>,
+        message: &[u8],
+    ) -> Result<frost_core::Challenge<Self>, frost_core::Error<Self>> {
+        let scalar = hash_challenge(R, verifying_key, message);
+
+        Ok(frost_core::Challenge::from_scalar(scalar))
     }
 }
 

@@ -627,6 +627,7 @@ dependencies = [
  "mina-hasher",
  "mina-signer",
  "num-traits",
+ "rand_chacha",
  "rand_core",
 ]
 
