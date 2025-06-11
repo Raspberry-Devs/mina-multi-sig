@@ -30,7 +30,10 @@ use rand_core::{CryptoRng, RngCore};
 
 pub type Error = frost_core::Error<PallasPoseidon>;
 
-use crate::hasher::{hash_challenge, hash_to_array, hash_to_scalar};
+use crate::{
+    hasher::{hash_to_array, hash_to_scalar, message_hash, PallasMessage},
+    translate::translate_pk,
+};
 
 pub mod hasher;
 pub mod keys;
@@ -166,10 +169,44 @@ impl Ciphersuite for PallasPoseidon {
         verifying_key: &frost_core::VerifyingKey<Self>,
         message: &[u8],
     ) -> Result<frost_core::Challenge<Self>, frost_core::Error<Self>> {
-        let scalar = hash_challenge(R, verifying_key, message);
+        let mina_pk = translate_pk(verifying_key).unwrap();
+        let rx = R.x;
+        let mina_msg = PallasMessage(message.to_vec());
+
+        let scalar = message_hash(&mina_pk, rx, &mina_msg);
 
         Ok(frost_core::Challenge::from_scalar(scalar))
     }
+
+    // fn verify_signature(
+    //         message: &[u8],
+    //         signature: &frost_core::Signature<Self>,
+    //         public_key: &frost_core::VerifyingKey<Self>,
+    //     ) -> Result<(), frost_core::Error<Self>> {
+    //     let ev = Self::challenge(signature.R(), public_key, message)?.to_scalar();
+
+    //     let sig = translate_sig(signature).unwrap();
+    //     let public = translate_pk(public_key).unwrap();
+
+    //     let sv = CurvePoint::generator()
+    //         .mul_bigint(sig.s.into_bigint())
+    //         .into_affine();
+    //     // Perform addition and infinity check in projective coordinates for performance
+    //     let rv = public.point().mul_bigint(ev.into_bigint()).neg().add(sv);
+
+    //     if rv.is_zero() {
+    //         return Err(Error::InvalidSignature);
+    //     }
+
+    //     let rv = rv.into_affine();
+
+    //     let valid = rv.y.into_bigint().is_even() && rv.x == sig.rx;
+    //     if valid {
+    //         Ok(())
+    //     } else {
+    //         Err(Error::InvalidSignature)
+    //     }
+    // }
 }
 
 // Simply type alias for the FROST ciphersuite using Pallas with Poseidon

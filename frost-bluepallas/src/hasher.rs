@@ -1,9 +1,9 @@
 use ark_ff::PrimeField;
-use frost_core::{Ciphersuite, Field, Group};
+use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
-use mina_signer::NetworkId;
+use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
-use crate::{PallasGroup, PallasPoseidon, PallasScalarField, VerifyingKey};
+use crate::PallasScalarField;
 
 #[derive(Clone, Debug)]
 struct PallasHashElement<'a> {
@@ -58,38 +58,50 @@ impl Hashable for PallasMessage {
     }
 }
 
-#[allow(non_snake_case)]
-#[derive(Clone, Debug)]
-pub struct Challenge<'a> {
-    // The nonce commitment R is a point on the Pallas curve
-    pub(crate) R: &'a <<PallasPoseidon as Ciphersuite>::Group as Group>::Element,
-    // The public key
-    pub(crate) P: &'a <PallasGroup as Group>::Element,
-    pub(crate) message: &'a [u8],
+#[derive(Clone)]
+struct Message<H: Hashable> {
+    input: H,
+    pub_key_x: BaseField,
+    pub_key_y: BaseField,
+    rx: BaseField,
 }
 
-impl Hashable for Challenge<'_> {
-    type D = NetworkId;
+impl<H> Hashable for Message<H>
+where
+    H: Hashable<D = NetworkId>,
+{
+    type D = H::D;
 
     fn to_roinput(&self) -> ROInput {
-        let mut roi = ROInput::new();
-
-        roi = roi.append_bytes(self.message);
-        roi = roi.append_field(self.P.x);
-        roi = roi.append_field(self.P.y);
-        roi = roi.append_field(self.R.x);
-
-        roi
+        self.input
+            .to_roinput()
+            .append_field(self.pub_key_x)
+            .append_field(self.pub_key_y)
+            .append_field(self.rx)
     }
 
-    fn domain_string(network_id: NetworkId) -> Option<String> {
-        match network_id {
-            NetworkId::MAINNET => "MinaSignatureMainnet",
-            NetworkId::TESTNET => "CodaSignature", //"FROST-PALLAS-POSEIDON",
-        }
-        .to_string()
-        .into()
+    fn domain_string(domain_param: Self::D) -> Option<String> {
+        H::domain_string(domain_param)
     }
+}
+
+pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: &H) -> ScalarField
+where
+    H: Hashable<D = NetworkId>,
+{
+    let mut hasher = mina_hasher::create_legacy::<Message<H>>(NetworkId::TESTNET);
+
+    let schnorr_input = Message::<H> {
+        input: input.clone(),
+        pub_key_x: pub_key.point().x,
+        pub_key_y: pub_key.point().y,
+        rx,
+    };
+
+    // Squeeze and convert from base field element to scalar field element
+    // Since the difference in modulus between the two fields is < 2^125, w.h.p., a
+    // random value from one field will fit in the other field.
+    ScalarField::from(hasher.hash(&schnorr_input).into_bigint())
 }
 
 type Fq = <PallasScalarField as Field>::Scalar;
@@ -110,21 +122,4 @@ pub fn hash_to_array(input: &[&[u8]]) -> <PallasScalarField as frost_core::Field
     let scalar = hash_to_scalar(input);
 
     PallasScalarField::serialize(&scalar)
-}
-
-#[allow(non_snake_case)]
-pub fn hash_challenge(
-    R: &<<PallasPoseidon as Ciphersuite>::Group as Group>::Element,
-    verifying_key: &VerifyingKey,
-    message: &[u8],
-) -> Fq {
-    // TODO: Make this generic over NetworkId
-    let mut hasher = mina_hasher::create_legacy::<Challenge>(NetworkId::TESTNET);
-    let challenge = Challenge {
-        R,
-        P: &verifying_key.to_element(),
-        message,
-    };
-
-    Fq::from(hasher.hash(&challenge).into_bigint())
 }

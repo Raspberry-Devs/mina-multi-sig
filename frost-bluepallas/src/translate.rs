@@ -1,8 +1,6 @@
 use crate::PallasPoseidon;
-use ark_ec::short_weierstrass::{Affine, Projective};
-use ark_ec::AffineRepr;
-use frost_core::{Ciphersuite, Group, Scalar, Signature as FrSig, VerifyingKey}; // Fr for frost
-use mina_curves::pasta::PallasParameters;
+use ark_ec::CurveGroup;
+use frost_core::{Scalar, Signature as FrSig, VerifyingKey}; // Fr for frost
 use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig};
 
 // temporary till we sort out proper error messages
@@ -21,25 +19,14 @@ pub fn translate_pk(fr_pk: &VerifyingKey<PallasPoseidon>) -> Result<PubKey> {
     // reference: https://github.com/ZcashFoundation/frost/blob/frost-secp256k1/v2.1.0/frost-core/src/serialization.rs#L88
     // This is however depending on the implmenetation details of frost not to change not just the
     //     public api
-    let pk_bytes: Vec<u8> = fr_pk.serialize()?;
-    let pk_projective: Projective<PallasParameters> =
-        <<PallasPoseidon as Ciphersuite>::Group as Group>::deserialize(
-            pk_bytes.as_slice().try_into()?,
-        )?;
-    let pk_affine: Affine<PallasParameters> = pk_projective.into();
-
-    Ok(PubKey::from_point_unsafe(pk_affine))
+    Ok(PubKey::from_point_unsafe(fr_pk.to_element().into_affine()))
 }
 
 pub fn translate_sig(fr_sig: &FrSig<PallasPoseidon>) -> Result<MinaSig> {
-    let r: &Projective<PallasParameters> = fr_sig.R();
-    let z: &Scalar<PallasPoseidon> = fr_sig.z();
-    let r_affine: Affine<PallasParameters> = (*r).into(); // Is this step required?
-    let (rx, _ry) = r_affine
-        .xy()
-        .ok_or("nonce commitment is the point at infinity??!!")?;
+    let rx = fr_sig.R().x;
+    let z: Scalar<PallasPoseidon> = *fr_sig.z();
 
-    Ok(MinaSig { rx: *rx, s: *z })
+    Ok(MinaSig { rx, s: z })
 }
 
 #[cfg(test)]
