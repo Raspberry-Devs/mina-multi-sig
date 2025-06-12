@@ -1,6 +1,6 @@
 use std::io::BufWriter;
 
-use frost_ed25519 as frost;
+use frost_bluepallas as frost;
 
 use frost::Error;
 use trusted_dealer::inputs::{request_inputs, Config};

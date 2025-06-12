@@ -52,7 +52,7 @@ pub fn split_secret<C: Ciphersuite, R: RngCore + CryptoRng>(
 #[cfg(test)]
 mod tests {
 
-    use frost_ed25519::keys::IdentifierList;
+    use frost_bluepallas::keys::IdentifierList;
     use rand::thread_rng;
 
     use super::super::{inputs::Config, trusted_dealer_keygen::split_secret};

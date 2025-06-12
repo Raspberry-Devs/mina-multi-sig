@@ -2,7 +2,7 @@ use frost::keys::{KeyPackage, SecretShare};
 use frost::round1::{SigningCommitments, SigningNonces};
 use frost::round2::SignatureShare;
 use frost::{Identifier, SigningPackage};
-use frost_ed25519 as frost;
+use frost_bluepallas as frost;
 use rand::rngs::ThreadRng;
 use std::collections::BTreeMap;
 

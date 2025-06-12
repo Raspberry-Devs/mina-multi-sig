@@ -25,6 +25,8 @@ name = "trusted-dealer"
 path = "src/trusted_dealer/main.rs"
 
 [dependencies]
+frost-bluepallas = { path = "../frost-bluepallas" }
+
 async-trait = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 reqwest = { workspace = true, features = ["json", "rustls-tls-native-roots"] }

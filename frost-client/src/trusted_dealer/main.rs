@@ -10,10 +10,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut reader = Box::new(io::stdin().lock());
     let mut logger = io::stdout();
-    if args.ciphersuite == "ed25519" {
-        cli::<frost_ed25519::Ed25519Sha512>(&args, &mut reader, &mut logger)?;
-    } else if args.ciphersuite == "redpallas" {
-        cli::<reddsa::frost::redpallas::PallasBlake2b512>(&args, &mut reader, &mut logger)?;
+    if args.ciphersuite == "bluepallas" {
+        cli::<frost_bluepallas::PallasPoseidon>(&args, &mut reader, &mut logger)?;
+    } else {
+        return Err(format!("Unsupported ciphersuite: {}", args.ciphersuite).into());
     }
 
     Ok(())
