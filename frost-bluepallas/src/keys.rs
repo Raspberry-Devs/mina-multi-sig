@@ -158,7 +158,7 @@ impl EvenY for KeyPackage {
     }
 }
 
-pub(crate) fn into_even_y(
+pub fn into_even_y(
     (secret_shares, public_key_package): (BTreeMap<Identifier, SecretShare>, PublicKeyPackage),
 ) -> (BTreeMap<Identifier, SecretShare>, PublicKeyPackage) {
     let is_even = public_key_package.has_even_y();
