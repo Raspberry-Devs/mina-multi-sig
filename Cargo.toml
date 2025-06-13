@@ -7,6 +7,7 @@ resolver = "2"
 
 [workspace.dependencies]
 frost-core = { version = "2.1.0", features = ["internals"] }
+frost-rerandomized = "2.1.0"
 mina-hasher = { git = "https://github.com/o1-labs/proof-systems.git", rev = "15139e422f" }
 mina-curves = { git = "https://github.com/o1-labs/proof-systems.git", rev = "15139e422f" }
 mina-signer = { git = "https://github.com/o1-labs/proof-systems.git", rev = "15139e422f" }
@@ -20,7 +21,10 @@ clap = "4.5.23"
 dirs = "5.0.1"
 eyre = "0.6.12"
 frost-ed25519 = "2.0.0"
-frost-rerandomized = "2.0.0-rc.0"
+futures = "0.3.31"
+futures-util = "0.3.31"
+halo2_gadgets = "0.3.0"
+halo2_proofs = "0.3.0"
 hex = "0.4.3"
 itertools = "0.14.0"
 message-io = "0.18"
