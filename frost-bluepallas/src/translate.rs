@@ -10,18 +10,14 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 // PallasProjective = Projective<PallasParameters> (= Element<PallasPoseidon>)  frost side
 // The ScalarField type on the mina and frost side are the same!
 
+/// Convert FROST public key to Mina public key
+/// The `VerifyingKey` is the public key in FROST, which is a point on the curve.
 pub fn translate_pk(fr_pk: &VerifyingKey<PallasPoseidon>) -> Result<PubKey> {
-    // A VerifyingKey is just a group element in some wrapper structs
-    // But the api doesn't seem to expose a way to extract the underlying element
-    // So I serialize VerifyingKey and deserialize into Element
-    // VerifyingKey<C: Ciphersuite>::serialize() is in fact exactly Ciphersuite::Group::serialize
-    //     (with an extra `?.as_ref().to_vec()`)
-    // reference: https://github.com/ZcashFoundation/frost/blob/frost-secp256k1/v2.1.0/frost-core/src/serialization.rs#L88
-    // This is however depending on the implmenetation details of frost not to change not just the
-    //     public api
     Ok(PubKey::from_point_unsafe(fr_pk.to_element().into_affine()))
 }
 
+/// Convert FROST signature to Mina signature
+/// The `R` field is the commitment to the nonce, and `z` is the response to the challenge.
 pub fn translate_sig(fr_sig: &FrSig<PallasPoseidon>) -> Result<MinaSig> {
     let rx = fr_sig.R().into_affine().x;
     let z: Scalar<PallasPoseidon> = *fr_sig.z();

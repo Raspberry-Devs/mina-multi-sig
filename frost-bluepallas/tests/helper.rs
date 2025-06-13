@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use frost_bluepallas as frost;
 use rand_core::{CryptoRng, RngCore};
 
+/// Helper function which uses FROST to generate a signature, message and verifying key to use in tests.
+/// This uses trusted dealer rather than DKG
 pub fn generate_signature<R: RngCore + CryptoRng>(
     mut rng: R,
 ) -> Result<(Vec<u8>, frost::Signature, frost::VerifyingKey), frost::Error> {
