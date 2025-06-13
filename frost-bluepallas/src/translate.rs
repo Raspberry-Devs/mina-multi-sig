@@ -23,7 +23,7 @@ pub fn translate_pk(fr_pk: &VerifyingKey<PallasPoseidon>) -> Result<PubKey> {
 }
 
 pub fn translate_sig(fr_sig: &FrSig<PallasPoseidon>) -> Result<MinaSig> {
-    let rx = fr_sig.R().x;
+    let rx = fr_sig.R().into_affine().x;
     let z: Scalar<PallasPoseidon> = *fr_sig.z();
 
     Ok(MinaSig { rx, s: z })

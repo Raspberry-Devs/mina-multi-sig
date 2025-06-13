@@ -18,7 +18,7 @@ extern crate alloc;
 
 use alloc::collections::BTreeMap;
 
-use ark_ec::{models::CurveConfig, Group as ArkGroup};
+use ark_ec::{models::CurveConfig, CurveGroup, Group as ArkGroup};
 
 use ark_ff::{fields::Field as ArkField, BigInteger, PrimeField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -170,7 +170,7 @@ impl Ciphersuite for PallasPoseidon {
         message: &[u8],
     ) -> Result<frost_core::Challenge<Self>, frost_core::Error<Self>> {
         let mina_pk = translate_pk(verifying_key).unwrap();
-        let rx = R.x;
+        let rx = R.into_affine().x;
         let mina_msg = PallasMessage(message.to_vec());
 
         let scalar = message_hash(&mina_pk, rx, &mina_msg);
