@@ -1,6 +1,7 @@
 use ark_ff::PrimeField;
 use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
+use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
 use crate::PallasScalarField;
 
@@ -27,6 +28,80 @@ impl Hashable for PallasHashElement<'_> {
     fn domain_string(_domain_param: Self::D) -> Option<String> {
         None
     }
+}
+
+// This s temporary: it's easier to test that u8 slices as messages work correctly first
+// We can implmement (or reuse) the Hashable trait for transaction as in this example afterwards:
+// https://github.com/o1-labs/proof-systems/blob/master/signer/README.md?plain=1#L19-L40
+
+#[derive(Clone, Debug)]
+pub struct PallasMessage(pub Vec<u8>);
+
+// Implement a hashable trait for a u8 slice
+impl Hashable for PallasMessage {
+    type D = NetworkId;
+
+    fn to_roinput(&self) -> ROInput {
+        ROInput::new().append_bytes(self.0.as_ref())
+    }
+
+    // copied from
+    // https://github.com/o1-labs/proof-systems/blob/0.1.0/signer/tests/transaction.rs#L53-L61
+    fn domain_string(network_id: NetworkId) -> Option<String> {
+        // Domain strings must have length <= 20
+        match network_id {
+            NetworkId::MAINNET => "MinaSignatureMainnet",
+            NetworkId::TESTNET => "CodaSignature", //"FROST-PALLAS-POSEIDON",
+        }
+        .to_string()
+        .into()
+    }
+}
+
+#[derive(Clone)]
+struct Message<H: Hashable> {
+    input: H,
+    pub_key_x: BaseField,
+    pub_key_y: BaseField,
+    rx: BaseField,
+}
+
+impl<H> Hashable for Message<H>
+where
+    H: Hashable<D = NetworkId>,
+{
+    type D = H::D;
+
+    fn to_roinput(&self) -> ROInput {
+        self.input
+            .to_roinput()
+            .append_field(self.pub_key_x)
+            .append_field(self.pub_key_y)
+            .append_field(self.rx)
+    }
+
+    fn domain_string(domain_param: Self::D) -> Option<String> {
+        H::domain_string(domain_param)
+    }
+}
+
+pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: &H) -> ScalarField
+where
+    H: Hashable<D = NetworkId>,
+{
+    let mut hasher = mina_hasher::create_legacy::<Message<H>>(NetworkId::TESTNET);
+
+    let schnorr_input = Message::<H> {
+        input: input.clone(),
+        pub_key_x: pub_key.point().x,
+        pub_key_y: pub_key.point().y,
+        rx,
+    };
+
+    // Squeeze and convert from base field element to scalar field element
+    // Since the difference in modulus between the two fields is < 2^125, w.h.p., a
+    // random value from one field will fit in the other field.
+    ScalarField::from(hasher.hash(&schnorr_input).into_bigint())
 }
 
 type Fq = <PallasScalarField as Field>::Scalar;

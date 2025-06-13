@@ -18,7 +18,7 @@ extern crate alloc;
 
 use alloc::collections::BTreeMap;
 
-use ark_ec::{models::CurveConfig, Group as ArkGroup};
+use ark_ec::{models::CurveConfig, CurveGroup, Group as ArkGroup};
 
 use ark_ff::{fields::Field as ArkField, BigInteger, PrimeField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -30,11 +30,13 @@ use rand_core::{CryptoRng, RngCore};
 
 pub type Error = frost_core::Error<PallasPoseidon>;
 
-use crate::hasher::{hash_to_array, hash_to_scalar};
+use crate::{
+    hasher::{hash_to_array, hash_to_scalar, message_hash, PallasMessage},
+    translate::translate_pk,
+};
 
+pub mod hasher;
 pub mod keys;
-
-mod hasher;
 pub mod translate;
 
 #[derive(Clone, Copy)]
@@ -128,7 +130,7 @@ const CONTEXT_STRING: &str = "bluepallas";
 const HASH_SIZE: usize = 32; // Posiedon hash output size
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct PallasPoseidon;
+pub struct PallasPoseidon {}
 
 impl Ciphersuite for PallasPoseidon {
     const ID: &'static str = CONTEXT_STRING;
@@ -140,10 +142,8 @@ impl Ciphersuite for PallasPoseidon {
     fn H1(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
         hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"rho", m])
     }
-    fn H2(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
-        // TODO: Modify the hash to include the mainnet context string
-        // This will ensure that the hash corresponds to mina signatures
-        hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"chal", m])
+    fn H2(_m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
+        unimplemented!("H2 is not implemented on purpose, please see the `challenge` function");
     }
     fn H3(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
         hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"nonce", m])
@@ -161,6 +161,22 @@ impl Ciphersuite for PallasPoseidon {
 
     fn HID(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
         Some(hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"id", m]))
+    }
+
+    #[allow(non_snake_case)]
+    fn challenge(
+        R: &frost_core::Element<Self>,
+        verifying_key: &frost_core::VerifyingKey<Self>,
+        message: &[u8],
+    ) -> Result<frost_core::Challenge<Self>, frost_core::Error<Self>> {
+        // Convert public key and R to the Mina format
+        let mina_pk = translate_pk(verifying_key).unwrap();
+        let rx = R.into_affine().x;
+        let mina_msg = PallasMessage(message.to_vec());
+
+        let scalar = message_hash(&mina_pk, rx, &mina_msg);
+
+        Ok(frost_core::Challenge::from_scalar(scalar))
     }
 }
 

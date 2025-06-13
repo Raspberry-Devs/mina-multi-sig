@@ -1054,7 +1054,8 @@ dependencies = [
  "mina-hasher",
  "mina-signer",
  "num-traits",
- "rand_core 0.6.4",
+ "rand_chacha",
+ "rand_core",
 ]
 
 [[package]]
