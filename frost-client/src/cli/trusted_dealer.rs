@@ -4,8 +4,8 @@ use eyre::{eyre, OptionExt};
 use itertools::izip;
 use rand::thread_rng;
 
-use frost_core::{keys::KeyPackage, Ciphersuite};
 use frost_bluepallas::PallasPoseidon;
+use frost_core::{keys::KeyPackage, Ciphersuite};
 
 use super::{
     args::Command,

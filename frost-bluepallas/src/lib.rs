@@ -20,7 +20,7 @@ use alloc::collections::BTreeMap;
 
 use ark_ec::{models::CurveConfig, CurveGroup, Group as ArkGroup};
 
-use ark_ff::{fields::Field as ArkField, BigInteger, PrimeField, UniformRand};
+use ark_ff::{fields::Field as ArkField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 pub use frost_core::{self as frost, Ciphersuite, Field, FieldError, Group, GroupError};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
@@ -60,11 +60,14 @@ impl Field for PallasScalarField {
     }
 
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
-        // Perform little endian serialization of the scalar field element
-        let bytes_le = scalar.into_bigint().to_bytes_le();
-        let mut out = [0u8; 32];
-        out[..bytes_le.len()].copy_from_slice(&bytes_le);
-        out
+        // Serialize the scalar in compressed form
+        let mut buf = [0u8; 32];
+        scalar
+            .serialize_compressed(&mut buf[..])
+            .map_err(|_| FieldError::MalformedScalar)
+            .expect("Serialization should not fail for valid scalars");
+
+        buf
     }
 
     fn little_endian_serialize(scalar: &Self::Scalar) -> Self::Serialization {
@@ -73,7 +76,8 @@ impl Field for PallasScalarField {
 
     // Parse the canonical 32-byte big-endian form back into a field element,
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
-        let scalar = <Self::Scalar as PrimeField>::from_le_bytes_mod_order(buf);
+        let scalar = <Self::Scalar as CanonicalDeserialize>::deserialize_compressed(&buf[..])
+            .map_err(|_| FieldError::MalformedScalar)?;
         Ok(scalar)
     }
 }

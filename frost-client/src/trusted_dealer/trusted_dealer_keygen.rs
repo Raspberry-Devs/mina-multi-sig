@@ -60,10 +60,13 @@ mod tests {
     #[test]
     fn return_malformed_signing_key_error_if_secret_is_invalid() {
         let mut rng = thread_rng();
+
         let secret_config = Config {
             min_signers: 2,
             max_signers: 3,
-            secret: b"helloIamaninvalidsecret111111111".to_vec(),
+            // original test secret was not large enough to trigger the error as we serialize in little-endian and pallas scalar field is too large
+            // so I've changed the secret to 0x40.... which is large enough
+            secret: b"helloIamaninvalidsecret11111111@".to_vec(),
         };
 
         let out = split_secret(&secret_config, IdentifierList::Default, &mut rng);
