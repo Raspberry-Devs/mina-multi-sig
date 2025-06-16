@@ -1050,7 +1050,6 @@ dependencies = [
  "ark-ff",
  "ark-serialize",
  "frost-core",
- "hex",
  "mina-curves",
  "mina-hasher",
  "mina-signer",
@@ -3950,8 +3949,3 @@ dependencies = [
  "quote",
  "syn 2.0.103",
 ]
-
-[[patch.unused]]
-name = "orchard"
-version = "0.10.1"
-source = "git+https://github.com/conradoplg/orchard.git?rev=f0c88b78a1d70d55ce6bb480566d132e57d5607b#f0c88b78a1d70d55ce6bb480566d132e57d5607b"
