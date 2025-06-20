@@ -1,0 +1,5 @@
+---
+source: frost-bluepallas/tests/serialization_tests.rs
+expression: "hex::encode(&bytes)"
+---
+0100000016f2d9b29370b85bfd6584c1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2a
