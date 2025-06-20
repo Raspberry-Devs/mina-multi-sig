@@ -13,8 +13,8 @@ mina-hasher.workspace = true
 mina-signer.workspace = true
 num-traits.workspace = true
 rand_core = { version = "0.6.4", features = ["getrandom"] }
-rand_chacha = "0.3"
 #rand_core.workspace = true
 
 [dev-dependencies]
 frost-core = { version = "2.1.0", features = ["test-impl"] }
+rand_chacha = "0.3"

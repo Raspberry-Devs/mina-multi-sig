@@ -8,7 +8,6 @@ use frost_core::{
 
 use frost_bluepallas::PallasPoseidon;
 
-
 /// Additional information about a group, derived from the key packages.
 #[derive(Debug, Clone)]
 pub struct GroupInfo {
@@ -47,9 +46,7 @@ pub(crate) fn ciphersuite_helper(
     ciphersuite_id: &str,
 ) -> Result<Box<dyn CiphersuiteHelper>, Box<dyn Error>> {
     if ciphersuite_id == PallasPoseidon::ID {
-        return Ok(Box::new(
-            CiphersuiteHelperImpl::<PallasPoseidon>::default(),
-        ));
+        return Ok(Box::new(CiphersuiteHelperImpl::<PallasPoseidon>::default()));
     }
     Err(eyre!("invalid ciphersuite ID").into())
 }
