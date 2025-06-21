@@ -56,15 +56,15 @@ COORDINATOR_OUTPUT=$(mktemp)
 
 # Start coordinator (Alice) in background and capture output
 echo "Starting coordinator..."
-frost-client coordinator -c "$GENERATED_DIR/alice.toml" --server-url localhost:2744 --group "$GROUP_PUBKEY" -S "$(frost-client contacts -c "$GENERATED_DIR/alice.toml" | grep "Bob" | awk '{print $2}'),$(frost-client contacts -c "$GENERATED_DIR/alice.toml" | grep "Eve" | awk '{print $2}')" -m "$MESSAGE" -C redpallas > "$COORDINATOR_OUTPUT" 2>&1 &
+frost-client coordinator -c "$GENERATED_DIR/alice.toml" --server-url localhost:2744 --group "$GROUP_PUBKEY" -S "$(frost-client contacts -c "$GENERATED_DIR/alice.toml" | grep "Bob" | awk '{print $2}'),$(frost-client contacts -c "$GENERATED_DIR/alice.toml" | grep "Eve" | awk '{print $2}')" -m "$MESSAGE" -C bluepallas > "$COORDINATOR_OUTPUT" 2>&1 &
 COORDINATOR_PID=$!
 
 # Start two participants (Bob and Eve)
 echo "Starting participants..."
-frost-client participant -c "$GENERATED_DIR/bob.toml" --server-url localhost:2744 --group "$GROUP_PUBKEY" -C redpallas &
+frost-client participant -c "$GENERATED_DIR/bob.toml" --server-url localhost:2744 --group "$GROUP_PUBKEY" -C bluepallas &
 BOB_PID=$!
 
-frost-client participant -c "$GENERATED_DIR/eve.toml" --server-url localhost:2744 --group "$GROUP_PUBKEY" -C redpallas &
+frost-client participant -c "$GENERATED_DIR/eve.toml" --server-url localhost:2744 --group "$GROUP_PUBKEY" -C bluepallas &
 EVE_PID=$!
 
 # Wait for all processes to complete

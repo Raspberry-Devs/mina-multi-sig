@@ -10,10 +10,8 @@ use super::round1::{generate_nonces_and_commitments, print_values};
 use super::round2::{generate_signature, print_values_round_2, round_2_request_inputs};
 
 use frost_core::Ciphersuite;
-use frost_ed25519::Ed25519Sha512;
 use frost_rerandomized::RandomizedCiphersuite;
 use rand::thread_rng;
-use reddsa::frost::redpallas::PallasBlake2b512;
 use std::io::{BufRead, Write};
 use zeroize::Zeroizing;
 
@@ -53,21 +51,13 @@ pub async fn cli_for_processed_args<C: RandomizedCiphersuite + 'static>(
 
     // Round 2 - Sign
 
-    let rerandomized = if C::ID == Ed25519Sha512::ID {
-        false
-    } else if C::ID == PallasBlake2b512::ID {
-        true
-    } else {
-        panic!("invalid ciphersuite");
-    };
-
     let round_2_config = round_2_request_inputs(
         &mut *comms,
         input,
         logger,
         commitments,
         *key_package.identifier(),
-        rerandomized,
+        false, // Possibly change in the future 
     )
     .await?;
 

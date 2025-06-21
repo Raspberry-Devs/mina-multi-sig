@@ -2,7 +2,7 @@
 
 use std::io::BufWriter;
 
-use frost_ed25519 as frost;
+use frost_bluepallas as frost;
 
 use frost::Identifier;
 use frost::{
@@ -39,7 +39,7 @@ async fn check_valid_round_1_inputs() {
 
     let mut buf = BufWriter::new(Vec::new());
     let args = Args {
-        ciphersuite: "ed25519".to_string(),
+        ciphersuite: "bluepallas".to_string(),
         cli: true,
         key_package: "-".to_string(),
         ip: "0.0.0.0".to_string(),
@@ -65,7 +65,7 @@ async fn check_0_input_for_identifier() {
     let mut invalid_input = input.as_bytes();
 
     let expected =
-        request_inputs::<frost_ed25519::Ed25519Sha512>(&args, &mut invalid_input, &mut buf)
+        request_inputs::<frost_bluepallas::PallasPoseidon>(&args, &mut invalid_input, &mut buf)
             .await
             .unwrap_err();
 
@@ -85,7 +85,7 @@ async fn check_invalid_length_signing_share() {
     let mut invalid_input = input.as_bytes();
 
     let expected =
-        request_inputs::<frost_ed25519::Ed25519Sha512>(&args, &mut invalid_input, &mut buf)
+        request_inputs::<frost_bluepallas::PallasPoseidon>(&args, &mut invalid_input, &mut buf)
             .await
             .unwrap_err();
 
@@ -105,7 +105,7 @@ async fn check_invalid_round_1_inputs() {
     let mut valid_input = input.as_bytes();
 
     let expected =
-        request_inputs::<frost_ed25519::Ed25519Sha512>(&args, &mut valid_input, &mut buf)
+        request_inputs::<frost_bluepallas::PallasPoseidon>(&args, &mut valid_input, &mut buf)
             .await
             .unwrap_err();
     assert_eq!(
@@ -125,7 +125,7 @@ async fn check_invalid_length_vss_commitment() {
     let mut invalid_input = input.as_bytes();
 
     let expected =
-        request_inputs::<frost_ed25519::Ed25519Sha512>(&args, &mut invalid_input, &mut buf);
+        request_inputs::<frost_bluepallas::PallasPoseidon>(&args, &mut invalid_input, &mut buf);
     assert!(expected.await.is_err())
 }
 

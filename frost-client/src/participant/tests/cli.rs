@@ -22,7 +22,7 @@ async fn check_cli() {
     );
 
     let signature =
-        cli::<frost_ed25519::Ed25519Sha512>(&args, &mut input.as_bytes(), &mut buf).await;
+        cli::<frost_bluepallas::PallasPoseidon>(&args, &mut input.as_bytes(), &mut buf).await;
     assert!(
         signature.is_ok(),
         "invalid signature: {}",
