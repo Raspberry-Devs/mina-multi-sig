@@ -1,9 +1,7 @@
 use frost_core::{self as frost, Ciphersuite};
 
 use frost::{Signature, SigningPackage};
-use frost_rerandomized::{RandomizedCiphersuite, Randomizer};
-use rand::thread_rng;
-use reddsa::frost::redpallas::PallasBlake2b512;
+use frost_rerandomized::{RandomizedCiphersuite};
 
 use std::{
     fs,
@@ -39,10 +37,7 @@ async fn request_inputs_signature_shares<C: RandomizedCiphersuite + 'static>(
     signing_package: &SigningPackage<C>,
 ) -> Result<Signature<C>, Box<dyn std::error::Error>> {
     // TODO: support multiple
-    let randomizer = if args.randomizers.is_empty() && C::ID == PallasBlake2b512::ID {
-        let rng = thread_rng();
-        Some(Randomizer::new(rng, signing_package)?)
-    } else if args.randomizers.is_empty() {
+    let randomizer = if args.randomizers.is_empty() {
         None
     } else {
         Some(args.randomizers[0])

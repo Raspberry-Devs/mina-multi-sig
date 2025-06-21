@@ -12,7 +12,7 @@ use frost::{
     round1::{NonceCommitment, SigningCommitments},
     Identifier, SigningPackage, VerifyingKey,
 };
-use frost_ed25519 as frost;
+use frost_bluepallas as frost;
 use std::{collections::BTreeMap, io::BufWriter};
 
 use super::common::get_helpers;
