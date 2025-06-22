@@ -7,9 +7,9 @@ use rand::thread_rng;
 use std::collections::BTreeMap;
 use std::io::BufWriter;
 
-use trusted_dealer::inputs::print_values;
-use trusted_dealer::inputs::Config;
-use trusted_dealer::trusted_dealer_keygen::{split_secret, trusted_dealer_keygen};
+use crate::trusted_dealer::inputs::{print_values, Config};
+use crate::trusted_dealer::args::Args;
+use crate::trusted_dealer::trusted_dealer_keygen::{split_secret, trusted_dealer_keygen};
 
 fn build_output(shares: BTreeMap<Identifier, SecretShare>, pubkeys: PublicKeyPackage) -> String {
     let pub_key_package = format!(
@@ -28,9 +28,21 @@ fn build_output(shares: BTreeMap<Identifier, SecretShare>, pubkeys: PublicKeyPac
     out + "\n"
 }
 
+fn cli_args() -> Args {
+    let mut args = Args::default();
+    args.cli = true;
+    args
+}
+
+fn assert_print_values(shares: &BTreeMap<Identifier, SecretShare>, pubkeys: &PublicKeyPackage) {
+    let mut buf = BufWriter::new(Vec::new());
+    print_values(&cli_args(), shares, pubkeys, &mut buf).unwrap();
+    let out = String::from_utf8(buf.into_inner().unwrap()).unwrap();
+    assert_eq!(out, build_output(shares.clone(), pubkeys.clone()));
+}
+
 #[test]
 fn check_output_without_secret() {
-    let mut buf = BufWriter::new(Vec::new());
     let mut rng = thread_rng();
     let config = Config {
         min_signers: 2,
@@ -39,17 +51,11 @@ fn check_output_without_secret() {
     };
     let identifiers = IdentifierList::Default;
     let (shares, pubkeys) = trusted_dealer_keygen(&config, identifiers, &mut rng).unwrap();
-
-    print_values(&shares, &pubkeys, &mut buf).unwrap(); // TODO: do we need shares here?
-
-    let out = String::from_utf8(buf.into_inner().unwrap()).unwrap();
-
-    assert_eq!(out, build_output(shares, pubkeys));
+    assert_print_values(&shares, &pubkeys);
 }
 
 #[test]
 fn check_output_with_secret() {
-    let mut buf = BufWriter::new(Vec::new());
     let mut rng = thread_rng();
     let secret: Vec<u8> = vec![
         123, 28, 51, 211, 245, 41, 29, 133, 222, 102, 72, 51, 190, 177, 173, 70, 159, 127, 182, 2,
@@ -61,17 +67,11 @@ fn check_output_with_secret() {
         secret,
     };
     let (shares, pubkeys) = split_secret(&config, IdentifierList::Default, &mut rng).unwrap();
-
-    print_values(&shares, &pubkeys, &mut buf).unwrap();
-
-    let out = String::from_utf8(buf.into_inner().unwrap()).unwrap();
-
-    assert_eq!(out, build_output(shares, pubkeys));
+    assert_print_values(&shares, &pubkeys);
 }
 
 #[test]
 fn check_output_with_large_num_of_signers() {
-    let mut buf = BufWriter::new(Vec::new());
     let mut rng = thread_rng();
     let config = Config {
         min_signers: 10,
@@ -80,17 +80,11 @@ fn check_output_with_large_num_of_signers() {
     };
     let (shares, pubkeys) =
         trusted_dealer_keygen(&config, IdentifierList::Default, &mut rng).unwrap();
-
-    print_values(&shares, &pubkeys, &mut buf).unwrap();
-
-    let out = String::from_utf8(buf.into_inner().unwrap()).unwrap();
-
-    assert_eq!(out, build_output(shares, pubkeys));
+    assert_print_values(&shares, &pubkeys);
 }
 
 #[test]
 fn check_output_with_secret_with_large_num_of_signers() {
-    let mut buf = BufWriter::new(Vec::new());
     let mut rng = thread_rng();
     let secret: Vec<u8> = vec![
         123, 28, 51, 211, 245, 41, 29, 133, 222, 102, 72, 51, 190, 177, 173, 70, 159, 127, 182, 2,
@@ -102,10 +96,5 @@ fn check_output_with_secret_with_large_num_of_signers() {
         secret,
     };
     let (shares, pubkeys) = split_secret(&config, IdentifierList::Default, &mut rng).unwrap();
-
-    print_values(&shares, &pubkeys, &mut buf).unwrap();
-
-    let out = String::from_utf8(buf.into_inner().unwrap()).unwrap();
-
-    assert_eq!(out, build_output(shares, pubkeys));
+    assert_print_values(&shares, &pubkeys);
 }

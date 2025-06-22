@@ -9,7 +9,6 @@ use super::comms::Comms;
 use super::round1::{generate_nonces_and_commitments, print_values};
 use super::round2::{generate_signature, print_values_round_2, round_2_request_inputs};
 
-use frost_core::Ciphersuite;
 use frost_rerandomized::RandomizedCiphersuite;
 use rand::thread_rng;
 use std::io::{BufRead, Write};
