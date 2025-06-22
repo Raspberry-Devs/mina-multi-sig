@@ -8,13 +8,17 @@ ark-ec.workspace = true
 ark-ff.workspace = true
 ark-serialize.workspace = true
 frost-core.workspace = true
+frost-rerandomized.workspace = true
 mina-curves.workspace = true
 mina-hasher.workspace = true
 mina-signer.workspace = true
 num-traits.workspace = true
 rand_core = { version = "0.6.4", features = ["getrandom"] }
-#rand_core.workspace = true
-
 [dev-dependencies]
 frost-core = { version = "2.1.0", features = ["test-impl"] }
+frost-rerandomized = { version = "2.1.0", features = ["test-impl"] }
+lazy_static.workspace = true
+serde_json.workspace = true
+insta.workspace = true
+hex.workspace = true
 rand_chacha = "0.3"

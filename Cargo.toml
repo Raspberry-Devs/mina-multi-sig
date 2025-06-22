@@ -1,8 +1,5 @@
 [workspace]
-members = [
-    "frost-bluepallas",
-    "frost-client"
-]
+members = ["frost-bluepallas", "frost-client"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -22,7 +19,9 @@ eyre = "0.6.12"
 frost-ed25519 = "2.0.0"
 frost-rerandomized = "2.0.0-rc.0"
 hex = "0.4.3"
+insta = "1.43.1"
 itertools = "0.14.0"
+lazy_static = "1.5.0"
 message-io = "0.18"
 postcard = "1.1.1"
 rand = "0.8.5"

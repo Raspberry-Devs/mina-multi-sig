@@ -23,6 +23,7 @@ use ark_ec::{models::CurveConfig, CurveGroup, Group as ArkGroup};
 use ark_ff::{fields::Field as ArkField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 pub use frost_core::{self as frost, Ciphersuite, Field, FieldError, Group, GroupError};
+use frost_rerandomized::RandomizedCiphersuite;
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
 
 use num_traits::identities::Zero;
@@ -181,6 +182,16 @@ impl Ciphersuite for PallasPoseidon {
         let scalar = message_hash(&mina_pk, rx, &mina_msg);
 
         Ok(frost_core::Challenge::from_scalar(scalar))
+    }
+}
+
+impl RandomizedCiphersuite for PallasPoseidon {
+    fn hash_randomizer(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
+        Some(hash_to_scalar(&[
+            CONTEXT_STRING.as_bytes(),
+            b"randomizer",
+            m,
+        ]))
     }
 }
 
