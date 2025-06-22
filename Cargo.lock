@@ -1077,6 +1077,7 @@ dependencies = [
  "message-io",
  "postcard",
  "rand 0.8.5",
+ "rand_core 0.6.4",
  "reddsa",
  "reqwest",
  "rpassword",
