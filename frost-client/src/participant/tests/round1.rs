@@ -4,10 +4,9 @@ use std::io::BufWriter;
 
 use frost_bluepallas as frost;
 
-use frost::Identifier;
 use frost::{
-    keys::{KeyPackage, SigningShare, VerifyingShare},
-    round1, Error, VerifyingKey,
+    keys::{KeyPackage, SigningShare},
+    round1, Error
 };
 use crate::participant::{
     args::Args,
@@ -16,19 +15,13 @@ use crate::participant::{
 
 use rand::thread_rng;
 
-const PUBLIC_KEY: &str = "81646bb7849d7ad5ac12eae2c2b1dc848cfedceed3518a795f5ca09163a3dd2d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-const GROUP_PUBLIC_KEY: &str = "0d3037389dfcc11f0ece67160d96ea7a0c7fec71cfb93dd11e22a956682e363680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 const SIGNING_SHARE: &str = "1932bede7d78fc6792031bf82b1985b7a398bd75033748c19bc27f56edabf30a";
-const SECRET_SHARE_JSON: &str = r#"{"header":{"version":0,"ciphersuite":"bluepallas"},"identifier":"0100000000000000000000000000000000000000000000000000000000000000","signing_share":"1932bede7d78fc6792031bf82b1985b7a398bd75033748c19bc27f56edabf30a","commitment":["6d51acee505c0c7f45e5df2bd91e037967b9f11542071d75b0f027d1f9b4340500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","105dca06dbe3c22024e224f325853437427935a2a9100dee6988909cdcd3533d80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"]}"#;
+const SECRET_SHARE_JSON: &str = r#"{"commitment":["bc376697fa19bf66b9e2bc06726c403b7cc15cabaddb8aee710e513e8649c51600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","d1157b29c24f6aeff88dc64ae8efb91d38729f62fa83b63fb88819c62d52e60380000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"],"header":{"ciphersuite":"bluepallas","version":0},"identifier":"0100000000000000000000000000000000000000000000000000000000000000","signing_share":"1932bede7d78fc6792031bf82b1985b7a398bd75033748c19bc27f56edabf30a"}"#;
 
 async fn build_key_package() -> KeyPackage {
-    KeyPackage::new(
-        Identifier::try_from(1).unwrap(),
-        SigningShare::deserialize(&hex::decode(SIGNING_SHARE).unwrap()).unwrap(),
-        VerifyingShare::deserialize(&hex::decode(PUBLIC_KEY).unwrap()).unwrap(),
-        VerifyingKey::deserialize(&hex::decode(GROUP_PUBLIC_KEY).unwrap()).unwrap(),
-        3,
-    )
+    // Use the type alias from frost_bluepallas, which does not take generics
+    let secret_share: frost::keys::SecretShare = serde_json::from_str(SECRET_SHARE_JSON).unwrap();
+    KeyPackage::try_from(secret_share).unwrap()
 }
 
 #[tokio::test]

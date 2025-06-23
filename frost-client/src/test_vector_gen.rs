@@ -186,4 +186,20 @@ fn main() {
         "let signing_share_1 = \"{}\".to_string();",
         hex::encode(shares.get(id_1).unwrap().signing_share().serialize())
     );
+
+    // Print secret share JSON for participant 1
+    let share_1 = shares.get(id_1).unwrap();
+    let coeff_commitments: Vec<String> = share_1
+        .commitment()
+        .coefficients()
+        .iter()
+        .map(|c| hex::encode(c.serialize().unwrap()))
+        .collect();
+    let secret_share_json_1 = json!({
+        "header": { "version": 0, "ciphersuite": "bluepallas" },
+        "identifier": hex::encode(id_1.serialize()),
+        "signing_share": hex::encode(share_1.signing_share().serialize()),
+        "commitment": coeff_commitments
+    });
+    println!("let secret_share_json_1 = r#\"{}\"#.to_string();", secret_share_json_1);
 }
