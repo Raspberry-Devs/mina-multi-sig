@@ -5,3 +5,6 @@ pub mod comms;
 pub mod input;
 pub mod round1;
 pub mod round2;
+
+#[cfg(test)]
+mod tests;

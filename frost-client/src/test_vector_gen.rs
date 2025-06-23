@@ -182,4 +182,8 @@ fn main() {
             "binding": binding_commitment_3_str
         })
     );
+    println!(
+        "let signing_share_1 = \"{}\".to_string();",
+        hex::encode(shares.get(id_1).unwrap().signing_share().serialize())
+    );
 }

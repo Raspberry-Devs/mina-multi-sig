@@ -9,17 +9,17 @@ use frost::{
     keys::{KeyPackage, SigningShare, VerifyingShare},
     round1, Error, VerifyingKey,
 };
-use participant::{
+use crate::participant::{
     args::Args,
     round1::{print_values, request_inputs, Round1Config},
 };
 
 use rand::thread_rng;
 
-const PUBLIC_KEY: &str = "adf6ab1f882d04988eadfaa52fb175bf37b6247785d7380fde3fb9d68032470d";
-const GROUP_PUBLIC_KEY: &str = "087e22f970daf6ac5b07b55bd7fc0af6dea199ab847dc34fc92a6f8641a1bb8e";
-const SIGNING_SHARE: &str = "ceed7dd148a1a1ec2e65b50ecab6a7c453ccbd38c397c3506a540b7cf0dd9104";
-const SECRET_SHARE_JSON: &str = r#"{"header":{"version":0,"ciphersuite":"FROST-ED25519-SHA512-v1"},"identifier":"0100000000000000000000000000000000000000000000000000000000000000","signing_share":"ceed7dd148a1a1ec2e65b50ecab6a7c453ccbd38c397c3506a540b7cf0dd9104","commitment":["087e22f970daf6ac5b07b55bd7fc0af6dea199ab847dc34fc92a6f8641a1bb8e","926d5910e146dccb9148ca39dc7607f4f7123ff1c0ffaf109add1d165c568bf2", "291bb78d7e4ef124f5aa6a36cbcf8c276e70fbb4e208212e916d762fc42c1bbc"]}"#;
+const PUBLIC_KEY: &str = "81646bb7849d7ad5ac12eae2c2b1dc848cfedceed3518a795f5ca09163a3dd2d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const GROUP_PUBLIC_KEY: &str = "0d3037389dfcc11f0ece67160d96ea7a0c7fec71cfb93dd11e22a956682e363680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const SIGNING_SHARE: &str = "1932bede7d78fc6792031bf82b1985b7a398bd75033748c19bc27f56edabf30a";
+const SECRET_SHARE_JSON: &str = r#"{"header":{"version":0,"ciphersuite":"bluepallas"},"identifier":"0100000000000000000000000000000000000000000000000000000000000000","signing_share":"1932bede7d78fc6792031bf82b1985b7a398bd75033748c19bc27f56edabf30a","commitment":["6d51acee505c0c7f45e5df2bd91e037967b9f11542071d75b0f027d1f9b4340500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","105dca06dbe3c22024e224f325853437427935a2a9100dee6988909cdcd3533d80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"]}"#;
 
 async fn build_key_package() -> KeyPackage {
     KeyPackage::new(
@@ -141,7 +141,7 @@ async fn check_print_values() {
 
     let out = String::from_utf8(buf.into_inner().unwrap()).unwrap();
 
-    let log = format!("=== Round 1 ===\nSigningNonces were generated and stored in memory\nSigningCommitments:\n{{\"header\":{{\"version\":0,\"ciphersuite\":\"FROST-ED25519-SHA512-v1\"}},\"hiding\":\"{}\",\"binding\":\"{}\"}}\n=== Round 1 Completed ===\nPlease send your SigningCommitments to the coordinator\n", &hex::encode(commitments.hiding().serialize().unwrap()), &hex::encode(commitments.binding().serialize().unwrap()));
+    let log = format!("=== Round 1 ===\nSigningNonces were generated and stored in memory\nSigningCommitments:\n{{\"header\":{{\"version\":0,\"ciphersuite\":\"bluepallas\"}},\"hiding\":\"{}\",\"binding\":\"{}\"}}\n=== Round 1 Completed ===\nPlease send your SigningCommitments to the coordinator\n", &hex::encode(commitments.hiding().serialize().unwrap()), &hex::encode(commitments.binding().serialize().unwrap()));
 
     assert_eq!(out, log)
 }

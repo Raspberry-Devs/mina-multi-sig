@@ -1,7 +1,7 @@
 use std::io::BufWriter;
 
-use participant::args::Args;
-use participant::cli::cli;
+use crate::participant::args::Args;
+use crate::participant::cli::cli;
 
 // TODO: to restore this test, we need to intercept that generated commitments
 // to put them inside the SigningPackage
