@@ -1,8 +1,8 @@
 use frost_bluepallas as frost;
 
-use frost::Error;
-use crate::trusted_dealer::inputs::{request_inputs, Config};
 use crate::trusted_dealer::args::Args;
+use crate::trusted_dealer::inputs::{request_inputs, Config};
+use frost::Error;
 
 fn call_request_inputs(input: &str) -> Result<Config, Box<dyn std::error::Error>> {
     let mut buf = std::io::BufWriter::new(Vec::new());
@@ -59,7 +59,10 @@ fn return_error_if_max_participant_is_less_than_2() {
 
 #[test]
 fn check_valid_input_with_secret() {
-    let config = call_request_inputs("3\n6\n7b1c33d3f5291d85de664833beb1ad469f7fb6025a0ec78b3a790c6e13a98304\n").unwrap();
+    let config = call_request_inputs(
+        "3\n6\n7b1c33d3f5291d85de664833beb1ad469f7fb6025a0ec78b3a790c6e13a98304\n",
+    )
+    .unwrap();
 
     let secret: Vec<u8> = vec![
         123, 28, 51, 211, 245, 41, 29, 133, 222, 102, 72, 51, 190, 177, 173, 70, 159, 127, 182, 2,

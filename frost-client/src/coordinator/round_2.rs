@@ -1,7 +1,7 @@
 use frost_core::{self as frost, Ciphersuite};
 
 use frost::{Signature, SigningPackage};
-use frost_rerandomized::{RandomizedCiphersuite};
+use frost_rerandomized::RandomizedCiphersuite;
 
 use std::{
     fs,

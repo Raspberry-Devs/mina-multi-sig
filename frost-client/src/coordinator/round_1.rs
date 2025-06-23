@@ -78,7 +78,8 @@ mod tests {
 
     fn build_pub_key_package() -> PublicKeyPackage {
         let id_1 = Identifier::try_from(1).unwrap();
-        let id_2: frost_core::Identifier<frost_bluepallas::PallasPoseidon> = Identifier::try_from(2).unwrap();
+        let id_2: frost_core::Identifier<frost_bluepallas::PallasPoseidon> =
+            Identifier::try_from(2).unwrap();
 
         let mut signer_pubkeys = BTreeMap::new();
         signer_pubkeys.insert(

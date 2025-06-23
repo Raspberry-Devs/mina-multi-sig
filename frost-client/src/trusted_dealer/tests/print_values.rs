@@ -7,8 +7,8 @@ use rand::thread_rng;
 use std::collections::BTreeMap;
 use std::io::BufWriter;
 
-use crate::trusted_dealer::inputs::{print_values, Config};
 use crate::trusted_dealer::args::Args;
+use crate::trusted_dealer::inputs::{print_values, Config};
 use crate::trusted_dealer::trusted_dealer_keygen::{split_secret, trusted_dealer_keygen};
 
 fn build_output(shares: BTreeMap<Identifier, SecretShare>, pubkeys: PublicKeyPackage) -> String {

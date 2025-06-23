@@ -4,13 +4,13 @@ use std::io::BufWriter;
 
 use frost_bluepallas as frost;
 
-use frost::{
-    keys::{KeyPackage, SigningShare},
-    round1, Error
-};
 use crate::participant::{
     args::Args,
     round1::{print_values, request_inputs, Round1Config},
+};
+use frost::{
+    keys::{KeyPackage, SigningShare},
+    round1, Error,
 };
 
 use rand::thread_rng;

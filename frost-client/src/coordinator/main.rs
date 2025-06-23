@@ -10,7 +10,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut reader = Box::new(io::stdin().lock());
     let mut logger = io::stdout();
-    let r = if args.ciphersuite == "bluepallas"{
+    let r = if args.ciphersuite == "bluepallas" {
         cli::<frost_bluepallas::PallasPoseidon>(&args, &mut reader, &mut logger).await
     } else {
         panic!("invalid ciphersuite");

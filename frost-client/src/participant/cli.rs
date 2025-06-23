@@ -56,7 +56,7 @@ pub async fn cli_for_processed_args<C: RandomizedCiphersuite + 'static>(
         logger,
         commitments,
         *key_package.identifier(),
-        false, // Possibly change in the future 
+        false, // Possibly change in the future
     )
     .await?;
 

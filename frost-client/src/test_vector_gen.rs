@@ -1,4 +1,4 @@
-use frost_bluepallas::{keys::generate_with_dealer};
+use frost_bluepallas::keys::generate_with_dealer;
 use frost_core::{
     keys::{IdentifierList, KeyPackage},
     round1, round2, SigningPackage,
@@ -37,8 +37,7 @@ fn main() {
     let mut nonces = BTreeMap::new(); // Private to each participant
 
     for (id, key_package) in signers.iter() {
-        let (nonce, commitment) =
-            round1::commit(key_package.signing_share(), &mut rng);
+        let (nonce, commitment) = round1::commit(key_package.signing_share(), &mut rng);
         nonces.insert(*id, nonce);
         commitments.insert(*id, commitment);
     }
@@ -79,15 +78,36 @@ fn main() {
     );
     println!(
         "let public_key_1 = \"{}\".to_string();",
-        hex::encode(pubkey_package.verifying_shares().get(id_1).unwrap().serialize().unwrap())
+        hex::encode(
+            pubkey_package
+                .verifying_shares()
+                .get(id_1)
+                .unwrap()
+                .serialize()
+                .unwrap()
+        )
     );
     println!(
         "let public_key_2 = \"{}\".to_string();",
-        hex::encode(pubkey_package.verifying_shares().get(id_2).unwrap().serialize().unwrap())
+        hex::encode(
+            pubkey_package
+                .verifying_shares()
+                .get(id_2)
+                .unwrap()
+                .serialize()
+                .unwrap()
+        )
     );
     println!(
         "let public_key_3 = \"{}\".to_string();",
-        hex::encode(pubkey_package.verifying_shares().get(id_3).unwrap().serialize().unwrap())
+        hex::encode(
+            pubkey_package
+                .verifying_shares()
+                .get(id_3)
+                .unwrap()
+                .serialize()
+                .unwrap()
+        )
     );
     println!(
         "let verifying_key = \"{}\".to_string();",
@@ -97,12 +117,24 @@ fn main() {
 
     let hiding_commitment_1_str =
         hex::encode(commitments.get(id_1).unwrap().hiding().serialize().unwrap());
-    let binding_commitment_1_str =
-        hex::encode(commitments.get(id_1).unwrap().binding().serialize().unwrap());
+    let binding_commitment_1_str = hex::encode(
+        commitments
+            .get(id_1)
+            .unwrap()
+            .binding()
+            .serialize()
+            .unwrap(),
+    );
     let hiding_commitment_3_str =
         hex::encode(commitments.get(id_3).unwrap().hiding().serialize().unwrap());
-    let binding_commitment_3_str =
-        hex::encode(commitments.get(id_3).unwrap().binding().serialize().unwrap());
+    let binding_commitment_3_str = hex::encode(
+        commitments
+            .get(id_3)
+            .unwrap()
+            .binding()
+            .serialize()
+            .unwrap(),
+    );
 
     println!(
         "let hiding_commitment_1 = \"{}\".to_string();",
@@ -201,5 +233,8 @@ fn main() {
         "signing_share": hex::encode(share_1.signing_share().serialize()),
         "commitment": coeff_commitments
     });
-    println!("let secret_share_json_1 = r#\"{}\"#.to_string();", secret_share_json_1);
+    println!(
+        "let secret_share_json_1 = r#\"{}\"#.to_string();",
+        secret_share_json_1
+    );
 }

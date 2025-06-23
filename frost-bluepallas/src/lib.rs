@@ -190,7 +190,11 @@ impl Ciphersuite for PallasPoseidon {
 impl RandomizedCiphersuite for PallasPoseidon {
     fn hash_randomizer(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
         // For bluepallas, we don't need to hash the randomizer
-        Some(hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"randomizer", m]))
+        Some(hash_to_scalar(&[
+            CONTEXT_STRING.as_bytes(),
+            b"randomizer",
+            m,
+        ]))
     }
 }
 
