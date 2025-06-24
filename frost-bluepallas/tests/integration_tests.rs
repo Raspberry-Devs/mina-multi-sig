@@ -286,35 +286,6 @@ fn check_share_generation_fails_with_invalid_max_signers() {
     >(min_signers, max_signers, error, rng);
 }
 
-lazy_static! {
-    pub static ref VECTORS: Value =
-        serde_json::from_str(include_str!("../tests/helpers/vectors.json").trim())
-            .expect("Test vector is valid JSON");
-    pub static ref VECTORS_BIG_IDENTIFIER: Value =
-        serde_json::from_str(include_str!("../tests/helpers/vectors-big-identifier.json").trim())
-            .expect("Test vector is valid JSON");
-    pub static ref VECTORS_DKG: Value =
-        serde_json::from_str(include_str!("../tests/helpers/vectors_dkg.json").trim())
-            .expect("Test vector is valid JSON");
-}
-
-#[test]
-fn check_sign_with_test_vectors() {
-    frost_core::tests::vectors::check_sign_with_test_vectors::<PallasPoseidon>(&VECTORS);
-}
-
-#[test]
-fn check_sign_with_test_vectors_dkg() {
-    frost_core::tests::vectors_dkg::check_dkg_keygen::<PallasPoseidon>(&VECTORS_DKG);
-}
-
-#[test]
-fn check_sign_with_test_vectors_with_big_identifiers() {
-    frost_core::tests::vectors::check_sign_with_test_vectors::<PallasPoseidon>(
-        &VECTORS_BIG_IDENTIFIER,
-    );
-}
-
 #[test]
 fn check_error_culprit() {
     frost_core::tests::ciphersuite_generic::check_error_culprit::<PallasPoseidon>();

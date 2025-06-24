@@ -1,5 +1,3 @@
-#![cfg(feature = "serde")]
-
 mod helpers;
 
 use frost_bluepallas::SigningKey;
