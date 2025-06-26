@@ -13,7 +13,7 @@ use rand_core::SeedableRng;
 
 use std::ops::{Add, Neg};
 
-use crate::helper::generate_signature;
+use crate::helper::generate_signature_random;
 
 mod helper;
 
@@ -22,8 +22,9 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
     // Esnure that the FROST implementation can sign a message and Mina can verify it
 
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
+    let fr_msg = b"Test message for FROST and Mina compatibility".to_vec();
 
-    let (fr_msg, fr_sig, fr_pk) = generate_signature(rng)?;
+    let (fr_sig, fr_pk) = generate_signature_random(&fr_msg, rng)?;
 
     assert!(
         fr_sig

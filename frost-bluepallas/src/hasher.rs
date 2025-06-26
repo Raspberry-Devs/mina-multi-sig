@@ -1,9 +1,30 @@
+use std::sync::RwLock;
+
 use ark_ff::PrimeField;
 use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
 use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
 use crate::PallasScalarField;
+
+/// Currently using global storage to store the network ID,
+/// As I am not sure how else to pass the network ID to the Ciphersuite challenge function
+static NETWORK_ID: RwLock<Option<NetworkId>> = RwLock::new(None);
+
+/// Set the global network ID
+pub fn set_network_id(network_id: NetworkId) -> Result<(), String> {
+    let mut id = NETWORK_ID.write().map_err(|_| "Lock poisoned")?;
+    *id = Some(network_id);
+    Ok(())
+}
+
+/// Get the global network ID, defaults to TESTNET if not set
+pub fn get_network_id() -> NetworkId {
+    NETWORK_ID
+        .read()
+        .map(|id| id.clone().unwrap_or(NetworkId::TESTNET))
+        .unwrap_or(NetworkId::TESTNET)
+}
 
 #[derive(Clone, Debug)]
 struct PallasHashElement<'a> {
@@ -89,7 +110,7 @@ pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: &H) -> ScalarFiel
 where
     H: Hashable<D = NetworkId>,
 {
-    let mut hasher = mina_hasher::create_legacy::<Message<H>>(NetworkId::TESTNET);
+    let mut hasher = mina_hasher::create_legacy::<Message<H>>(get_network_id());
 
     let schnorr_input = Message::<H> {
         input: input.clone(),

@@ -1,7 +1,9 @@
-use crate::PallasPoseidon;
+use crate::{PallasPoseidon, SigningKey};
 use ark_ec::CurveGroup;
-use frost_core::{Scalar, Signature as FrSig, VerifyingKey}; // Fr for frost
-use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig};
+use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
+use mina_hasher::Hashable;
+// Fr for frost
+use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, NetworkId};
 
 // temporary till we sort out proper error messages
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -23,6 +25,20 @@ pub fn translate_sig(fr_sig: &FrSig<PallasPoseidon>) -> Result<MinaSig> {
     let z: Scalar<PallasPoseidon> = *fr_sig.z();
 
     Ok(MinaSig { rx, s: z })
+}
+
+/// Convert Hashable Mina message to Vec<u8>
+pub fn translate_msg<H>(msg: &H) -> Vec<u8>
+where
+    H: Hashable<D = NetworkId>,
+{
+    msg.to_roinput().to_bytes()
+}
+
+pub fn translate_minask(msg: &mina_signer::Keypair) -> Result<SigningKey> {
+    // Convert mina SecKey to FROST SigningKey
+    let scalar = msg.secret.scalar();
+    SigningKey::from_scalar(*scalar).map_err(|e| e.into())
 }
 
 #[cfg(test)]
