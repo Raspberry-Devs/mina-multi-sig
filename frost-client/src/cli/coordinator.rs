@@ -6,10 +6,10 @@ use eyre::Context;
 use eyre::OptionExt;
 
 use crate::cipher::PublicKey;
+use frost_bluepallas::PallasPoseidon;
 use frost_core::keys::PublicKeyPackage;
 use frost_core::Ciphersuite;
 use frost_rerandomized::RandomizedCiphersuite;
-use frost_bluepallas::PallasPoseidon;
 use reqwest::Url;
 
 use crate::coordinator::args;

@@ -6,10 +6,10 @@ use eyre::Context;
 use eyre::OptionExt;
 use reqwest::Url;
 
+use frost_bluepallas::PallasPoseidon;
 use frost_core::keys::KeyPackage;
 use frost_core::Ciphersuite;
 use frost_rerandomized::RandomizedCiphersuite;
-use frost_bluepallas::PallasPoseidon;
 
 use super::{args::Command, config::Config};
 
