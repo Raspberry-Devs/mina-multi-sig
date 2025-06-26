@@ -76,13 +76,7 @@ pub fn split<R: RngCore + CryptoRng>(
     identifiers: IdentifierList,
     rng: &mut R,
 ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
-    Ok(into_even_y(frost::keys::split(
-        key,
-        max_signers,
-        min_signers,
-        identifiers,
-        rng,
-    )?))
+    frost::keys::split(key, max_signers, min_signers, identifiers, rng).map(into_even_y)
 }
 
 /// Copied from https://github.com/ZcashFoundation/reddsa/blob/main/src/frost/redpallas.rs
