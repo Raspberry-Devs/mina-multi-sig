@@ -16,5 +16,5 @@ rand_core = { version = "0.6.4", features = ["getrandom"] }
 #rand_core.workspace = true
 
 [dev-dependencies]
-frost-core = { version = "2.1.0", features = ["test-impl"] }
+frost-core = { version = "2.1.0", features = ["test-impl", "internals"] }
 rand_chacha = "0.3"

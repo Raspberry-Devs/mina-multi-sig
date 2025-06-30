@@ -21,7 +21,7 @@ mod helper;
 fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
     // Esnure that the FROST implementation can sign a message and Mina can verify it
 
-    let rng = rand_chacha::ChaChaRng::seed_from_u64(1);
+    let rng = rand_chacha::ChaChaRng::seed_from_u64(100);
     let fr_msg = b"Test message for FROST and Mina compatibility".to_vec();
 
     let (fr_sig, fr_pk) = generate_signature_random(&fr_msg, rng)?;
