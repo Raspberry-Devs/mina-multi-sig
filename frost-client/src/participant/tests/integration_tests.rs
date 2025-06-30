@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::vec;
 
-use frost_ed25519 as frost;
+use frost_bluepallas as frost;
 
 use frost::keys::IdentifierList;
 use frost::{aggregate, SigningPackage};

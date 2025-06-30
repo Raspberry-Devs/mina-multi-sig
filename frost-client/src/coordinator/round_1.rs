@@ -65,21 +65,21 @@ pub fn print_participants<C: Ciphersuite>(
 mod tests {
     use std::collections::BTreeMap;
 
-    use frost_ed25519::{
+    use frost_bluepallas::{
         keys::{PublicKeyPackage, VerifyingShare},
         Error, Identifier, VerifyingKey,
     };
 
     use super::super::comms::cli::validate;
 
-    const PUBLIC_KEY_1: &str = "fc2c9b8e335c132d9ebe0403c9317aac480bbbf8cbdb1bc3730bb68eb60dadf9";
-    const PUBLIC_KEY_2: &str = "2cff4148a2f965801fb1f25f1d2a4e5df2f75b3a57cd06f30471c2c774419a41";
-    const GROUP_PUBLIC_KEY: &str =
-        "15d21ccd7ee42959562fc8aa63224c8851fb3ec85a3faf66040d380fb9738673";
+    const PUBLIC_KEY_1: &str = "0e097a0409c1a75f63af2f1d2b1c93384177242f4b06c99c64f92124d988c51e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    const PUBLIC_KEY_2: &str = "c0a3dfba8e5a6468aa575514205bbf392e2daee0c0cd69f57c195cb2ee92ea0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    const GROUP_PUBLIC_KEY: &str = "d256b73e945ca156dc19a4ea536568822690e3b2bc6f690ed7ac79b37e7db23300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
     fn build_pub_key_package() -> PublicKeyPackage {
         let id_1 = Identifier::try_from(1).unwrap();
-        let id_2 = Identifier::try_from(2).unwrap();
+        let id_2: frost_core::Identifier<frost_bluepallas::PallasPoseidon> =
+            Identifier::try_from(2).unwrap();
 
         let mut signer_pubkeys = BTreeMap::new();
         signer_pubkeys.insert(

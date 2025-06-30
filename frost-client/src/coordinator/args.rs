@@ -18,7 +18,7 @@ use super::input::read_from_file_or_stdin;
 #[derive(Clone, Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    #[arg(short = 'C', long, default_value = "ed25519")]
+    #[arg(short = 'C', long, default_value = "bluepallas")]
     pub ciphersuite: String,
 
     /// CLI mode. If enabled, it will prompt for inputs from stdin

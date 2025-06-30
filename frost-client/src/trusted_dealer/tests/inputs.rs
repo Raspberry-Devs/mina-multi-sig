@@ -1,30 +1,33 @@
-use std::io::BufWriter;
-
 use frost_bluepallas as frost;
 
+use crate::trusted_dealer::args::Args;
+use crate::trusted_dealer::inputs::{request_inputs, Config};
 use frost::Error;
-use trusted_dealer::inputs::{request_inputs, Config};
+
+fn call_request_inputs(input: &str) -> Result<Config, Box<dyn std::error::Error>> {
+    let mut buf = std::io::BufWriter::new(Vec::new());
+    let mut input = input.as_bytes();
+    let mut args = Args::default();
+    args.cli = true;
+    request_inputs::<frost_bluepallas::PallasPoseidon>(&args, &mut input, &mut buf)
+}
 
 #[test]
 fn check_valid_input_for_signers() {
-    let mut buf = BufWriter::new(Vec::new());
     let config = Config {
         min_signers: 2,
         max_signers: 3,
         secret: Vec::new(),
     };
 
-    let mut valid_input = "2\n3\n\n".as_bytes();
-    let expected = request_inputs(&mut valid_input, &mut buf).unwrap();
+    let expected = call_request_inputs("2\n3\n\n").unwrap();
 
     assert_eq!(expected, config);
 }
 
 #[test]
 fn return_error_if_min_participant_greater_than_max_participant() {
-    let mut buf = BufWriter::new(Vec::new());
-    let mut invalid_input = "4\n3\n\n".as_bytes();
-    let expected = request_inputs(&mut invalid_input, &mut buf).unwrap_err();
+    let expected = call_request_inputs("4\n3\n\n").unwrap_err();
 
     assert_eq!(
         *expected.downcast::<Error>().unwrap(),
@@ -34,9 +37,7 @@ fn return_error_if_min_participant_greater_than_max_participant() {
 
 #[test]
 fn return_error_if_min_participant_is_less_than_2() {
-    let mut buf = BufWriter::new(Vec::new());
-    let mut invalid_input = "1\n3\n\n".as_bytes();
-    let expected = request_inputs(&mut invalid_input, &mut buf).unwrap_err();
+    let expected = call_request_inputs("1\n3\n\n").unwrap_err();
 
     assert_eq!(
         *expected.downcast::<Error>().unwrap(),
@@ -46,9 +47,7 @@ fn return_error_if_min_participant_is_less_than_2() {
 
 #[test]
 fn return_error_if_max_participant_is_less_than_2() {
-    let mut buf = BufWriter::new(Vec::new());
-    let mut invalid_input = "2\n1\n\n".as_bytes();
-    let expected = request_inputs(&mut invalid_input, &mut buf).unwrap_err();
+    let expected = call_request_inputs("2\n1\n\n").unwrap_err();
 
     assert_eq!(
         *expected.downcast::<Error>().unwrap(),
@@ -60,10 +59,10 @@ fn return_error_if_max_participant_is_less_than_2() {
 
 #[test]
 fn check_valid_input_with_secret() {
-    let mut buf = BufWriter::new(Vec::new());
-    let mut valid_input =
-        "3\n6\n7b1c33d3f5291d85de664833beb1ad469f7fb6025a0ec78b3a790c6e13a98304\n".as_bytes();
-    let config = request_inputs(&mut valid_input, &mut buf).unwrap();
+    let config = call_request_inputs(
+        "3\n6\n7b1c33d3f5291d85de664833beb1ad469f7fb6025a0ec78b3a790c6e13a98304\n",
+    )
+    .unwrap();
 
     let secret: Vec<u8> = vec![
         123, 28, 51, 211, 245, 41, 29, 133, 222, 102, 72, 51, 190, 177, 173, 70, 159, 127, 182, 2,
@@ -80,9 +79,7 @@ fn check_valid_input_with_secret() {
 
 #[test]
 fn return_error_if_invalid_min_signers_input() {
-    let mut buf = BufWriter::new(Vec::new());
-    let mut invalid_input = "hello\n6\n\n".as_bytes();
-    let expected = request_inputs(&mut invalid_input, &mut buf).unwrap_err();
+    let expected = call_request_inputs("hello\n6\n\n").unwrap_err();
 
     assert_eq!(
         *expected.downcast::<Error>().unwrap(),
@@ -92,9 +89,7 @@ fn return_error_if_invalid_min_signers_input() {
 
 #[test]
 fn return_error_if_invalid_max_signers_input() {
-    let mut buf = BufWriter::new(Vec::new());
-    let mut invalid_input = "4\nworld\n\n".as_bytes();
-    let expected = request_inputs(&mut invalid_input, &mut buf).unwrap_err();
+    let expected = call_request_inputs("4\nworld\n\n").unwrap_err();
 
     assert_eq!(
         *expected.downcast::<Error>().unwrap(),
@@ -104,9 +99,7 @@ fn return_error_if_invalid_max_signers_input() {
 
 #[test]
 fn return_malformed_signing_key_error_if_secret_is_invalid() {
-    let mut buf = BufWriter::new(Vec::new());
-    let mut secret_input = "4\n6\nasecret\n".as_bytes();
-    let expected = request_inputs(&mut secret_input, &mut buf).unwrap_err();
+    let expected = call_request_inputs("4\n6\nasecret\n").unwrap_err();
 
     assert_eq!(
         *expected.downcast::<Error>().unwrap(),

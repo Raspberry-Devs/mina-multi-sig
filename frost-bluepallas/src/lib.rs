@@ -28,6 +28,8 @@ use mina_curves::pasta::{PallasParameters, ProjectivePallas};
 use num_traits::identities::Zero;
 use rand_core::{CryptoRng, RngCore};
 
+use frost_rerandomized::RandomizedCiphersuite;
+
 pub type Error = frost_core::Error<PallasPoseidon>;
 
 use crate::{
@@ -181,6 +183,18 @@ impl Ciphersuite for PallasPoseidon {
         let scalar = message_hash(&mina_pk, rx, &mina_msg);
 
         Ok(frost_core::Challenge::from_scalar(scalar))
+    }
+}
+
+// IMPORTANT: This ciphersuite offers NO randomization. It is a placeholder for possible future randomization.
+impl RandomizedCiphersuite for PallasPoseidon {
+    fn hash_randomizer(m: &[u8]) -> Option<<<Self::Group as Group>::Field as Field>::Scalar> {
+        // For bluepallas, we don't need to hash the randomizer
+        Some(hash_to_scalar(&[
+            CONTEXT_STRING.as_bytes(),
+            b"randomizer",
+            m,
+        ]))
     }
 }
 

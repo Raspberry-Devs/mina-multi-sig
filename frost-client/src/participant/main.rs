@@ -10,10 +10,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let mut reader = Box::new(io::stdin().lock());
     let mut logger = io::stdout();
-    let r = if args.ciphersuite == "ed25519" {
-        cli::<frost_ed25519::Ed25519Sha512>(&args, &mut reader, &mut logger).await
-    } else if args.ciphersuite == "redpallas" {
-        cli::<reddsa::frost::redpallas::PallasBlake2b512>(&args, &mut reader, &mut logger).await
+    let r = if args.ciphersuite == "bluepallas" {
+        cli::<frost_bluepallas::PallasPoseidon>(&args, &mut reader, &mut logger).await
     } else {
         panic!("invalid ciphersuite");
     };

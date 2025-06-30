@@ -6,4 +6,5 @@ pub mod input;
 pub mod round_1;
 pub mod round_2;
 
+#[cfg(test)]
 mod tests;

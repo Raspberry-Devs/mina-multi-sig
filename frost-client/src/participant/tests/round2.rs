@@ -2,8 +2,9 @@
 
 use std::{collections::BTreeMap, io::BufWriter};
 
-use frost_ed25519 as frost;
+use frost_bluepallas as frost;
 
+use crate::api::SendSigningPackageArgs;
 use frost::Identifier;
 use frost::{
     keys::{KeyPackage, SigningShare, VerifyingShare},
@@ -11,25 +12,17 @@ use frost::{
     round2::SignatureShare,
     SigningPackage, VerifyingKey,
 };
-use frostd::SendSigningPackageArgs;
-use hex::FromHex;
-use participant::comms::cli::CLIComms;
-use participant::round2::print_values_round_2;
-use participant::round2::{generate_signature, round_2_request_inputs, Round2Config};
+// use frostd::SendSigningPackageArgs;
+use crate::participant::comms::cli::CLIComms;
+use crate::participant::round2::print_values_round_2;
+use crate::participant::round2::{generate_signature, round_2_request_inputs, Round2Config};
 use rand::thread_rng;
 
-const PUBLIC_KEY: &str = "adf6ab1f882d04988eadfaa52fb175bf37b6247785d7380fde3fb9d68032470d";
-const GROUP_PUBLIC_KEY: &str = "087e22f970daf6ac5b07b55bd7fc0af6dea199ab847dc34fc92a6f8641a1bb8e";
-const SIGNING_SHARE: &str = "ceed7dd148a1a1ec2e65b50ecab6a7c453ccbd38c397c3506a540b7cf0dd9104";
-const MESSAGE: &str = "15d21ccd7ee42959562fc8aa63224c8851fb3ec85a3faf66040d380fb9738673";
-const MY_HIDING_COMMITMENT: &str =
-    "beb81feb53ed75a2695b07f377b464a88c4c2824e7d7b63911b745df01dc2d87";
-const MY_BINDING_COMMITMENT: &str =
-    "d2102c5f8b8abb7ad2f1706f47a4aab3be6ede28e408f3e74baeff1f6fbcd5c0";
-const HIDING_COMMITMENT_2: &str =
-    "cc9e9503921cdd3f4d64f2c9e7b22c9ab6d7c940111ce36f84e4a114331c6edd";
-const BINDING_COMMITMENT_2: &str =
-    "b0e13794eaf00be2e430b16ec7f72ab0b6579e52ca604d17406a4fd1597afd66";
+const PUBLIC_KEY: &str = "81646bb7849d7ad5ac12eae2c2b1dc848cfedceed3518a795f5ca09163a3dd2d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const GROUP_PUBLIC_KEY: &str = "0d3037389dfcc11f0ece67160d96ea7a0c7fec71cfb93dd11e22a956682e363680000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const SIGNING_SHARE: &str = "1932bede7d78fc6792031bf82b1985b7a398bd75033748c19bc27f56edabf30a";
+const HIDING_COMMITMENT_2: &str = "a6004b8d59349a0b1694203b3f033e6aebf8b8e630691c801800bd81eda1e53980000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const BINDING_COMMITMENT_2: &str = "22247e68ca705360b2878e7cf1dbce40b34fe82a4c18fb04dc45f016856eb70500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
 pub fn nonce_commitment(input: &str) -> NonceCommitment {
     NonceCommitment::deserialize(&hex::decode(input).unwrap()).unwrap()
@@ -43,22 +36,22 @@ async fn check_valid_round_2_inputs() {
 
     let mut comms = CLIComms::new();
     let my_signer_commitments = SigningCommitments::new(
-        nonce_commitment(MY_HIDING_COMMITMENT),
-        nonce_commitment(MY_BINDING_COMMITMENT),
+        nonce_commitment("9e873f63a9debeb378dc619208d556b5f7896237a89ec83ce2b789c314aa730900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+        nonce_commitment("162475dd0abdbd8da8f7d8a0eb63059bb43d2198da01d8f15760bc32c020d70b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
     );
 
-    let signer_commitments_2 = SigningCommitments::new(
-        nonce_commitment(HIDING_COMMITMENT_2),
-        nonce_commitment(BINDING_COMMITMENT_2),
+    let signer_commitments_3 = SigningCommitments::new(
+        nonce_commitment("08a07c1fa33f276452622bd29c2de5ccedcf9b532e6b23c4dc414251be86050900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+        nonce_commitment("a63b131aa847eb1ccb963617636b52265d115dfe247b5ae964817eb5776b673a80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
     );
 
     let mut signer_commitments = BTreeMap::new();
     signer_commitments.insert(Identifier::try_from(1).unwrap(), my_signer_commitments);
-    signer_commitments.insert(Identifier::try_from(2).unwrap(), signer_commitments_2);
+    signer_commitments.insert(Identifier::try_from(3).unwrap(), signer_commitments_3);
 
-    let message = <[u8; 32]>::from_hex(MESSAGE).unwrap();
+    let message = hex::decode("74657374").unwrap();
 
-    let signing_package = r#"{"header":{"version":0,"ciphersuite":"FROST-ED25519-SHA512-v1"},"signing_commitments":{"0100000000000000000000000000000000000000000000000000000000000000":{"header":{"version":0,"ciphersuite":"FROST-ED25519-SHA512-v1"},"hiding":"beb81feb53ed75a2695b07f377b464a88c4c2824e7d7b63911b745df01dc2d87","binding":"d2102c5f8b8abb7ad2f1706f47a4aab3be6ede28e408f3e74baeff1f6fbcd5c0"},"0200000000000000000000000000000000000000000000000000000000000000":{"header":{"version":0,"ciphersuite":"FROST-ED25519-SHA512-v1"},"hiding":"cc9e9503921cdd3f4d64f2c9e7b22c9ab6d7c940111ce36f84e4a114331c6edd","binding":"b0e13794eaf00be2e430b16ec7f72ab0b6579e52ca604d17406a4fd1597afd66"}},"message":"15d21ccd7ee42959562fc8aa63224c8851fb3ec85a3faf66040d380fb9738673"}"#;
+    let signing_package = r#"{"header":{"version":0,"ciphersuite":"bluepallas"},"signing_commitments":{"0100000000000000000000000000000000000000000000000000000000000000":{"header":{"version":0,"ciphersuite":"bluepallas"},"hiding":"9e873f63a9debeb378dc619208d556b5f7896237a89ec83ce2b789c314aa730900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","binding":"162475dd0abdbd8da8f7d8a0eb63059bb43d2198da01d8f15760bc32c020d70b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},"0300000000000000000000000000000000000000000000000000000000000000":{"header":{"version":0,"ciphersuite":"bluepallas"},"hiding":"08a07c1fa33f276452622bd29c2de5ccedcf9b532e6b23c4dc414251be86050900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000","binding":"a63b131aa847eb1ccb963617636b52265d115dfe247b5ae964817eb5776b673a80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}},"message":"74657374"}"#;
 
     let expected = Round2Config {
         signing_package: SigningPackage::new(signer_commitments, &message),
@@ -143,7 +136,7 @@ async fn check_print_values_round_2() {
 
     print_values_round_2(signature_response, &mut buf).unwrap();
 
-    let log = "Please send the following to the Coordinator\nSignatureShare:\n{\"header\":{\"version\":0,\"ciphersuite\":\"FROST-ED25519-SHA512-v1\"},\"share\":\"44055c54d0604cbd006f0d1713a22474d7735c5e8816b1878f62ca94bf105900\"}\n";
+    let log = "Please send the following to the Coordinator\nSignatureShare:\n{\"header\":{\"version\":0,\"ciphersuite\":\"bluepallas\"},\"share\":\"44055c54d0604cbd006f0d1713a22474d7735c5e8816b1878f62ca94bf105900\"}\n";
 
     let out = String::from_utf8(buf.into_inner().unwrap()).unwrap();
 
