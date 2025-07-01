@@ -237,7 +237,7 @@ pub type SigningPackage = frost::SigningPackage<P>;
 /// This functions computes the group commitment and checks whether the y-coordinate of the
 /// group commitment is even, as required by the Mina protocol.
 /// If the group commitment is not even, it negates the nonces and commitments
-pub(crate) fn pre_commitment<'a>(
+pub(crate) fn pre_commitment_sign<'a>(
     signing_package: &'a SigningPackage,
     signing_nonces: &'a SigningNonces,
     binding_factor_list: &'a BindingFactorList<PallasPoseidon>,
@@ -246,7 +246,7 @@ pub(crate) fn pre_commitment<'a>(
     // Compute the group commitment from signing commitments produced in round one.
     let commit = compute_group_commitment(signing_package, binding_factor_list)?;
 
-    if commit.to_element().y.into_bigint().is_even() {
+    if commit.to_element().into_affine().y.into_bigint().is_even() {
         return Ok((
             std::borrow::Cow::Borrowed(signing_package),
             std::borrow::Cow::Borrowed(signing_nonces),
@@ -261,6 +261,23 @@ pub(crate) fn pre_commitment<'a>(
         std::borrow::Cow::Owned(negated_commitments),
         std::borrow::Cow::Owned(negated_nonce),
     ))
+}
+
+pub(crate) fn pre_commitment_aggregate<'a>(
+    signing_package: &'a SigningPackage,
+    binding_factor_list: &'a BindingFactorList<PallasPoseidon>,
+) -> Result<Cow<'a, SigningPackage>, Error> {
+    use ark_ff::{BigInteger, PrimeField};
+    // Compute the group commitment from signing commitments produced in round one.
+    let commit = compute_group_commitment(signing_package, binding_factor_list)?;
+
+    if commit.to_element().into_affine().y.into_bigint().is_even() {
+        return Ok(std::borrow::Cow::Borrowed(signing_package));
+    }
+
+    // Otherwise negate the nonce that we know and all the commitments
+    let negated_commitments = signing_package.negate_y();
+    Ok(std::borrow::Cow::Owned(negated_commitments))
 }
 
 /// FROST(Pallas, Posiedon) Round 2 functionality and types, for signature share generation.
@@ -313,7 +330,7 @@ pub mod round2 {
 
         // Perform pre_group_commitment to check if the group commitment is even
         let (signing_package, signer_nonces) =
-            pre_commitment(&signing_package, &signer_nonces, &binding_factor_list)?;
+            pre_commitment_sign(&signing_package, &signer_nonces, &binding_factor_list)?;
 
         // Compute the group commitment from signing commitments produced in round one.
         let group_commitment = compute_group_commitment(&signing_package, &binding_factor_list)?;
@@ -388,6 +405,9 @@ pub fn aggregate(
     // binding factor.
     let binding_factor_list: BindingFactorList<PallasPoseidon> =
         compute_binding_factor_list(&signing_package, pubkeys.verifying_key(), &[])?;
+
+    let signing_package = pre_commitment_aggregate(&signing_package, &binding_factor_list)?;
+
     // Compute the group commitment from signing commitments produced in round one.
     let group_commitment = compute_group_commitment(&signing_package, &binding_factor_list)?;
 
