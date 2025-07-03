@@ -4,7 +4,7 @@ use ark_ff::{BigInteger, PrimeField};
 use frost_core::{self as frost, keys::CoefficientCommitment};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::{Error, Identifier, VerifyingKey, P};
+use crate::{Error, Identifier, SigningKey, VerifyingKey, P};
 
 pub mod dkg;
 
@@ -61,6 +61,22 @@ pub fn generate_with_dealer<RNG: RngCore + CryptoRng>(
 ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
     frost::keys::generate_with_dealer(max_signers, min_signers, identifiers, &mut rng)
         .map(into_even_y)
+}
+
+/// Splits an existing key into FROST shares.
+///
+/// This is identical to [`generate_with_dealer`] but receives an existing key
+/// instead of generating a fresh one. This is useful in scenarios where
+/// the key needs to be generated externally or must be derived from e.g. a
+/// seed phrase.
+pub fn split<R: RngCore + CryptoRng>(
+    key: &SigningKey,
+    max_signers: u16,
+    min_signers: u16,
+    identifiers: IdentifierList,
+    rng: &mut R,
+) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
+    frost::keys::split(key, max_signers, min_signers, identifiers, rng).map(into_even_y)
 }
 
 /// Copied from https://github.com/ZcashFoundation/reddsa/blob/main/src/frost/redpallas.rs

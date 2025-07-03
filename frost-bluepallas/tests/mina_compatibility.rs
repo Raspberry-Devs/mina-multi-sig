@@ -13,7 +13,7 @@ use rand_core::SeedableRng;
 
 use std::ops::{Add, Neg};
 
-use crate::helper::generate_signature;
+use crate::helper::generate_signature_random;
 
 mod helper;
 
@@ -21,9 +21,10 @@ mod helper;
 fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
     // Esnure that the FROST implementation can sign a message and Mina can verify it
 
-    let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
+    let rng = rand_chacha::ChaChaRng::seed_from_u64(100);
+    let fr_msg = b"Test message for FROST and Mina compatibility".to_vec();
 
-    let (fr_msg, fr_sig, fr_pk) = generate_signature(rng)?;
+    let (fr_sig, fr_pk) = generate_signature_random(&fr_msg, rng)?;
 
     assert!(
         fr_sig
@@ -97,4 +98,27 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
     assert!(ctx.verify(&mina_sig, &mina_pk, &mina_msg));
     Ok(())
+}
+
+#[test]
+fn frost_even_commitment() {
+    // Iterate 32 times to ensure we have at least one even commitment
+    for i in 0..32 {
+        let rng = rand_chacha::ChaChaRng::seed_from_u64(i);
+        let fr_msg = b"Test message for FROST even commitment".to_vec();
+        let (fr_sig, _fr_pk) =
+            generate_signature_random(&fr_msg, rng).expect("Failed to generate signature");
+
+        // Ensure the signature commitment y-coordinate is even
+        assert!(
+            fr_sig
+                .R()
+                .into_affine()
+                .y()
+                .expect("Failed to extract y-coord from sig")
+                .into_bigint()
+                .is_even(),
+            "Signature commitment y-coordinate must be even"
+        );
+    }
 }

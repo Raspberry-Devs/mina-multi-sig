@@ -3,19 +3,14 @@ use std::collections::BTreeMap;
 use frost_bluepallas as frost;
 use rand_core::{CryptoRng, RngCore};
 
-/// Helper function which uses FROST to generate a signature, message and verifying key to use in tests.
-/// This uses trusted dealer rather than DKG
-pub fn generate_signature<R: RngCore + CryptoRng>(
+/// Helper function to sign a message using existing key packages
+pub(crate) fn sign_from_packages<R: RngCore + CryptoRng>(
+    message: &[u8],
+    shares: BTreeMap<frost::Identifier, frost::keys::SecretShare>,
+    pubkey_package: frost::keys::PublicKeyPackage,
     mut rng: R,
-) -> Result<(Vec<u8>, frost::Signature, frost::VerifyingKey), frost::Error> {
-    let max_signers = 5;
-    let min_signers = 3;
-    let (shares, pubkey_package) = frost::keys::generate_with_dealer(
-        max_signers,
-        min_signers,
-        frost::keys::IdentifierList::Default,
-        &mut rng,
-    )?;
+) -> Result<(frost::Signature, frost::VerifyingKey), frost::Error> {
+    let min_signers = pubkey_package.verifying_shares().len().min(3);
 
     // Verifies the secret shares from the dealer and store them in a BTreeMap.
     // In practice, the KeyPackages must be sent to its respective participants
@@ -36,7 +31,8 @@ pub fn generate_signature<R: RngCore + CryptoRng>(
 
     // In practice, each iteration of this loop will be executed by its respective participant.
     for participant_index in 1..=min_signers {
-        let participant_identifier = participant_index.try_into().expect("should be nonzero");
+        let participant_identifier =
+            frost::Identifier::try_from(participant_index as u16).expect("should be nonzero");
         let key_package = &key_packages[&participant_identifier];
         // Generate one (1) nonce and one SigningCommitments instance for each
         // participant, up to _threshold_.
@@ -53,7 +49,6 @@ pub fn generate_signature<R: RngCore + CryptoRng>(
     // - decide what message to sign
     // - take one (unused) commitment per signing participant
     let mut signature_shares = BTreeMap::new();
-    let message = "message to sign".as_bytes();
     let signing_package = frost::SigningPackage::new(commitments_map, message);
 
     ////////////////////////////////////////////////////////////////////////////
@@ -83,5 +78,45 @@ pub fn generate_signature<R: RngCore + CryptoRng>(
     let group_signature = frost::aggregate(&signing_package, &signature_shares, &pubkey_package)?;
     let pk = pubkey_package.verifying_key();
 
-    Ok((message.to_vec(), group_signature, *pk))
+    Ok((group_signature, *pk))
+}
+
+/// Helper function which uses FROST to generate a signature, message and verifying key to use in tests.
+/// This uses trusted dealer rather than DKG
+#[allow(dead_code)]
+pub(crate) fn generate_signature_random<R: RngCore + CryptoRng>(
+    message: &[u8],
+    mut rng: R,
+) -> Result<(frost::Signature, frost::VerifyingKey), frost::Error> {
+    let max_signers = 5;
+    let min_signers = 3;
+    let (shares, pubkey_package) = frost::keys::generate_with_dealer(
+        max_signers,
+        min_signers,
+        frost::keys::IdentifierList::Default,
+        &mut rng,
+    )?;
+
+    sign_from_packages(message, shares, pubkey_package, rng)
+}
+
+/// Helper function which splits an existing signing key into FROST shares and generates a signature.
+/// This uses the split function to create shares from a single signing key.
+#[allow(dead_code)]
+pub(crate) fn generate_signature_from_sk<R: RngCore + CryptoRng>(
+    message: &[u8],
+    signing_key: &frost::SigningKey,
+    mut rng: R,
+) -> Result<(frost::Signature, frost::VerifyingKey), frost::Error> {
+    let max_signers = 5;
+    let min_signers = 3;
+    let (shares, pubkey_package) = frost::keys::split(
+        signing_key,
+        max_signers,
+        min_signers,
+        frost::keys::IdentifierList::Default,
+        &mut rng,
+    )?;
+
+    sign_from_packages(message, shares, pubkey_package, rng)
 }

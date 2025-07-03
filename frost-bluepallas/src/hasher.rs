@@ -1,9 +1,32 @@
+use std::cell::RefCell;
+
 use ark_ff::PrimeField;
 use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
 use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
 use crate::PallasScalarField;
+
+thread_local! {
+    static NETWORK_ID: RefCell<Option<NetworkId>> = const { RefCell::new(Some(NetworkId::TESTNET)) }
+}
+
+/// Set the network ID for the current thread
+pub fn set_network_id(network_id: NetworkId) -> Result<(), String> {
+    NETWORK_ID.with(|id| {
+        *id.borrow_mut() = Some(network_id);
+    });
+    Ok(())
+}
+
+/// Get the network ID for the current thread, returns error if not set
+pub fn get_network_id() -> Result<NetworkId, String> {
+    NETWORK_ID.with(|id| {
+        id.borrow()
+            .clone()
+            .ok_or_else(|| "NetworkId not set. Call set_network_id() first.".to_string())
+    })
+}
 
 #[derive(Clone, Debug)]
 struct PallasHashElement<'a> {
@@ -89,7 +112,8 @@ pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: &H) -> ScalarFiel
 where
     H: Hashable<D = NetworkId>,
 {
-    let mut hasher = mina_hasher::create_legacy::<Message<H>>(NetworkId::TESTNET);
+    let network_id = get_network_id().expect("NetworkId must be set before calling message_hash");
+    let mut hasher = mina_hasher::create_legacy::<Message<H>>(network_id);
 
     let schnorr_input = Message::<H> {
         input: input.clone(),
