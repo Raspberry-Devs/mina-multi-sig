@@ -1051,6 +1051,7 @@ dependencies = [
  "ark-serialize",
  "frost-core",
  "frost-rerandomized",
+ "hex",
  "mina-curves",
  "mina-hasher",
  "mina-signer",

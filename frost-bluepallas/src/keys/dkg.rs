@@ -86,9 +86,5 @@ pub fn part3(
 ) -> Result<(KeyPackage, PublicKeyPackage), Error> {
     let (key_package, public_key_package) =
         frost::keys::dkg::part3(round2_secret_package, round1_packages, round2_packages)?;
-    let is_even = public_key_package.has_even_y();
-    Ok((
-        key_package.into_even_y(Some(is_even)),
-        public_key_package.into_even_y(Some(is_even)),
-    ))
+    Ok((key_package, public_key_package))
 }

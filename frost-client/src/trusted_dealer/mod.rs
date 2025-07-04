@@ -48,7 +48,8 @@ impl MaybeIntoEvenY for frost_bluepallas::PallasPoseidon {
         BTreeMap<Identifier<Self>, SecretShare<Self>>,
         PublicKeyPackage<Self>,
     ) {
-        frost_bluepallas::keys::into_even_y((secret_shares, public_key_package))
+        // Perform no-op
+        (secret_shares, public_key_package)
     }
 }
 

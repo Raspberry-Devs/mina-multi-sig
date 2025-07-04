@@ -43,8 +43,10 @@ use crate::{
 };
 
 pub mod hasher;
+pub mod helper;
 pub mod keys;
 mod negate;
+pub mod transactions;
 pub mod translate;
 
 #[derive(Clone, Copy)]

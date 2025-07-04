@@ -1,8 +1,9 @@
 #![allow(clippy::needless_borrows_for_generic_args)]
 
-use crate::{helper, mina_tests::transactions::Transaction};
 use frost_bluepallas::{
     hasher::{set_network_id, PallasMessage},
+    helper,
+    transactions::Transaction,
     translate::{translate_minask, translate_msg, translate_pk},
 };
 use frost_core::Ciphersuite;
@@ -11,6 +12,8 @@ use mina_signer::{Keypair, NetworkId, PubKey, Signer};
 #[cfg(test)]
 #[test]
 fn signer_test_raw() {
+    use frost_bluepallas::transactions::Transaction;
+
     set_network_id(NetworkId::TESTNET).expect("Failed to set network ID");
 
     let kp = Keypair::from_hex("164244176fddb5d769b7de2027469d027ad428fadcc0c02396e6280142efb718")
