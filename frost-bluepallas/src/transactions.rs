@@ -2,13 +2,15 @@
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::{CompressedPubKey, NetworkId, PubKey};
 
+use serde::ser::{Serialize, SerializeStruct, Serializer};
+
 /// Copied from https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs
 const MEMO_BYTES: usize = 34;
 const TAG_BITS: usize = 3;
 const PAYMENT_TX_TAG: [bool; TAG_BITS] = [false, false, false];
 const DELEGATION_TX_TAG: [bool; TAG_BITS] = [false, false, true];
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Transaction {
     // Common
     pub fee: u64,
@@ -24,6 +26,28 @@ pub struct Transaction {
     pub token_id: u64,
     pub amount: u64,
     pub token_locked: bool,
+}
+
+impl Serialize for Transaction {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Transaction", 7)?;
+        state.serialize_field("to", &self.receiver_pk.into_address())?;
+        state.serialize_field("from", &self.source_pk.into_address())?;
+        state.serialize_field("fee", &self.fee.to_string())?;
+        state.serialize_field("amount", &self.amount.to_string())?;
+        state.serialize_field("nonce", &self.nonce.to_string())?;
+        // Memo: drop trailing zeros, or replace with empty string if all zero?
+        let memo_str = String::from_utf8(self.memo.to_vec())
+            .unwrap_or_default()
+            .trim_end_matches(char::from(0))
+            .to_string();
+        state.serialize_field("memo", &memo_str)?;
+        state.serialize_field("valid_until", &self.valid_until.to_string())?;
+        state.end()
+    }
 }
 
 impl Hashable for Transaction {

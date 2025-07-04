@@ -3,12 +3,14 @@ use ark_ff::fields::PrimeField;
 use ark_ff::BigInteger;
 use frost_bluepallas::{
     hasher::{message_hash, PallasMessage},
-    translate::{translate_pk, translate_sig},
+    transactions::Transaction,
+    translate::{translate_msg, translate_pk, translate_sig},
     PallasGroup,
 };
 use frost_core::{Ciphersuite, Group};
 
-use mina_signer::{CurvePoint, NetworkId, Signer};
+use mina_hasher::Hashable;
+use mina_signer::{CurvePoint, NetworkId, PubKey, Signer};
 use rand_core::SeedableRng;
 
 use std::ops::{Add, Neg};
@@ -96,6 +98,41 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
     assert!(ctx.verify(&mina_sig, &mina_pk, &mina_msg));
     Ok(())
+}
+
+#[test]
+fn roi_mina_tx() {
+    let mut rng = rand_core::OsRng;
+
+    // Use trusted dealer to setup public and packages
+    let max_signers = 5;
+    let min_signers = 3;
+    let (_shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
+        max_signers,
+        min_signers,
+        frost_bluepallas::keys::IdentifierList::Default,
+        &mut rng,
+    )
+    .expect("Failed to generate key shares");
+
+    let tx = Transaction::new_payment(
+        translate_pk(pubkey_package.verifying_key())
+            .expect("failed to translate verifying key to Mina public key"),
+        PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
+            .expect("invalid address"),
+        1729000000000,
+        2000000000,
+        16,
+    )
+    .set_valid_until(271828)
+    .set_memo_str("Hello Mina!");
+
+    let msg = PallasMessage(translate_msg(&tx));
+    assert_eq!(
+        msg.to_roinput(),
+        tx.to_roinput(),
+        "ROI Input does not match after translation"
+    );
 }
 
 #[test]
