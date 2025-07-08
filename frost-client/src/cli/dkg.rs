@@ -28,6 +28,8 @@ pub async fn dkg(args: &Command) -> Result<(), Box<dyn Error>> {
         dkg_for_ciphersuite::<Ed25519Sha512>(args).await
     } else if ciphersuite == "redpallas" {
         dkg_for_ciphersuite::<reddsa::frost::redpallas::PallasBlake2b512>(args).await
+    // } else if ciphersuite == "bluepallas" {
+    //     dkg_for_ciphersuite::<frost_bluepallas::PallasPoseidon>(args).await
     } else {
         Err(eyre!("unsupported ciphersuite").into())
     }
