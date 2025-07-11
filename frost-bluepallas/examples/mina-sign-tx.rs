@@ -66,8 +66,9 @@ fn main() -> Result<(), Error> {
         recipient_pubkey,
         1000000000,
         1000000000,
-        0,
-    );
+        1,
+    )
+    .set_memo_str("Hello Mina x FROST from the Raspberry Devs!");
     //let tx = tx.set_memo_str("Hello World!");
     let signing_key = frost_bluepallas::translate::translate_minask(&mina_keypair)
         .map_err(|_| Error::DeserializationError)?;
@@ -75,12 +76,9 @@ fn main() -> Result<(), Error> {
     let msg = translate_msg(&tx);
 
     // Sign the transaction with FROST
-    let (sig, vk) = frost_bluepallas::helper::generate_signature_from_sk(
-        &msg,
-        &signing_key,
-        rand_core::OsRng,
-    )
-    .map_err(|_| Error::MalformedSignature)?;
+    let (sig, vk) =
+        frost_bluepallas::helper::generate_signature_from_sk(&msg, &signing_key, rand_core::OsRng)
+            .map_err(|_| Error::MalformedSignature)?;
 
     // Print out signature and verifying key
     // Convert signature to Mina format

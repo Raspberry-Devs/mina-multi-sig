@@ -114,8 +114,11 @@ fn sign_mina_tx() {
     // Verify the signature using Mina Signer
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
     let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx);
 
     assert!(is_valid, "Mina signature verification failed");
+    assert!(is_valid_tx, "Mina transaction verification failed");
 }
 
 #[test]
