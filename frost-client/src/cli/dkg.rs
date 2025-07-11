@@ -7,7 +7,6 @@ use std::{
 use eyre::{eyre, Context as _, OptionExt};
 
 use frost_core::Ciphersuite;
-use frost_ed25519::Ed25519Sha512;
 use reqwest::Url;
 use zeroize::Zeroizing;
 
@@ -16,26 +15,22 @@ use super::{
     config::{Config, Group, Participant},
 };
 
+use crate::api;
 use crate::dkg::{args, cli};
-use crate::{api, dkg::cli::MaybeIntoEvenY};
 
 pub async fn dkg(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Dkg { ciphersuite, .. } = (*args).clone() else {
         panic!("invalid Command");
     };
 
-    if ciphersuite == "ed25519" {
-        dkg_for_ciphersuite::<Ed25519Sha512>(args).await
-    } else if ciphersuite == "redpallas" {
-        dkg_for_ciphersuite::<reddsa::frost::redpallas::PallasBlake2b512>(args).await
-    // } else if ciphersuite == "bluepallas" {
-    //     dkg_for_ciphersuite::<frost_bluepallas::PallasPoseidon>(args).await
+    if ciphersuite == "bluepallas" {
+        dkg_for_ciphersuite::<frost_bluepallas::PallasPoseidon>(args).await
     } else {
         Err(eyre!("unsupported ciphersuite").into())
     }
 }
 
-pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + MaybeIntoEvenY + 'static>(
+pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
 ) -> Result<(), Box<dyn Error>> {
     let Command::Dkg {

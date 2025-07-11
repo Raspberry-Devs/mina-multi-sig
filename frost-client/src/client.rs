@@ -11,6 +11,8 @@ pub enum Error {
     ServerError(#[from] api::Error),
     #[error("connection error: {0}")]
     ConnectionError(#[from] reqwest::Error),
+    #[error("JSON parsing error: {0}")]
+    JsonError(#[from] serde_json::Error),
 }
 
 /// A frostd Client that allows calling frostd API methods.
@@ -59,7 +61,9 @@ impl Client {
                 ))
             }
         } else {
-            Ok(response.json::<O>().await?)
+            let body = response.text().await?;
+            let json_str = if body.is_empty() { "null" } else { &body };
+            Ok(serde_json::from_str(json_str)?)
         }
     }
 
@@ -77,7 +81,7 @@ impl Client {
 
     /// Log out from the server. This will clear the cached access token.
     pub async fn logout(&mut self) -> Result<(), Error> {
-        self.call::<(), ()>("login", &()).await?;
+        self.call::<(), ()>("logout", &()).await?;
         self.access_token = None;
         Ok(())
     }

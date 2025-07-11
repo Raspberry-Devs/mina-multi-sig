@@ -11,10 +11,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut reader = Box::new(io::stdin().lock());
     let mut logger = io::stdout();
 
-    if args.ciphersuite == "ed25519" {
-        cli::<frost_ed25519::Ed25519Sha512>(&mut reader, &mut logger).await?;
-    } else if args.ciphersuite == "redpallas" {
-        cli::<reddsa::frost::redpallas::PallasBlake2b512>(&mut reader, &mut logger).await?;
+    if args.ciphersuite == "bluepallas" {
+        cli::<frost_bluepallas::PallasPoseidon>(&mut reader, &mut logger).await?;
+    } else {
+        return Err(eyre::eyre!("unsupported ciphersuite").into());
     }
 
     Ok(())
