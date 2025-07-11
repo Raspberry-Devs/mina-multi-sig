@@ -58,14 +58,30 @@ impl Hashable for PallasHashElement<'_> {
 // https://github.com/o1-labs/proof-systems/blob/master/signer/README.md?plain=1#L19-L40
 
 #[derive(Clone, Debug)]
-pub struct PallasMessage(pub Vec<u8>);
+pub struct PallasMessage {
+    input: ROInput,
+}
+
+impl PallasMessage {
+    pub fn new(input: Vec<u8>) -> Self {
+        // Try to deserialize as ROInput first
+        match ROInput::deserialize(&input) {
+            Ok(roi) => PallasMessage { input: roi },
+            Err(_) => {
+                // If deserialization fails, treat input as raw bytes
+                let roi = ROInput::new().append_bytes(&input);
+                PallasMessage { input: roi }
+            }
+        }
+    }
+}
 
 // Implement a hashable trait for a u8 slice
 impl Hashable for PallasMessage {
     type D = NetworkId;
 
     fn to_roinput(&self) -> ROInput {
-        ROInput::new().append_bytes(self.0.as_ref())
+        self.input.clone()
     }
 
     // copied from
@@ -108,7 +124,7 @@ where
     }
 }
 
-pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: &H) -> ScalarField
+pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: H) -> ScalarField
 where
     H: Hashable<D = NetworkId>,
 {
@@ -116,7 +132,7 @@ where
     let mut hasher = mina_hasher::create_legacy::<Message<H>>(network_id);
 
     let schnorr_input = Message::<H> {
-        input: input.clone(),
+        input,
         pub_key_x: pub_key.point().x,
         pub_key_y: pub_key.point().y,
         rx,

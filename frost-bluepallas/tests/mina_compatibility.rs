@@ -42,7 +42,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
     let mina_pk = translate_pk(&fr_pk)?;
     let mina_sig = translate_sig(&fr_sig)?;
-    let mina_msg = PallasMessage(fr_msg.clone());
+    let mina_msg = PallasMessage::new(fr_msg.clone());
 
     assert_eq!(
         mina_sig.rx,
@@ -55,7 +55,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         "Generator point must match"
     );
 
-    let mina_chall = message_hash(&mina_pk, mina_sig.rx, &mina_msg);
+    let mina_chall = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone());
     let chall = frost_bluepallas::PallasPoseidon::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
 
     // As of now this should be trivially true because the implementations are the same
@@ -71,7 +71,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         ctx.verify(&mina_sig, &mina_pk, &mina_msg)
     );
 
-    let ev = message_hash(&mina_pk, mina_sig.rx, &mina_msg);
+    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone());
 
     let sv = CurvePoint::generator()
         .mul_bigint(mina_sig.s.into_bigint())
@@ -102,7 +102,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn roi_mina_tx() {
-    let mut rng = rand_core::OsRng;
+    let rng = rand_core::OsRng;
 
     // Use trusted dealer to setup public and packages
     let max_signers = 5;
@@ -111,7 +111,7 @@ fn roi_mina_tx() {
         max_signers,
         min_signers,
         frost_bluepallas::keys::IdentifierList::Default,
-        &mut rng,
+        rng,
     )
     .expect("Failed to generate key shares");
 
@@ -127,7 +127,7 @@ fn roi_mina_tx() {
     .set_valid_until(271828)
     .set_memo_str("Hello Mina!");
 
-    let msg = PallasMessage(translate_msg(&tx));
+    let msg = PallasMessage::new(translate_msg(&tx));
     assert_eq!(
         msg.to_roinput(),
         tx.to_roinput(),

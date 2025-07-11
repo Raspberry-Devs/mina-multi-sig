@@ -65,7 +65,7 @@ fn signer_test_raw() {
 
     // Create ctx signer and verify the signature
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage(msg.clone()));
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
     assert!(is_valid, "Mina signature verification failed");
 }
@@ -113,7 +113,7 @@ fn sign_mina_tx() {
 
     // Verify the signature using Mina Signer
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage(msg.clone()));
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
     assert!(is_valid, "Mina signature verification failed");
 }
@@ -165,7 +165,7 @@ fn sign_mina_tx_mainnet() {
 
     // Verify the signature using Mina Signer with MAINNET
     let mut ctx = mina_signer::create_legacy(NetworkId::MAINNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage(msg.clone()));
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
     assert!(is_valid, "Mina signature verification failed on MAINNET");
 }

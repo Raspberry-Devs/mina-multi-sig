@@ -78,7 +78,7 @@ fn main() -> Result<(), Error> {
     let (sig, vk) = frost_bluepallas::helper::generate_signature_from_sk(
         &msg,
         &signing_key,
-        &mut rand_core::OsRng,
+        rand_core::OsRng,
     )
     .map_err(|_| Error::MalformedSignature)?;
 
