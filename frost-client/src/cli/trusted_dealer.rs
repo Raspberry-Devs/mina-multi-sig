@@ -14,7 +14,6 @@ use super::{
 };
 
 use crate::trusted_dealer;
-use crate::trusted_dealer::MaybeIntoEvenY;
 
 pub fn trusted_dealer(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::TrustedDealer { ciphersuite, .. } = (*args).clone() else {
@@ -28,7 +27,7 @@ pub fn trusted_dealer(args: &Command) -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub(crate) fn trusted_dealer_for_ciphersuite<C: Ciphersuite + MaybeIntoEvenY + 'static>(
+pub(crate) fn trusted_dealer_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
 ) -> Result<(), Box<dyn Error>> {
     let Command::TrustedDealer {
