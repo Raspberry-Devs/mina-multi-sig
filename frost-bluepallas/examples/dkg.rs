@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use frost_bluepallas::{self as frost, keys::EvenY};
+use frost_bluepallas as frost;
 
 #[allow(clippy::needless_borrows_for_generic_args)]
 fn main() {
@@ -121,8 +121,6 @@ fn main() {
             frost::keys::dkg::part3(round2_secret_package, round1_packages, round2_packages)
                 .unwrap();
 
-        assert!(key_package.has_even_y());
-        assert!(pubkey_package.has_even_y());
         // ANCHOR_END: dkg_part3
         key_packages.insert(participant_identifier, key_package);
         pubkey_packages.insert(participant_identifier, pubkey_package);

@@ -3,19 +3,19 @@ use ark_ff::fields::PrimeField;
 use ark_ff::BigInteger;
 use frost_bluepallas::{
     hasher::{message_hash, PallasMessage},
-    translate::{translate_pk, translate_sig},
+    transactions::Transaction,
+    translate::{translate_msg, translate_pk, translate_sig},
     PallasGroup,
 };
 use frost_core::{Ciphersuite, Group};
 
-use mina_signer::{CurvePoint, NetworkId, Signer};
+use mina_hasher::Hashable;
+use mina_signer::{CurvePoint, NetworkId, PubKey, Signer};
 use rand_core::SeedableRng;
 
 use std::ops::{Add, Neg};
 
-use crate::helper::generate_signature_random;
-
-mod helper;
+use frost_bluepallas::helper::generate_signature_random;
 
 #[test]
 fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
@@ -42,7 +42,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
     let mina_pk = translate_pk(&fr_pk)?;
     let mina_sig = translate_sig(&fr_sig)?;
-    let mina_msg = PallasMessage(fr_msg.clone());
+    let mina_msg = PallasMessage::new(fr_msg.clone());
 
     assert_eq!(
         mina_sig.rx,
@@ -55,7 +55,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         "Generator point must match"
     );
 
-    let mina_chall = message_hash(&mina_pk, mina_sig.rx, &mina_msg);
+    let mina_chall = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone());
     let chall = frost_bluepallas::PallasPoseidon::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
 
     // As of now this should be trivially true because the implementations are the same
@@ -71,7 +71,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         ctx.verify(&mina_sig, &mina_pk, &mina_msg)
     );
 
-    let ev = message_hash(&mina_pk, mina_sig.rx, &mina_msg);
+    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone());
 
     let sv = CurvePoint::generator()
         .mul_bigint(mina_sig.s.into_bigint())
@@ -98,6 +98,41 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
     assert!(ctx.verify(&mina_sig, &mina_pk, &mina_msg));
     Ok(())
+}
+
+#[test]
+fn roi_mina_tx() {
+    let rng = rand_core::OsRng;
+
+    // Use trusted dealer to setup public and packages
+    let max_signers = 5;
+    let min_signers = 3;
+    let (_shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
+        max_signers,
+        min_signers,
+        frost_bluepallas::keys::IdentifierList::Default,
+        rng,
+    )
+    .expect("Failed to generate key shares");
+
+    let tx = Transaction::new_payment(
+        translate_pk(pubkey_package.verifying_key())
+            .expect("failed to translate verifying key to Mina public key"),
+        PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
+            .expect("invalid address"),
+        1729000000000,
+        2000000000,
+        16,
+    )
+    .set_valid_until(271828)
+    .set_memo_str("Hello Mina!");
+
+    let msg = PallasMessage::new(translate_msg(&tx));
+    assert_eq!(
+        msg.to_roinput(),
+        tx.to_roinput(),
+        "ROI Input does not match after translation"
+    );
 }
 
 #[test]

@@ -1,10 +1,9 @@
 use std::collections::BTreeMap;
 
-use ark_ff::{BigInteger, PrimeField};
-use frost_core::{self as frost, keys::CoefficientCommitment};
+use frost_core::{self as frost};
 use rand_core::{CryptoRng, RngCore};
 
-use crate::{Error, Identifier, SigningKey, VerifyingKey, P};
+use crate::{Error, Identifier, SigningKey, P};
 
 pub mod dkg;
 
@@ -60,7 +59,6 @@ pub fn generate_with_dealer<RNG: RngCore + CryptoRng>(
     mut rng: RNG,
 ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
     frost::keys::generate_with_dealer(max_signers, min_signers, identifiers, &mut rng)
-        .map(into_even_y)
 }
 
 /// Splits an existing key into FROST shares.
@@ -76,112 +74,5 @@ pub fn split<R: RngCore + CryptoRng>(
     identifiers: IdentifierList,
     rng: &mut R,
 ) -> Result<(BTreeMap<Identifier, SecretShare>, PublicKeyPackage), Error> {
-    frost::keys::split(key, max_signers, min_signers, identifiers, rng).map(into_even_y)
-}
-
-/// Copied from https://github.com/ZcashFoundation/reddsa/blob/main/src/frost/redpallas.rs
-pub trait EvenY {
-    /// Return if the given type has a group public key with an even Y
-    /// coordinate.
-    fn has_even_y(&self) -> bool;
-
-    /// Convert the given type to make sure the group public key has an even
-    /// Y coordinate. `is_even` can be specified if evenness was already
-    /// determined beforehand. Returns a boolean indicating if the original
-    /// type had an even Y, and a (possibly converted) value with even Y.
-    fn into_even_y(self, is_even: Option<bool>) -> Self;
-}
-
-impl EvenY for PublicKeyPackage {
-    fn has_even_y(&self) -> bool {
-        self.verifying_key().to_element().y.into_bigint().is_even()
-    }
-
-    fn into_even_y(self, is_even: Option<bool>) -> Self {
-        let is_even = is_even.unwrap_or_else(|| self.has_even_y());
-        if !is_even {
-            // Negate verifying key
-            let verifying_key = VerifyingKey::new(-self.verifying_key().to_element());
-            // Recreate verifying share map with negated VerifyingShares
-            // values.
-            let verifying_shares: BTreeMap<_, _> = self
-                .verifying_shares()
-                .iter()
-                .map(|(i, vs)| {
-                    let vs = VerifyingShare::new(-vs.to_element());
-                    (*i, vs)
-                })
-                .collect();
-            PublicKeyPackage::new(verifying_shares, verifying_key)
-        } else {
-            self
-        }
-    }
-}
-
-impl EvenY for SecretShare {
-    fn has_even_y(&self) -> bool {
-        let key_package: KeyPackage = self
-            .clone()
-            .try_into()
-            .expect("Should work; expected to be called in freshly generated SecretShares");
-        key_package.has_even_y()
-    }
-
-    fn into_even_y(self, is_even: Option<bool>) -> Self {
-        let is_even = is_even.unwrap_or_else(|| self.has_even_y());
-        if !is_even {
-            // Negate SigningShare
-            let signing_share = SigningShare::new(-self.signing_share().to_scalar());
-            // Negate VerifiableSecretSharingCommitment by negating each
-            // coefficient in it
-            let coefficients: Vec<_> = self
-                .commitment()
-                .coefficients()
-                .iter()
-                .map(|e| CoefficientCommitment::new(-e.value()))
-                .collect();
-            let commitments = VerifiableSecretSharingCommitment::new(coefficients);
-            SecretShare::new(*self.identifier(), signing_share, commitments)
-        } else {
-            self
-        }
-    }
-}
-
-impl EvenY for KeyPackage {
-    fn has_even_y(&self) -> bool {
-        self.verifying_key().to_element().y.into_bigint().is_even()
-    }
-
-    fn into_even_y(self, is_even: Option<bool>) -> Self {
-        let is_even = is_even.unwrap_or_else(|| self.has_even_y());
-        if !is_even {
-            // Negate all components
-            let verifying_key = VerifyingKey::new(-self.verifying_key().to_element());
-            let signing_share = SigningShare::new(-self.signing_share().to_scalar());
-            let verifying_share = VerifyingShare::new(-self.verifying_share().to_element());
-            KeyPackage::new(
-                *self.identifier(),
-                signing_share,
-                verifying_share,
-                verifying_key,
-                *self.min_signers(),
-            )
-        } else {
-            self
-        }
-    }
-}
-
-pub fn into_even_y(
-    (secret_shares, public_key_package): (BTreeMap<Identifier, SecretShare>, PublicKeyPackage),
-) -> (BTreeMap<Identifier, SecretShare>, PublicKeyPackage) {
-    let is_even = public_key_package.has_even_y();
-    let public_key_package = public_key_package.into_even_y(Some(is_even));
-    let secret_shares = secret_shares
-        .iter()
-        .map(|(i, s)| (*i, s.clone().into_even_y(Some(is_even))))
-        .collect();
-    (secret_shares, public_key_package)
+    frost::keys::split(key, max_signers, min_signers, identifiers, rng)
 }

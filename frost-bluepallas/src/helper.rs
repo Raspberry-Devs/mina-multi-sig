@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
-use frost_bluepallas as frost;
+use crate as frost;
 use rand_core::{CryptoRng, RngCore};
 
 /// Helper function to sign a message using existing key packages
-pub(crate) fn sign_from_packages<R: RngCore + CryptoRng>(
+pub fn sign_from_packages<R: RngCore + CryptoRng>(
     message: &[u8],
     shares: BTreeMap<frost::Identifier, frost::keys::SecretShare>,
     pubkey_package: frost::keys::PublicKeyPackage,
@@ -84,7 +84,7 @@ pub(crate) fn sign_from_packages<R: RngCore + CryptoRng>(
 /// Helper function which uses FROST to generate a signature, message and verifying key to use in tests.
 /// This uses trusted dealer rather than DKG
 #[allow(dead_code)]
-pub(crate) fn generate_signature_random<R: RngCore + CryptoRng>(
+pub fn generate_signature_random<R: RngCore + CryptoRng>(
     message: &[u8],
     mut rng: R,
 ) -> Result<(frost::Signature, frost::VerifyingKey), frost::Error> {
@@ -103,7 +103,7 @@ pub(crate) fn generate_signature_random<R: RngCore + CryptoRng>(
 /// Helper function which splits an existing signing key into FROST shares and generates a signature.
 /// This uses the split function to create shares from a single signing key.
 #[allow(dead_code)]
-pub(crate) fn generate_signature_from_sk<R: RngCore + CryptoRng>(
+pub fn generate_signature_from_sk<R: RngCore + CryptoRng>(
     message: &[u8],
     signing_key: &frost::SigningKey,
     mut rng: R,

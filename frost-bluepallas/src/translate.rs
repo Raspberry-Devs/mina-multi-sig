@@ -32,7 +32,7 @@ pub fn translate_msg<H>(msg: &H) -> Vec<u8>
 where
     H: Hashable<D = NetworkId>,
 {
-    msg.to_roinput().to_bytes()
+    msg.to_roinput().serialize()
 }
 
 pub fn translate_minask(msg: &mina_signer::Keypair) -> Result<SigningKey> {

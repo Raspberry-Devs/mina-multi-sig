@@ -1,8 +1,9 @@
 #![allow(clippy::needless_borrows_for_generic_args)]
 
-use crate::{helper, mina_tests::transactions::Transaction};
 use frost_bluepallas::{
     hasher::{set_network_id, PallasMessage},
+    helper,
+    transactions::Transaction,
     translate::{translate_minask, translate_msg, translate_pk},
 };
 use frost_core::Ciphersuite;
@@ -11,6 +12,8 @@ use mina_signer::{Keypair, NetworkId, PubKey, Signer};
 #[cfg(test)]
 #[test]
 fn signer_test_raw() {
+    use frost_bluepallas::transactions::Transaction;
+
     set_network_id(NetworkId::TESTNET).expect("Failed to set network ID");
 
     let kp = Keypair::from_hex("164244176fddb5d769b7de2027469d027ad428fadcc0c02396e6280142efb718")
@@ -62,7 +65,7 @@ fn signer_test_raw() {
 
     // Create ctx signer and verify the signature
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage(msg.clone()));
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
     assert!(is_valid, "Mina signature verification failed");
 }
@@ -110,9 +113,12 @@ fn sign_mina_tx() {
 
     // Verify the signature using Mina Signer
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage(msg.clone()));
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx);
 
     assert!(is_valid, "Mina signature verification failed");
+    assert!(is_valid_tx, "Mina transaction verification failed");
 }
 
 #[test]
@@ -162,7 +168,7 @@ fn sign_mina_tx_mainnet() {
 
     // Verify the signature using Mina Signer with MAINNET
     let mut ctx = mina_signer::create_legacy(NetworkId::MAINNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage(msg.clone()));
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
     assert!(is_valid, "Mina signature verification failed on MAINNET");
 }

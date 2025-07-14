@@ -6,7 +6,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use ark_serialize::CanonicalSerialize;
-    use frost_bluepallas::{keys::EvenY, Error, PallasPoseidon};
+    use frost_bluepallas::{Error, PallasPoseidon};
     use frost_core::{Ciphersuite, Group, GroupError};
 
     use super::*;
@@ -37,118 +37,6 @@ mod tests {
         raw_identity.serialize_compressed(&mut out[..]).unwrap();
         let r = <PallasPoseidon as Ciphersuite>::Group::deserialize(&out);
         assert_eq!(r, Err(GroupError::InvalidIdentityElement));
-    }
-
-    #[test]
-    fn check_even_y_frost_core() {
-        let mut rng = rand_core::OsRng;
-
-        // Since there is a 50% chance of the public key having an odd Y (which
-        // we need to actually test), loop until we get an odd Y.
-        loop {
-            let max_signers = 5;
-            let min_signers = 3;
-            // Generate keys with frost-core function, which doesn't ensure even Y
-            let (shares, public_key_package) =
-                frost::keys::generate_with_dealer::<PallasPoseidon, _>(
-                    max_signers,
-                    min_signers,
-                    frost::keys::IdentifierList::Default,
-                    &mut rng,
-                )
-                .unwrap();
-
-            println!("Looping!");
-            if !public_key_package.has_even_y() {
-                println!("Found odd Y in public key package, testing even_y conversion");
-                // Test consistency of into_even_y() for PublicKeyPackage
-                let even_public_key_package_is_even_none =
-                    public_key_package.clone().into_even_y(None);
-                let even_public_key_package_is_even_false =
-                    public_key_package.clone().into_even_y(Some(false));
-                assert_eq!(
-                    even_public_key_package_is_even_false,
-                    even_public_key_package_is_even_none
-                );
-                assert_ne!(public_key_package, even_public_key_package_is_even_false);
-                assert_ne!(public_key_package, even_public_key_package_is_even_none);
-
-                // Test consistency of into_even_y() for SecretShare (arbitrarily on
-                // the first secret share)
-                let secret_share = shares.first_key_value().unwrap().1.clone();
-                let even_secret_share_is_even_none = secret_share.clone().into_even_y(None);
-                let even_secret_share_is_even_false = secret_share.clone().into_even_y(Some(false));
-                assert_eq!(
-                    even_secret_share_is_even_false,
-                    even_secret_share_is_even_none
-                );
-                assert_ne!(secret_share, even_secret_share_is_even_false);
-                assert_ne!(secret_share, even_secret_share_is_even_none);
-
-                // Make secret shares even, then convert into KeyPackages
-                let key_packages_evened_before: BTreeMap<_, _> = shares
-                    .clone()
-                    .into_iter()
-                    .map(|(identifier, share)| {
-                        Ok((
-                            identifier,
-                            frost::keys::KeyPackage::try_from(share.into_even_y(None))?,
-                        ))
-                    })
-                    .collect::<Result<_, frost::Error<PallasPoseidon>>>()
-                    .unwrap();
-                // Convert into KeyPackages, then make them even
-                let key_packages_evened_after: BTreeMap<_, _> = shares
-                    .into_iter()
-                    .map(|(identifier, share)| {
-                        Ok((
-                            identifier,
-                            frost::keys::KeyPackage::try_from(share)?.into_even_y(None),
-                        ))
-                    })
-                    .collect::<Result<_, frost::Error<PallasPoseidon>>>()
-                    .unwrap();
-                // Make sure they are equal
-                assert_eq!(key_packages_evened_after, key_packages_evened_before);
-
-                #[allow(clippy::needless_borrows_for_generic_args)]
-                // Check if signing works with evened keys
-                frost::tests::ciphersuite_generic::check_sign(
-                    min_signers,
-                    key_packages_evened_after,
-                    &mut rng,
-                    even_public_key_package_is_even_none,
-                )
-                .unwrap();
-
-                // We managed to test it; break the loop and return
-                break;
-            }
-        }
-    }
-
-    #[test]
-    fn check_even_y_bluepallas() {
-        let mut rng = rand_core::OsRng;
-
-        // Since there is a ~50% chance of having a odd Y internally, to make sure
-        // that odd Ys are converted to even, we test multiple times to increase
-        // the chance of an odd Y being generated internally
-        for _ in 0..32 {
-            let max_signers = 5;
-            let min_signers = 3;
-            // Generate keys with reexposed bluepallas function, which ensures even Y
-            let (shares, public_key_package) = frost_bluepallas::keys::generate_with_dealer::<_>(
-                max_signers,
-                min_signers,
-                frost::keys::IdentifierList::Default,
-                &mut rng,
-            )
-            .unwrap();
-
-            assert!(public_key_package.has_even_y());
-            assert!(shares.values().all(|s| s.has_even_y()));
-        }
     }
 
     #[test]
@@ -286,8 +174,6 @@ mod tests {
                 )
                 .unwrap();
 
-                assert!(key_package.has_even_y());
-                assert!(pubkey_package.has_even_y());
                 // ANCHOR_END: dkg_part3
                 key_packages.insert(participant_identifier, key_package);
                 pubkey_packages.insert(participant_identifier, pubkey_package);

@@ -20,7 +20,7 @@ use std::borrow::Cow;
 
 use alloc::collections::BTreeMap;
 
-use ark_ec::{models::CurveConfig, CurveGroup, Group as ArkGroup};
+use ark_ec::{models::CurveConfig, CurveGroup, PrimeGroup};
 
 use ark_ff::{fields::Field as ArkField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -43,8 +43,10 @@ use crate::{
 };
 
 pub mod hasher;
+pub mod helper;
 pub mod keys;
 mod negate;
+pub mod transactions;
 pub mod translate;
 
 #[derive(Clone, Copy)]
@@ -55,10 +57,10 @@ impl Field for PallasScalarField {
     type Scalar = <PallasParameters as CurveConfig>::ScalarField;
     type Serialization = [u8; 32];
     fn zero() -> Self::Scalar {
-        <Self::Scalar as ArkField>::ZERO
+        Self::Scalar::zero()
     }
     fn one() -> Self::Scalar {
-        <Self::Scalar as ArkField>::ONE
+        Self::Scalar::ONE
     }
     fn invert(scalar: &Self::Scalar) -> Result<Self::Scalar, FieldError> {
         <Self::Scalar as ArkField>::inverse(scalar).ok_or(FieldError::InvalidZeroScalar)
@@ -105,7 +107,7 @@ impl Group for PallasGroup {
         Self::Element::zero()
     }
     fn generator() -> Self::Element {
-        <Self::Element as ArkGroup>::generator()
+        Self::Element::generator()
     }
     fn serialize(element: &Self::Element) -> Result<Self::Serialization, GroupError> {
         // Ensure that the element is not the identity element
@@ -184,9 +186,9 @@ impl Ciphersuite for PallasPoseidon {
         // Convert public key and R to the Mina format
         let mina_pk = translate_pk(verifying_key).unwrap();
         let rx = R.into_affine().x;
-        let mina_msg = PallasMessage(message.to_vec());
+        let mina_msg = PallasMessage::new(message.to_vec());
 
-        let scalar = message_hash(&mina_pk, rx, &mina_msg);
+        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, mina_msg);
 
         Ok(frost_core::Challenge::from_scalar(scalar))
     }

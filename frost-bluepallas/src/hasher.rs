@@ -53,19 +53,35 @@ impl Hashable for PallasHashElement<'_> {
     }
 }
 
-// This s temporary: it's easier to test that u8 slices as messages work correctly first
-// We can implmement (or reuse) the Hashable trait for transaction as in this example afterwards:
-// https://github.com/o1-labs/proof-systems/blob/master/signer/README.md?plain=1#L19-L40
-
+/// This is an adaptor for the Mina Hashable type and allows us to
+/// have compatiblility between the Mina and FROST implementations
+/// The adaptor will attempt to serialize the input as a ROInput first, if that fails then it will
+/// treat the input as raw bytes
 #[derive(Clone, Debug)]
-pub struct PallasMessage(pub Vec<u8>);
+pub struct PallasMessage {
+    input: ROInput,
+}
+
+impl PallasMessage {
+    pub fn new(input: Vec<u8>) -> Self {
+        // Try to deserialize as ROInput first
+        match ROInput::deserialize(&input) {
+            Ok(roi) => PallasMessage { input: roi },
+            Err(_) => {
+                // If deserialization fails, treat input as raw bytes
+                let roi = ROInput::new().append_bytes(&input);
+                PallasMessage { input: roi }
+            }
+        }
+    }
+}
 
 // Implement a hashable trait for a u8 slice
 impl Hashable for PallasMessage {
     type D = NetworkId;
 
     fn to_roinput(&self) -> ROInput {
-        ROInput::new().append_bytes(self.0.as_ref())
+        self.input.clone()
     }
 
     // copied from
@@ -108,7 +124,7 @@ where
     }
 }
 
-pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: &H) -> ScalarField
+pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: H) -> ScalarField
 where
     H: Hashable<D = NetworkId>,
 {
@@ -116,7 +132,7 @@ where
     let mut hasher = mina_hasher::create_legacy::<Message<H>>(network_id);
 
     let schnorr_input = Message::<H> {
-        input: input.clone(),
+        input,
         pub_key_x: pub_key.point().x,
         pub_key_y: pub_key.point().y,
         rx,
