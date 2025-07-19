@@ -68,6 +68,7 @@ mkcert localhost 127.0.0.1 ::1 2>/dev/null || {
     echo "  sudo apt install mkcert"
     echo "  # On macOS:"
     echo "  brew install mkcert"
+    echo "  Also ensure you have run 'mkcert -install' to set up the local CA."
     exit 1
 }
 cd ..

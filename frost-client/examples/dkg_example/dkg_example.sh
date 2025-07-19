@@ -37,7 +37,15 @@ mkdir -p "$GENERATED_DIR"
 
 # Setting up the tls certificates
 cd $GENERATED_DIR
-mkcert localhost 127.0.0.1 ::1
+mkcert localhost 127.0.0.1 ::1 2>/dev/null || {
+    echo "ERROR: mkcert failed. Please install mkcert first:"
+    echo "  # On Ubuntu/Debian:"
+    echo "  sudo apt install mkcert"
+    echo "  # On macOS:"
+    echo "  brew install mkcert"
+    echo "  Also ensure you have run 'mkcert -install' to set up the local CA."
+    exit 1
+}
 cd ..
 
 pwd
