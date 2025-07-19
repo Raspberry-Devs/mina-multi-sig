@@ -89,7 +89,6 @@ where
         _output: &mut dyn Write,
         commitments: SigningCommitments<C>,
         identifier: Identifier<C>,
-        _rerandomized: bool,
     ) -> Result<SendSigningPackageArgs<C>, Box<dyn Error>> {
         // Send Commitments to Coordinator
         let data = serde_json::to_vec(&Message::<C>::IdentifiedCommitments {
@@ -106,14 +105,9 @@ where
             .ok_or(eyre!("Did not receive signing package!"))?;
 
         let message: Message<C> = serde_json::from_slice(&data)?;
-        if let Message::SigningPackageAndRandomizer {
-            signing_package,
-            randomizer,
-        } = message
-        {
+        if let Message::SigningPackage { signing_package } = message {
             Ok(SendSigningPackageArgs::<C> {
                 signing_package: vec![signing_package],
-                randomizer: randomizer.map(|r| vec![r]).unwrap_or_default(),
                 aux_msg: vec![],
             })
         } else {

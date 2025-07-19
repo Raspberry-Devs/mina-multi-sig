@@ -1,7 +1,6 @@
 use frost_core::{self as frost, Ciphersuite};
 
 use frost::{Signature, SigningPackage};
-use frost_rerandomized::RandomizedCiphersuite;
 
 use std::{
     fs,
@@ -10,7 +9,7 @@ use std::{
 
 use super::{args::ProcessedArgs, comms::Comms, round_1::ParticipantsConfig};
 
-pub async fn send_signing_package_and_get_signature_shares<C: RandomizedCiphersuite + 'static>(
+pub async fn send_signing_package_and_get_signature_shares<C: Ciphersuite + 'static>(
     args: &ProcessedArgs<C>,
     comms: &mut dyn Comms<C>,
     input: &mut dyn BufRead,
@@ -28,8 +27,8 @@ pub async fn send_signing_package_and_get_signature_shares<C: RandomizedCiphersu
 // Input required:
 // 1. number of signers (TODO: maybe pass this in?)
 // 2. signatures for all signers
-async fn request_inputs_signature_shares<C: RandomizedCiphersuite + 'static>(
-    args: &ProcessedArgs<C>,
+async fn request_inputs_signature_shares<C: Ciphersuite + 'static>(
+    _args: &ProcessedArgs<C>,
     comms: &mut dyn Comms<C>,
     input: &mut dyn BufRead,
     logger: &mut dyn Write,
@@ -37,37 +36,17 @@ async fn request_inputs_signature_shares<C: RandomizedCiphersuite + 'static>(
     signing_package: &SigningPackage<C>,
 ) -> Result<Signature<C>, Box<dyn std::error::Error>> {
     // TODO: support multiple
-    let randomizer = if args.randomizers.is_empty() {
-        None
-    } else {
-        Some(args.randomizers[0])
-    };
 
     let signatures_list = comms
-        .send_signing_package_and_get_signature_shares(input, logger, signing_package, randomizer)
+        .send_signing_package_and_get_signature_shares(input, logger, signing_package)
         .await?;
 
-    let group_signature = if let Some(randomizer) = randomizer {
-        let randomizer_params = frost_rerandomized::RandomizedParams::<C>::from_randomizer(
-            participants.pub_key_package.verifying_key(),
-            randomizer,
-        );
-
-        frost_rerandomized::aggregate(
-            signing_package,
-            &signatures_list,
-            &participants.pub_key_package,
-            &randomizer_params,
-        )
-        .unwrap()
-    } else {
-        frost::aggregate::<C>(
-            signing_package,
-            &signatures_list,
-            &participants.pub_key_package,
-        )
-        .unwrap()
-    };
+    let group_signature = frost::aggregate::<C>(
+        signing_package,
+        &signatures_list,
+        &participants.pub_key_package,
+    )
+    .unwrap();
 
     Ok(group_signature)
 }

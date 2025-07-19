@@ -11,7 +11,6 @@ use eyre::eyre;
 
 use crate::cipher::{PrivateKey, PublicKey};
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Identifier};
-use frost_rerandomized::Randomizer;
 
 use super::input::read_from_file_or_stdin;
 
@@ -51,14 +50,6 @@ pub struct Args {
     #[arg(short = 'm', long)]
     pub message: Vec<String>,
 
-    /// The randomizers to use. Each instance can be a file with the raw
-    /// randomizer, "" or "-". If "" or "-" is specified, then it will be read
-    /// from standard input as a hex string. If none are passed, random ones
-    /// will be generated. If one or more are passed, the number should match
-    /// the `message` parameter.
-    #[arg(short = 'r', long)]
-    pub randomizer: Vec<String>,
-
     /// Where to write the generated raw bytes signature. If "-", the
     /// human-readable hex-string is printed to stdout.
     #[arg(short = 's', long, default_value = "")]
@@ -97,9 +88,6 @@ pub struct ProcessedArgs<C: Ciphersuite> {
 
     /// The messages to sign.
     pub messages: Vec<Vec<u8>>,
-
-    /// The randomizers to use.
-    pub randomizers: Vec<Randomizer<C>>,
 
     /// Where to write the generated raw bytes signature. If "-", the
     /// human-readable hex-string is printed to stdout.
@@ -152,9 +140,6 @@ impl<C: Ciphersuite + 'static> ProcessedArgs<C> {
 
         let messages = read_messages(&args.message, output, input)?;
 
-        println!("Processing randomizer {:?}", args.randomizer);
-        let randomizers = read_randomizers(&args.randomizer, output, input)?;
-
         Ok(ProcessedArgs {
             cli: args.cli,
             http: false,
@@ -162,7 +147,6 @@ impl<C: Ciphersuite + 'static> ProcessedArgs<C> {
             num_signers,
             public_key_package,
             messages,
-            randomizers,
             signature: args.signature.clone(),
             ip: args.ip.clone(),
             port: args.port,
@@ -211,33 +195,4 @@ pub fn read_messages(
             .collect::<Result<_, Box<dyn Error>>>()?
     };
     Ok(messages)
-}
-
-pub fn read_randomizers<C: Ciphersuite + 'static>(
-    randomizer_paths: &[String],
-    output: &mut dyn Write,
-    input: &mut dyn BufRead,
-) -> Result<Vec<Randomizer<C>>, Box<dyn Error>> {
-    let randomizers = if randomizer_paths.is_empty() {
-        Vec::new()
-    } else {
-        randomizer_paths
-            .iter()
-            .map(|filename| {
-                let randomizer = if filename == "-" || filename.is_empty() {
-                    writeln!(output, "Enter the randomizer (hex string):")?;
-                    let mut randomizer = String::new();
-                    input.read_line(&mut randomizer)?;
-                    let bytes = hex::decode(randomizer.trim())?;
-                    frost_rerandomized::Randomizer::deserialize(&bytes)?
-                } else {
-                    eprintln!("Reading randomizer from {}...", &filename);
-                    let bytes = fs::read(filename)?;
-                    frost_rerandomized::Randomizer::deserialize(&bytes)?
-                };
-                Ok(randomizer)
-            })
-            .collect::<Result<_, Box<dyn Error>>>()?
-    };
-    Ok(randomizers)
 }

@@ -152,7 +152,6 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         _input: &mut dyn BufRead,
         _output: &mut dyn Write,
         signing_package: &SigningPackage<C>,
-        randomizer: Option<frost_rerandomized::Randomizer<C>>,
     ) -> Result<BTreeMap<Identifier<C>, SignatureShare<C>>, Box<dyn Error>> {
         eprintln!("Sending SigningPackage to participants...");
         let cipher = self
@@ -162,8 +161,8 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         let send_signing_package_args = SendSigningPackageArgs {
             signing_package: vec![signing_package.clone()],
             aux_msg: Default::default(),
-            randomizer: randomizer.map(|r| vec![r]).unwrap_or_default(),
         };
+
         // We need to send a message separately for each recipient even if the
         // message is the same, because they are (possibly) encrypted
         // individually for each recipient.

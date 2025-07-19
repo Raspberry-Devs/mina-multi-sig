@@ -1,7 +1,6 @@
 //! Types for the FROST server API.
 
 use frost_core::{Ciphersuite, SigningPackage};
-use frost_rerandomized::Randomizer;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 pub use uuid::Uuid;
@@ -123,7 +122,6 @@ pub struct SendSigningPackageArgs<C: Ciphersuite> {
         deserialize_with = "serdect::slice::deserialize_hex_or_bin_vec"
     )]
     pub aux_msg: Vec<u8>,
-    pub randomizer: Vec<Randomizer<C>>,
 }
 
 /// An error. Wraps a StatusCode which is returned by the server when the

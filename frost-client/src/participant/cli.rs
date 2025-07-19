@@ -9,12 +9,12 @@ use super::comms::Comms;
 use super::round1::{generate_nonces_and_commitments, print_values};
 use super::round2::{generate_signature, print_values_round_2, round_2_request_inputs};
 
-use frost_rerandomized::RandomizedCiphersuite;
+use frost_core::Ciphersuite;
 use rand::thread_rng;
 use std::io::{BufRead, Write};
 use zeroize::Zeroizing;
 
-pub async fn cli<C: RandomizedCiphersuite + 'static>(
+pub async fn cli<C: Ciphersuite + 'static>(
     args: &Args,
     reader: &mut impl BufRead,
     logger: &mut impl Write,
@@ -23,7 +23,7 @@ pub async fn cli<C: RandomizedCiphersuite + 'static>(
     cli_for_processed_args(pargs, reader, logger).await
 }
 
-pub async fn cli_for_processed_args<C: RandomizedCiphersuite + 'static>(
+pub async fn cli_for_processed_args<C: Ciphersuite + 'static>(
     pargs: ProcessedArgs<C>,
     input: &mut impl BufRead,
     logger: &mut impl Write,
@@ -56,7 +56,6 @@ pub async fn cli_for_processed_args<C: RandomizedCiphersuite + 'static>(
         logger,
         commitments,
         *key_package.identifier(),
-        false, // Possibly change in the future
     )
     .await?;
 

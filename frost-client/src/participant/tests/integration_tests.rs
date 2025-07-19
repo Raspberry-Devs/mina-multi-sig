@@ -44,7 +44,6 @@ fn check_participant() {
     for participant_identifier in nonces.keys() {
         let config = SendSigningPackageArgs {
             signing_package: vec![SigningPackage::new(commitments.clone(), &message)],
-            randomizer: vec![],
             aux_msg: vec![],
         };
         let signature = generate_signature(

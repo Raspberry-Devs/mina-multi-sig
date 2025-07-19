@@ -29,9 +29,8 @@ pub enum Message<C: Ciphersuite> {
         identifier: Identifier<C>,
         commitments: SigningCommitments<C>,
     },
-    SigningPackageAndRandomizer {
+    SigningPackage {
         signing_package: SigningPackage<C>,
-        randomizer: Option<frost_rerandomized::Randomizer<C>>,
     },
     SignatureShare(SignatureShare<C>),
 }
@@ -51,7 +50,6 @@ pub trait Comms<C: Ciphersuite> {
         input: &mut dyn BufRead,
         output: &mut dyn Write,
         signing_package: &SigningPackage<C>,
-        randomizer: Option<frost_rerandomized::Randomizer<C>>,
     ) -> Result<BTreeMap<Identifier<C>, SignatureShare<C>>, Box<dyn Error>>;
 
     /// Do any cleanups in case an error occurs during the protocol run.
