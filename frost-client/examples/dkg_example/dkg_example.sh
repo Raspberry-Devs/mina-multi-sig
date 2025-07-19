@@ -47,6 +47,15 @@ echo "========================================="
 echo "Starting frostd server"
 echo "========================================="
 
+# Check if frostd is installed
+if ! command -v frostd &> /dev/null; then
+    echo "ERROR: frostd is not installed or not in PATH!"
+    echo ""
+    echo "Please install frostd first. You can build it from the FROST server repository:"
+    echo "  cargo install --git https://github.com/ZcashFoundation/frost-zcash-demo.git --locked frostd"
+    exit 1
+fi
+
 # Start frostd server in the background
 echo "Starting frostd server on $SERVER_URL..."
 echo "Using TLS cert: $GENERATED_DIR/localhost+2.pem"
@@ -130,8 +139,6 @@ echo "Starting DKG process..."
 # Extract public keys from contacts
 echo "Extracting public keys from contacts..."
 CONTACTS_OUTPUT=$(cargo run --bin frost-client -- contacts -c "$GENERATED_DIR/alice.toml" 2>&1)
-
-
 
 # Define group name
 GROUP_NAME="Alice, Bob and Eve"
