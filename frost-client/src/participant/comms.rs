@@ -29,9 +29,8 @@ pub enum Message<C: Ciphersuite> {
         identifier: Identifier<C>,
         commitments: SigningCommitments<C>,
     },
-    SigningPackageAndRandomizer {
+    SigningPackage {
         signing_package: frost::SigningPackage<C>,
-        randomizer: Option<frost_rerandomized::Randomizer<C>>,
     },
     SignatureShare(SignatureShare<C>),
 }
@@ -44,7 +43,6 @@ pub trait Comms<C: Ciphersuite> {
         output: &mut dyn Write,
         commitments: SigningCommitments<C>,
         identifier: Identifier<C>,
-        rerandomized: bool,
     ) -> Result<SendSigningPackageArgs<C>, Box<dyn Error>>;
 
     /// Ask the user if they want to sign the message.

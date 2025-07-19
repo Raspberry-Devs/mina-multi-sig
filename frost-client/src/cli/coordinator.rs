@@ -9,7 +9,6 @@ use crate::cipher::PublicKey;
 use frost_bluepallas::PallasPoseidon;
 use frost_core::keys::PublicKeyPackage;
 use frost_core::Ciphersuite;
-use frost_rerandomized::RandomizedCiphersuite;
 use reqwest::Url;
 
 use crate::coordinator::args;
@@ -34,7 +33,7 @@ pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub(crate) async fn run_for_ciphersuite<C: RandomizedCiphersuite + 'static>(
+pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
 ) -> Result<(), Box<dyn Error>> {
     let Command::Coordinator {
@@ -43,7 +42,6 @@ pub(crate) async fn run_for_ciphersuite<C: RandomizedCiphersuite + 'static>(
         group,
         signers,
         message,
-        randomizer,
         signature,
     } = (*args).clone()
     else {
@@ -84,7 +82,6 @@ pub(crate) async fn run_for_ciphersuite<C: RandomizedCiphersuite + 'static>(
         num_signers,
         public_key_package,
         messages: args::read_messages(&message, &mut output, &mut input)?,
-        randomizers: args::read_randomizers(&randomizer, &mut output, &mut input)?,
         signature,
         ip: server_url_parsed
             .host_str()

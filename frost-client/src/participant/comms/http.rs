@@ -138,7 +138,6 @@ where
         _output: &mut dyn Write,
         commitments: SigningCommitments<C>,
         _identifier: Identifier<C>,
-        _rerandomized: bool,
     ) -> Result<SendSigningPackageArgs<C>, Box<dyn Error>> {
         let mut rng = thread_rng();
 

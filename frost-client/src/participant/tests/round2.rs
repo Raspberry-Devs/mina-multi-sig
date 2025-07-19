@@ -55,7 +55,6 @@ async fn check_valid_round_2_inputs() {
 
     let expected = Round2Config {
         signing_package: SigningPackage::new(signer_commitments, &message),
-        randomizer: None,
     };
 
     let mut buf = BufWriter::new(Vec::new());
@@ -69,7 +68,6 @@ async fn check_valid_round_2_inputs() {
         &mut buf,
         my_signer_commitments,
         Identifier::try_from(1).unwrap(),
-        false,
     )
     .await;
 
@@ -116,7 +114,6 @@ async fn check_sign() {
 
     let config = SendSigningPackageArgs {
         signing_package: vec![signing_package],
-        randomizer: vec![],
         aux_msg: vec![],
     };
 

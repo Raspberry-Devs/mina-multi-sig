@@ -3,7 +3,6 @@ use std::io::{BufRead, Write};
 
 use frost::{round1::SigningCommitments, Identifier, SigningPackage};
 use frost_core::{self as frost, Ciphersuite};
-use frost_rerandomized::RandomizedCiphersuite;
 
 use super::args::Args;
 use super::args::ProcessedArgs;
@@ -14,7 +13,7 @@ use super::comms::Comms;
 use super::round_1::get_commitments;
 use super::round_2::send_signing_package_and_get_signature_shares;
 
-pub async fn cli<C: RandomizedCiphersuite + 'static>(
+pub async fn cli<C: Ciphersuite + 'static>(
     args: &Args,
     reader: &mut impl BufRead,
     logger: &mut impl Write,
@@ -23,7 +22,7 @@ pub async fn cli<C: RandomizedCiphersuite + 'static>(
     cli_for_processed_args(pargs, reader, logger).await
 }
 
-pub async fn cli_for_processed_args<C: RandomizedCiphersuite + 'static>(
+pub async fn cli_for_processed_args<C: Ciphersuite + 'static>(
     pargs: ProcessedArgs<C>,
     reader: &mut impl BufRead,
     logger: &mut impl Write,
@@ -35,10 +34,6 @@ pub async fn cli_for_processed_args<C: RandomizedCiphersuite + 'static>(
     } else {
         Box::new(SocketComms::new(&pargs))
     };
-
-    if !pargs.randomizers.is_empty() && pargs.randomizers.len() != pargs.messages.len() {
-        return Err("Number of randomizers must match number of messages".into());
-    }
 
     let r = get_commitments(&pargs, &mut *comms, reader, logger).await;
     let Ok(participants_config) = r else {

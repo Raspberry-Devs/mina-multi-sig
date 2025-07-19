@@ -111,14 +111,12 @@ impl<C: Ciphersuite> Comms<C> for SocketComms<C> {
         _input: &mut dyn BufRead,
         _output: &mut dyn Write,
         signing_package: &SigningPackage<C>,
-        randomizer: Option<frost_rerandomized::Randomizer<C>>,
     ) -> Result<BTreeMap<Identifier<C>, SignatureShare<C>>, Box<dyn Error>> {
         // Send SigningPackage to all participants
         eprintln!("Sending SigningPackage to participants...");
 
-        let data = serde_json::to_vec(&Message::SigningPackageAndRandomizer {
+        let data = serde_json::to_vec(&Message::SigningPackage {
             signing_package: signing_package.clone(),
-            randomizer,
         })?;
 
         for identifier in signing_package.signing_commitments().keys() {

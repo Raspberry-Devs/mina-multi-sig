@@ -76,11 +76,7 @@ where
         input: &mut dyn BufRead,
         output: &mut dyn Write,
         signing_package: &SigningPackage<C>,
-        randomizer: Option<frost_rerandomized::Randomizer<C>>,
     ) -> Result<BTreeMap<Identifier<C>, SignatureShare<C>>, Box<dyn Error>> {
-        if randomizer.is_some() {
-            panic!("rerandomized not supported");
-        }
         let mut signatures_list: BTreeMap<Identifier<C>, SignatureShare<C>> = BTreeMap::new();
         for p in signing_package.signing_commitments().keys() {
             writeln!(

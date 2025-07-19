@@ -47,7 +47,6 @@ where
         output: &mut dyn Write,
         _commitments: SigningCommitments<C>,
         _identifier: Identifier<C>,
-        rerandomized: bool,
     ) -> Result<SendSigningPackageArgs<C>, Box<dyn Error>> {
         writeln!(output, "Enter the JSON-encoded SigningPackage:")?;
 
@@ -58,28 +57,11 @@ where
         // TODO: change to return a generic Error and use a better error
         let signing_package: SigningPackage<C> = serde_json::from_str(signing_package_json.trim())?;
 
-        if rerandomized {
-            writeln!(output, "Enter the randomizer (hex string):")?;
-
-            let mut json = String::new();
-            input.read_line(&mut json).unwrap();
-
-            let randomizer =
-                frost_rerandomized::Randomizer::<C>::deserialize(&hex::decode(json.trim())?)?;
-            let r = api::SendSigningPackageArgs::<C> {
-                signing_package: vec![signing_package],
-                randomizer: vec![randomizer],
-                aux_msg: vec![],
-            };
-            Ok(r)
-        } else {
-            let r = api::SendSigningPackageArgs::<C> {
-                signing_package: vec![signing_package],
-                randomizer: vec![],
-                aux_msg: vec![],
-            };
-            Ok(r)
-        }
+        let r = api::SendSigningPackageArgs::<C> {
+            signing_package: vec![signing_package],
+            aux_msg: vec![],
+        };
+        Ok(r)
     }
 
     async fn send_signature_share(
