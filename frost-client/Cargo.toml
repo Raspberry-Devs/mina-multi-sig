@@ -24,10 +24,6 @@ path = "src/dkg/main.rs"
 name = "participant"
 path = "src/participant/main.rs"
 
-[[bin]]
-name = "trusted-dealer"
-path = "src/trusted_dealer/main.rs"
-
 [dependencies]
 frost-bluepallas = { path = "../frost-bluepallas" }
 
