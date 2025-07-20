@@ -9,7 +9,6 @@ use reqwest::Url;
 use frost_bluepallas::PallasPoseidon;
 use frost_core::keys::KeyPackage;
 use frost_core::Ciphersuite;
-use frost_rerandomized::RandomizedCiphersuite;
 
 use super::{args::Command, config::Config};
 
@@ -32,7 +31,7 @@ pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub(crate) async fn run_for_ciphersuite<C: RandomizedCiphersuite + 'static>(
+pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
 ) -> Result<(), Box<dyn Error>> {
     let Command::Participant {
