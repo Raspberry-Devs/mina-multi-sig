@@ -18,7 +18,6 @@ serde = { workspace = true, features = ["derive"] }
 
 [dev-dependencies]
 frost-core = { version = "2.1.0", features = ["test-impl", "internals"] }
-frost-rerandomized = { version = "2.1.0", features = ["test-impl"] }
 lazy_static.workspace = true
 serde_json.workspace = true
 insta.workspace = true
@@ -33,13 +32,6 @@ default = ["serialization", "cheater-detection"]
 ## `serde` (e.g. JSON with `serde_json`).
 serde = ["frost-core/serde"]
 ## Enable a default serialization format. Enables `serde`.
-serialization = [
-  "serde",
-  "frost-core/serialization",
-  "frost-rerandomized/serialization",
-]
+serialization = ["serde", "frost-core/serialization"]
 ## Enable cheater detection
-cheater-detection = [
-  "frost-core/cheater-detection",
-  "frost-rerandomized/cheater-detection",
-]
+cheater-detection = ["frost-core/cheater-detection"]
