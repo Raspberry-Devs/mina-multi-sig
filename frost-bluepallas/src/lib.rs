@@ -40,6 +40,7 @@ use crate::{
     translate::translate_pk,
 };
 
+pub mod errors;
 pub mod hasher;
 pub mod helper;
 pub mod keys;
@@ -73,7 +74,6 @@ impl Field for PallasScalarField {
         let mut buf = [0u8; 32];
         scalar
             .serialize_compressed(&mut buf[..])
-            .map_err(|_| FieldError::MalformedScalar)
             .expect("Serialization should not fail for valid scalars");
 
         buf
@@ -188,11 +188,13 @@ impl Ciphersuite for PallasPoseidon {
         message: &[u8],
     ) -> Result<frost_core::Challenge<Self>, frost_core::Error<Self>> {
         // Convert public key and R to the Mina format
-        let mina_pk = translate_pk(verifying_key).unwrap();
+        let mina_pk =
+            translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let rx = R.into_affine().x;
         let mina_msg = PallasMessage::new(message.to_vec());
 
-        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, mina_msg);
+        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, mina_msg)
+            .map_err(|_| frost_core::FieldError::MalformedScalar)?;
 
         Ok(frost_core::Challenge::from_scalar(scalar))
     }

@@ -30,6 +30,7 @@ impl NegateY for SigningNonces {
 impl NegateY for SigningCommitments {
     fn negate_y(&self) -> Self {
         // Perform serialization roundtrip to get the hiding and binding parts
+        // Note that we use expect() clauses here because these are ALWAYS expected to succeed
         let hiding_commitment_ser: <PallasGroup as frost_core::Group>::Serialization = self
             .hiding()
             .serialize()

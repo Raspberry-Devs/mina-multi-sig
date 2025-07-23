@@ -5,7 +5,7 @@ use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
 use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
-use crate::PallasScalarField;
+use crate::{errors::BluePallasError, PallasScalarField};
 
 thread_local! {
     // set network id to be the testnet by default
@@ -13,7 +13,7 @@ thread_local! {
 }
 
 /// Set the network ID for the current thread
-pub fn set_network_id(network_id: NetworkId) -> Result<(), String> {
+pub fn set_network_id(network_id: NetworkId) -> Result<(), BluePallasError> {
     NETWORK_ID.with(|id| {
         *id.borrow_mut() = Some(network_id);
     });
@@ -21,12 +21,8 @@ pub fn set_network_id(network_id: NetworkId) -> Result<(), String> {
 }
 
 /// Get the network ID for the current thread, returns error if not set
-pub fn get_network_id() -> Result<NetworkId, String> {
-    NETWORK_ID.with(|id| {
-        id.borrow()
-            .clone()
-            .ok_or_else(|| "NetworkId not set. Call set_network_id() first.".to_string())
-    })
+pub fn get_network_id() -> Result<NetworkId, BluePallasError> {
+    NETWORK_ID.with(|id| id.borrow().clone().ok_or(BluePallasError::NetworkIdNotSet))
 }
 
 /// This is a Hashable interface for an array of bytes
@@ -133,11 +129,15 @@ where
 /// Currently, the FROST Ciphersuite implementation only allows for static function calls
 /// This means that any context related information must be passed either through global variables or thread-local values
 /// As we ONLY expect FROST to be single-threaded, we opt to use thread-local storage to pass in the NetworkID
-pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: H) -> ScalarField
+pub fn message_hash<H>(
+    pub_key: &PubKey,
+    rx: BaseField,
+    input: H,
+) -> Result<ScalarField, BluePallasError>
 where
     H: Hashable<D = NetworkId>,
 {
-    let network_id = get_network_id().expect("NetworkId must be set before calling message_hash");
+    let network_id = get_network_id()?;
     let mut hasher = mina_hasher::create_legacy::<Message<H>>(network_id);
 
     let schnorr_input = Message::<H> {
@@ -150,7 +150,7 @@ where
     // Squeeze and convert from base field element to scalar field element
     // Since the difference in modulus between the two fields is < 2^125, w.h.p., a
     // random value from one field will fit in the other field.
-    ScalarField::from(hasher.hash(&schnorr_input).into_bigint())
+    Ok(ScalarField::from(hasher.hash(&schnorr_input).into_bigint()))
 }
 
 type Fq = <PallasScalarField as Field>::Scalar;

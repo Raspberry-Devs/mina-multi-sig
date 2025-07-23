@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate as frost;
+use crate::{self as frost};
 use rand_core::{CryptoRng, RngCore};
 
 /// Helper function to sign a message using existing key packages
@@ -31,8 +31,8 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
 
     // In practice, each iteration of this loop will be executed by its respective participant.
     for participant_index in 1..=min_signers {
-        let participant_identifier =
-            frost::Identifier::try_from(participant_index as u16).expect("should be nonzero");
+        let participant_identifier = frost::Identifier::try_from(participant_index as u16)
+            .map_err(|_| frost::Error::MalformedIdentifier)?;
         let key_package = &key_packages[&participant_identifier];
         // Generate one (1) nonce and one SigningCommitments instance for each
         // participant, up to _threshold_.
