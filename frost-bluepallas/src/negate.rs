@@ -26,6 +26,7 @@ impl NegateY for SigningNonces {
     }
 }
 
+/// Negate the Y coordinate of the group commitment element with FROST
 impl NegateY for SigningCommitments {
     fn negate_y(&self) -> Self {
         // Perform serialization roundtrip to get the hiding and binding parts
@@ -70,6 +71,7 @@ impl NegateY for SigningCommitments {
 
 type NoncePallas = NonceCommitment<PallasPoseidon>;
 
+/// Take all commitments with a signing package and negate their Y coordinates
 impl NegateY for SigningPackage {
     fn negate_y(&self) -> Self {
         let negated_commitments = self

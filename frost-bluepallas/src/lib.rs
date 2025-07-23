@@ -47,6 +47,7 @@ mod negate;
 pub mod transactions;
 pub mod translate;
 
+/// PallasScalarField implements the FROST field interface for the Pallas scalar field
 #[derive(Clone, Copy)]
 pub struct PallasScalarField;
 
@@ -90,6 +91,7 @@ impl Field for PallasScalarField {
     }
 }
 
+/// PallasGroup implements the FROST group interface for the Pallas curve
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PallasGroup {}
 
@@ -141,6 +143,10 @@ impl Group for PallasGroup {
 pub const CONTEXT_STRING: &str = "bluepallas";
 const HASH_SIZE: usize = 32; // Posiedon hash output size
 
+/// The PallasPoseidon ciphersuite, which uses the Pallas curve and Poseidon hash function.
+///
+/// Note that this ciphersuite is used for FROST signatures in the Mina protocol and has a lot of Mina-specific logic
+/// This library SHOULD not be treated as a general-purpose PallasPoseidon ciphersuite, but rather as a Mina-specific implementation.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PallasPoseidon {}
 
@@ -239,6 +245,7 @@ pub type SigningPackage = frost::SigningPackage<P>;
 /// This functions computes the group commitment and checks whether the y-coordinate of the
 /// group commitment is even, as required by the Mina protocol.
 /// If the group commitment is not even, it negates the nonces and commitments
+/// This will be called by each individual signer during [`round2::sign`]
 pub(crate) fn pre_commitment_sign<'a>(
     signing_package: &'a SigningPackage,
     signing_nonces: &'a SigningNonces,
@@ -265,6 +272,8 @@ pub(crate) fn pre_commitment_sign<'a>(
     ))
 }
 
+/// This performs the same functionality as [`pre_commitment_sign`], but instead only negates commitments because the coordinator is not able to receive any nonces
+/// Naturally, this is called by the coordinator in the [`aggregate`] function
 pub(crate) fn pre_commitment_aggregate<'a>(
     signing_package: &'a SigningPackage,
     binding_factor_list: &'a BindingFactorList<PallasPoseidon>,

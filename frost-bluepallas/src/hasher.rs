@@ -8,6 +8,7 @@ use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 use crate::PallasScalarField;
 
 thread_local! {
+    // set network id to be the testnet by default
     static NETWORK_ID: RefCell<Option<NetworkId>> = const { RefCell::new(Some(NetworkId::TESTNET)) }
 }
 
@@ -28,6 +29,8 @@ pub fn get_network_id() -> Result<NetworkId, String> {
     })
 }
 
+/// This is a Hashable interface for an array of bytes
+/// This allows us to provide a easy-to-read interface for hashing FROST elements in H1, H3, H4, H5
 #[derive(Clone, Debug)]
 struct PallasHashElement<'a> {
     value: &'a [&'a [u8]],
@@ -97,6 +100,8 @@ impl Hashable for PallasMessage {
     }
 }
 
+/// This allows us to hash a Mina/FROST signature
+/// Follows the Mina signing specification at https://github.com/MinaProtocol/mina/blob/develop/docs/specs/signatures/description.md
 #[derive(Clone)]
 struct Message<H: Hashable> {
     input: H,
@@ -124,6 +129,10 @@ where
     }
 }
 
+/// Hashes the message using the Mina hashher, given a hashable message and a NetworkId
+/// Currently, the FROST Ciphersuite implementation only allows for static function calls
+/// This means that any context related information must be passed either through global variables or thread-local values
+/// As we ONLY expect FROST to be single-threaded, we opt to use thread-local storage to pass in the NetworkID
 pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: H) -> ScalarField
 where
     H: Hashable<D = NetworkId>,
