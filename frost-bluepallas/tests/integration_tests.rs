@@ -1,5 +1,7 @@
 use frost_bluepallas::*;
+use lazy_static::lazy_static;
 use rand_core::SeedableRng;
+use serde_json::Value;
 
 #[test]
 fn check_zero_key_fails() {
@@ -282,6 +284,27 @@ fn check_share_generation_fails_with_invalid_max_signers() {
         PallasPoseidon,
         _,
     >(min_signers, max_signers, error, rng);
+}
+
+lazy_static! {
+    pub static ref VECTORS: Value =
+        serde_json::from_str(include_str!("../tests/helpers/vectors.json").trim())
+            .expect("Test vector is valid JSON");
+    pub static ref VECTORS_BIG_IDENTIFIER: Value =
+        serde_json::from_str(include_str!("../tests/helpers/vectors-big-identifier.json").trim())
+            .expect("Test vector is valid JSON");
+}
+
+#[test]
+fn check_sign_with_test_vectors() {
+    frost_core::tests::vectors::check_sign_with_test_vectors::<PallasPoseidon>(&VECTORS);
+}
+
+#[test]
+fn check_sign_with_test_vectors_with_big_identifiers() {
+    frost_core::tests::vectors::check_sign_with_test_vectors::<PallasPoseidon>(
+        &VECTORS_BIG_IDENTIFIER,
+    );
 }
 
 #[test]
