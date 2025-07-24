@@ -28,7 +28,7 @@ pub fn get_network_id() -> Result<NetworkId, BluePallasError> {
 /// This is a Hashable interface for an array of bytes
 /// This allows us to provide a easy-to-read interface for hashing FROST elements in H1, H3, H4, H5
 #[derive(Clone, Debug)]
-struct PallasHashElement<'a> {
+pub(crate) struct PallasHashElement<'a> {
     value: &'a [&'a [u8]],
 }
 
@@ -125,7 +125,7 @@ where
     }
 }
 
-/// Hashes the message using the Mina hashher, given a hashable message and a NetworkId
+/// Hashes the message using the Mina hasher, given a hashable message and a NetworkId
 /// Currently, the FROST Ciphersuite implementation only allows for static function calls
 /// This means that any context related information must be passed either through global variables or thread-local values
 /// As we ONLY expect FROST to be single-threaded, we opt to use thread-local storage to pass in the NetworkID
@@ -171,4 +171,51 @@ pub fn hash_to_array(input: &[&[u8]]) -> <PallasScalarField as frost_core::Field
     let scalar = hash_to_scalar(input);
 
     PallasScalarField::serialize(&scalar)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mina_signer::Keypair;
+
+    #[test]
+    fn test_hash_to_scalar_is_deterministic_and_differs() {
+        let input = &[&b"abc"[..]];
+        let s1 = hash_to_scalar(input);
+        let s2 = hash_to_scalar(input);
+        assert_eq!(s1, s2, "same input must yield same scalar");
+
+        let other = &[&b"def"[..]];
+        let s3 = hash_to_scalar(other);
+        assert_ne!(s1, s3, "different input must yield a different scalar");
+    }
+
+    #[test]
+    fn test_hash_to_array_length() {
+        let arr = hash_to_array(&[&b"hello"[..]]);
+        // Serialization for PallasScalarField is 32 bytes
+        assert_eq!(arr.len(), 32);
+    }
+
+    #[test]
+    fn test_message_hash_is_consistent() {
+        let mut rng = rand_core::OsRng;
+        let pubkey = Keypair::rand(&mut rng).unwrap().public;
+        let rx = BaseField::from(42u64);
+
+        let msg = PallasMessage::new(b"unit test".to_vec());
+
+        // TESTNET
+        set_network_id(NetworkId::TESTNET).unwrap();
+        let h1 = message_hash(&pubkey, rx, msg.clone()).unwrap();
+
+        // repeat must be same
+        let h2 = message_hash(&pubkey, rx, msg.clone()).unwrap();
+        assert_eq!(h1, h2);
+
+        // MAINNET should give a different domain, hence a different hash
+        set_network_id(NetworkId::MAINNET).unwrap();
+        let h3 = message_hash(&pubkey, rx, msg).unwrap();
+        assert_ne!(h1, h3);
+    }
 }
