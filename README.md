@@ -19,21 +19,60 @@ Besides the usual advantages of shared control over accounts, threshold signatur
 
 Below is a minimal outline of how the client can be used.  See the `examples/` folders in each crate for complete scripts.
 
+### Trusted Dealer Setup
+
 ```bash
-# Initialize participant configuration
+# Initialize participant configurations
 cargo run --bin frost-client -- init -c alice.toml
+cargo run --bin frost-client -- init -c bob.toml
+cargo run --bin frost-client -- init -c eve.toml
 
 # Generate key shares with the trusted dealer helper
 cargo run --bin frost-client -- trusted-dealer \
-  -d "Example Group" --names Alice,Bob,Eve \
-  -c alice.toml -c bob.toml -c eve.toml -C bluepallas
+  -d "Alice, Bob and Eve's group" \
+  --names Alice,Bob,Eve \
+  -c alice.toml -c bob.toml -c eve.toml \
+  -C bluepallas
+```
 
+### Distributed Key Generation (DKG)
+
+```bash
+# Initialize configurations and exchange contacts
+cargo run --bin frost-client -- init -c alice.toml
+cargo run --bin frost-client -- export --name 'Alice' -c alice.toml
+cargo run --bin frost-client -- import -c alice.toml <contact_string>
+
+# Start DKG process (coordinator)
+cargo run --bin frost-client -- dkg \
+  -d "Alice, Bob and Eve" \
+  -s localhost:2744 \
+  -S <BOB_PUBLIC_KEY>,<EVE_PUBLIC_KEY> \
+  -t 2 -C bluepallas -c alice.toml
+
+# Each participant joins the DKG
+cargo run --bin frost-client -- dkg \
+  -d "Alice, Bob and Eve" \
+  -s localhost:2744 \
+  -t 2 -C bluepallas -c bob.toml
+```
+
+### Signing Session
+
+```bash
 # Start a signing session (coordinator)
 cargo run --bin frost-client -- coordinator \
-  --group <GROUP_PUBKEY> --signers <PUBKEYS> -m tx.json -o sig.bin
+  -c alice.toml \
+  --server-url localhost:2744 \
+  --group <GROUP_PUBLIC_KEY> \
+  -S <BOB_PUBLIC_KEY>,<EVE_PUBLIC_KEY> \
+  -m message.txt -o signature.hex
 
 # Each participant joins the session
-cargo run --bin frost-client -- participant --group <GROUP_PUBKEY>
+cargo run --bin frost-client -- participant \
+  -c bob.toml \
+  --server-url localhost:2744 \
+  --group <GROUP_PUBLIC_KEY>
 ```
 
 ## Contributing
