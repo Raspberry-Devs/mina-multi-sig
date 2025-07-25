@@ -52,6 +52,7 @@ pub type PublicKeyPackage = frost::keys::PublicKeyPackage<P>;
 /// ensure that they received the correct (and same) value.
 pub type VerifiableSecretSharingCommitment = frost::keys::VerifiableSecretSharingCommitment<P>;
 
+/// Generate a random keypair and split into FROST keyshares.
 pub fn generate_with_dealer<RNG: RngCore + CryptoRng>(
     max_signers: u16,
     min_signers: u16,
