@@ -35,6 +35,22 @@ cargo run --bin frost-client -- trusted-dealer \
   -C bluepallas
 ```
 
+## Running the Server
+Install `frostd` using cargo with
+```bash
+cargo install --git https://github.com/ZcashFoundation/frost-zcash-demo.git --locked frostd
+```
+
+Generate certificates for the server with `mkcert`
+```bash
+mkcert localhost 127.0.0.1 ::1 2>/dev/null
+```
+
+Start the server
+```bash
+frostd --tls-cert localhost+2.pem --tls-key localhost+2-key.pem
+```
+
 ### Distributed Key Generation (DKG)
 
 ```bash
@@ -55,6 +71,13 @@ cargo run --bin frost-client -- dkg \
   -d "Alice, Bob and Eve" \
   -s localhost:2744 \
   -t 2 -C bluepallas -c bob.toml
+```
+
+### View Groups
+```bash
+# Each user can view group information
+cargo run --bin frost-client -- groups \
+  -c alice.toml
 ```
 
 ### Signing Session
