@@ -1880,7 +1880,7 @@ dependencies = [
 [[package]]
 name = "mina-curves"
 version = "0.1.0"
-source = "git+https://github.com/scaraven/proof-systems?rev=3699b58#3699b5846cdd6b0937aef7843e113a2dcb73367d"
+source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -1891,7 +1891,7 @@ dependencies = [
 [[package]]
 name = "mina-hasher"
 version = "0.1.0"
-source = "git+https://github.com/scaraven/proof-systems?rev=3699b58#3699b5846cdd6b0937aef7843e113a2dcb73367d"
+source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
 dependencies = [
  "ark-ff",
  "bitvec",
@@ -1904,7 +1904,7 @@ dependencies = [
 [[package]]
 name = "mina-poseidon"
 version = "0.1.0"
-source = "git+https://github.com/scaraven/proof-systems?rev=3699b58#3699b5846cdd6b0937aef7843e113a2dcb73367d"
+source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -1922,7 +1922,7 @@ dependencies = [
 [[package]]
 name = "mina-signer"
 version = "0.1.0"
-source = "git+https://github.com/scaraven/proof-systems?rev=3699b58#3699b5846cdd6b0937aef7843e113a2dcb73367d"
+source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -2021,7 +2021,7 @@ dependencies = [
 [[package]]
 name = "o1-utils"
 version = "0.1.0"
-source = "git+https://github.com/scaraven/proof-systems?rev=3699b58#3699b5846cdd6b0937aef7843e113a2dcb73367d"
+source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
 dependencies = [
  "ark-ec",
  "ark-ff",
