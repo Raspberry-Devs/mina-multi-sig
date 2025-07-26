@@ -9,16 +9,16 @@ use super::config::Config;
 
 /// **TESTING ONLY** - See security warnings in `Command::TrustedDealer`.
 /// Generates FROST key shares using a trusted dealer approach
-/// 
+///
 /// Creates secret shares for a threshold signature scheme where any `threshold` participants
 /// can collaborate to create valid group signatures.
 ///
 /// # Returns
-/// 
+///
 /// - Secret shares map for each participant
 /// - Public key package for the group
 #[allow(clippy::type_complexity)]
-pub fn trusted_dealer_keygen<C: Ciphersuite, R: RngCore + CryptoRng>(
+pub fn keygen<C: Ciphersuite, R: RngCore + CryptoRng>(
     config: &Config,
     rng: &mut R,
 ) -> Result<(BTreeMap<Identifier<C>, SecretShare<C>>, PublicKeyPackage<C>), Error<C>> {

@@ -1,4 +1,22 @@
-//! HTTP implementation of the Comms trait.
+//! HTTP-based communication implementation for FROST DKG
+//!
+//! This module provides an HTTP client implementation of the `Comms` trait,
+//! enabling FROST distributed key generation over HTTPS connections through
+//! a coordination server.
+//!
+//! # Architecture
+//!
+//! The HTTP implementation uses a client-server model where:
+//! - A coordination server facilitates message exchange between participants
+//! - Each participant connects as an HTTP client to the server
+//! - The server handles session management, message routing, and consistency
+//!
+//! # Security Features
+//!
+//! - **Authentication**: Participants authenticate using cryptographic signatures
+//! - **Encryption**: Round 2 messages (secret shares) are encrypted end-to-end
+//! - **Integrity**: All messages are signed and verified
+//! - **Echo Broadcast**: Round 1 uses echo broadcast for consistency guarantees
 
 use std::{
     collections::{BTreeMap, HashMap},
@@ -16,21 +34,22 @@ use frost_core::{
     Ciphersuite, Identifier,
 };
 
-use crate::cipher::Cipher;
+use super::Comms;
 use crate::client::Client;
 use crate::{
     api::{self, PublicKey, Uuid},
     session::DKGSessionState,
 };
+use crate::{cipher::Cipher, dkg::config::Config};
 use rand::thread_rng;
 
-use super::super::args::ProcessedArgs;
-use super::Comms;
-
+/// This struct manages HTTP client connections to a coordination server,
+/// handling authentication, session management, and secure message exchange
+/// between DKG participants.
 pub struct HTTPComms<C: Ciphersuite> {
     client: Client,
     session_id: Option<Uuid>,
-    args: ProcessedArgs<C>,
+    config: Config,
     state: DKGSessionState<C>,
     identifier: Option<Identifier<C>>,
     pubkeys: HashMap<PublicKey, Identifier<C>>,
@@ -39,11 +58,11 @@ pub struct HTTPComms<C: Ciphersuite> {
 }
 
 impl<C: Ciphersuite> HTTPComms<C> {
-    pub fn new(args: &ProcessedArgs<C>) -> Result<Self, Box<dyn Error>> {
+    pub fn new(config: Config) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
-            client: Client::new(format!("https://{}:{}", args.ip, args.port)),
+            client: Client::new(format!("https://{}:{}", config.ip, config.port)),
             session_id: None,
-            args: args.clone(),
+            config: config,
             state: DKGSessionState::default(),
             identifier: None,
             pubkeys: Default::default(),
@@ -53,31 +72,45 @@ impl<C: Ciphersuite> HTTPComms<C> {
     }
 }
 
+/// Implementation of the `Comms` trait for HTTP-based DKG communication
+///
+/// This implementation handles the HTTP-specific details of:
+/// - Server authentication using challenge-response
+/// - Session management and participant coordination
+/// - Message encryption/decryption for sensitive data
+/// - Error handling and cleanup for network failures
 #[async_trait(?Send)]
 impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
+    /// Authenticate with server and establish DKG session participation
     async fn get_identifier_and_max_signers(
         &mut self,
         _input: &mut dyn BufRead,
         _output: &mut dyn Write,
     ) -> Result<(Identifier<C>, u16), Box<dyn Error>> {
+        // Initialize cryptographically secure random number generator
         let mut rng = thread_rng();
 
+        // --------------- Authentication with Challenge-Response-----------------
         eprintln!("Logging in...");
+        // Request authentication challenge from server
         let challenge = self.client.challenge().await?.challenge;
 
+        // Sign the challenge with our private communication key
         let signature: [u8; 64] = self
-            .args
+            .config
             .comm_privkey
             .clone()
             .ok_or_eyre("comm_privkey must be specified")?
             .sign(challenge.as_bytes(), &mut rng)?;
 
+        // Get our public key for server verification
         let comm_pubkey = self
-            .args
+            .config
             .comm_pubkey
             .clone()
             .ok_or_eyre("comm_pubkey must be specified")?;
 
+        // Submit signed challenge to complete authentication
         self.client
             .login(&api::LoginArgs {
                 challenge,
@@ -86,22 +119,26 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             })
             .await?;
 
-        let session_id = if !self.args.participants.is_empty() {
+        // -------------- Session Management --------------------
+        let session_id = if !self.config.participants.is_empty() {
+            // Coordinator role: Create new DKG session with specified participants
             eprintln!("Creating DKG session...");
             let r = self
                 .client
                 .create_new_session(&api::CreateNewSessionArgs {
-                    pubkeys: self.args.participants.clone(),
-                    message_count: 1,
+                    pubkeys: self.config.participants.clone(),
+                    message_count: 1, // DKG requires 1 message exchange per round
                 })
                 .await?;
             r.session_id
         } else {
+            // Participant role: Join existing DKG session
             eprintln!("Joining DKG session...");
             match self.session_id {
+                // Use explicitly provided session ID
                 Some(s) => s,
                 None => {
-                    // Get session ID from server
+                    // Auto-discover session ID from server
                     let r = self.client.list_sessions().await?;
                     if r.session_ids.len() > 1 {
                         return Err(eyre!("user has more than one FROST session active; use `frost-client sessions` to list them and specify the session ID with `-S`").into());
@@ -112,15 +149,20 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                 }
             }
         };
+        // Store session ID for future API calls
         self.session_id = Some(session_id);
 
+        // --------------- Participant Discovery and Identifier Derivation -----------------
         eprintln!("Getting session info...");
-        // Get all participants' public keys, and derive their identifiers
-        // from them.
+        // Retrieve the complete list of participants in this session
         let session_info = self
             .client
             .get_session_info(&api::GetSessionInfoArgs { session_id })
             .await?;
+
+        // Derive deterministic FROST identifiers for all participants
+        // Each identifier is computed as: derive(session_id || participant_pubkey)
+        // This ensures all participants compute the same identifiers in the same order
         self.pubkeys = session_info
             .pubkeys
             .iter()
@@ -132,11 +174,12 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             })
             .collect::<Result<_, frost_core::Error<C>>>()?;
 
+        // Validate minimum participants for DKG security
         if self.pubkeys.len() < 2 {
             return Err(eyre!("DKG session must have at least 2 participants").into());
         }
 
-        // Copy the pubkeys into the state.
+        // Update internal protocol state with participant information
         match self.state {
             DKGSessionState::WaitingForRound1Packages {
                 ref mut pubkeys, ..
@@ -146,16 +189,18 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             _ => unreachable!("wrong state"),
         }
 
-        // Compute this user's identifier by deriving it from the concatenation
-        // of the session ID and the communication public key.
-        // This ensures the identifier is unique and that participants can
-        // derive each other's identifiers.
+        // -------------- Compute This Participant's Identifier -----------------
+        // Use the same derivation method to compute our own identifier
+        // This ensures consistency with how other participants compute our identifier
         let input = [session_id.as_bytes(), &comm_pubkey.0[..]].concat();
         let identifier = Identifier::<C>::derive(&input)?;
         self.identifier = Some(identifier);
+
+        // Return our identifier and the total number of participants
         Ok((identifier, self.pubkeys.len() as u16))
     }
 
+    /// Perform Round 1 message exchange using echo broadcast
     async fn get_round1_packages(
         &mut self,
         _input: &mut dyn BufRead,
@@ -163,8 +208,8 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         round1_package: round1::Package<C>,
     ) -> Result<BTreeMap<Identifier<C>, round1::Package<C>>, Box<dyn Error>> {
         let (Some(comm_privkey), Some(comm_participant_pubkey_getter)) = (
-            &self.args.comm_privkey,
-            &self.args.comm_participant_pubkey_getter,
+            &self.config.comm_privkey,
+            &self.config.comm_participant_pubkey_getter,
         ) else {
             return Err(
                 eyre!("comm_privkey and comm_participant_pubkey_getter must be specified").into(),
@@ -182,7 +227,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
 
         // Send Round 1 Package to all other participants
         for pubkey in self.pubkeys.clone().keys() {
-            if Some(pubkey) == self.args.comm_pubkey.as_ref() {
+            if Some(pubkey) == self.config.comm_pubkey.as_ref() {
                 continue;
             }
             let msg = cipher.encrypt(Some(pubkey), serde_json::to_vec(&round1_package)?)?;
@@ -224,7 +269,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             // Broadcast received Round 1 Packages to all other participants
             for (recipient_pubkey, recipient_identifier) in self.pubkeys.clone().iter() {
                 // No need to broadcast to oneself
-                if Some(recipient_pubkey) == self.args.comm_pubkey.as_ref() {
+                if Some(recipient_pubkey) == self.config.comm_pubkey.as_ref() {
                     continue;
                 }
                 for (sender_identifier, package) in self.state.round1_packages()?.iter() {
@@ -273,6 +318,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         self.state.round1_packages()
     }
 
+    /// Perform Round 2 message exchange with secure delivery
     async fn get_round2_packages(
         &mut self,
         _input: &mut dyn BufRead,
@@ -282,7 +328,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         let cipher = self.cipher.as_mut().expect("was just set");
         // Send Round 2 Packages to all other participants
         for (pubkey, identifier) in self.pubkeys.clone().into_iter() {
-            if Some(&pubkey) == self.args.comm_pubkey.as_ref() {
+            if Some(&pubkey) == self.config.comm_pubkey.as_ref() {
                 continue;
             }
             let msg = cipher.encrypt(
@@ -325,7 +371,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         }
         eprintln!();
 
-        if !self.args.participants.is_empty() {
+        if !self.config.participants.is_empty() {
             let _r = self
                 .client
                 .close_session(&api::CloseSessionArgs {
@@ -339,6 +385,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         self.state.round2_packages()
     }
 
+    /// Retrieve the mapping between communication keys and FROST identifiers
     fn get_pubkey_identifier_map(
         &self,
     ) -> Result<HashMap<PublicKey, Identifier<C>>, Box<dyn Error>> {
@@ -348,6 +395,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         }
     }
 
+    /// Cleanup on error: close the session if it was created
     async fn cleanup_on_error(&mut self) -> Result<(), Box<dyn Error>> {
         if let Some(session_id) = self.session_id {
             let _r = self

@@ -1,4 +1,3 @@
-pub mod cli;
 pub mod http;
 
 use crate::cipher::PublicKey;
@@ -19,6 +18,19 @@ use async_trait::async_trait;
 use frost::Identifier;
 
 #[async_trait(?Send)]
+/// Communication abstraction for FROST distributed key generation (DKG)
+///
+/// This trait defines the interface for coordinating DKG protocol messages between
+/// participants. It abstracts the underlying communication mechanism (HTTP, P2P, etc.)
+/// and provides a consistent API for the DKG protocol implementation.
+///
+/// # Protocol Flow
+///
+/// The DKG process follows this communication pattern:
+/// 1. **Setup**: Establish participant identifiers and group size
+/// 2. **Round 1**: Exchange commitment packages via echo broadcast
+/// 3. **Round 2**: Exchange secret share packages securely
+/// 4. **Cleanup**: Handle any errors or cleanup tasks
 pub trait Comms<C: Ciphersuite> {
     /// Return this participant's identifier (in case it's derived from other
     /// information) and the number of participants in the signing session.

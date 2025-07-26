@@ -115,8 +115,6 @@ pub enum Command {
         /// The server URL through which DKG will be run.
         #[arg(short, long)]
         server_url: String,
-        #[arg(short = 'C', long, default_value = "ed25519")]
-        ciphersuite: String,
         /// The threshold (minimum number of signers).
         #[arg(short = 't', long)]
         threshold: u16,
