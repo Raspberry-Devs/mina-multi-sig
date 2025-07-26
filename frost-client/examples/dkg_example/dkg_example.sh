@@ -160,7 +160,6 @@ cargo run --bin frost-client -- dkg \
     -s "$SERVER_URL" \
     -S "$BOB_PUBLIC_KEY,$EVE_PUBLIC_KEY" \
     -t 2 \
-    -C bluepallas \
     -c "$GENERATED_DIR/alice.toml" &
 ALICE_DKG_PID=$!
 
@@ -174,7 +173,6 @@ cargo run --bin frost-client -- dkg \
     -d "$GROUP_NAME" \
     -s "$SERVER_URL" \
     -t 2 \
-    -C bluepallas \
     -c "$GENERATED_DIR/bob.toml" &
 BOB_DKG_PID=$!
 
@@ -188,7 +186,6 @@ cargo run --bin frost-client -- dkg \
     -d "$GROUP_NAME" \
     -s "$SERVER_URL" \
     -t 2 \
-    -C bluepallas \
     -c "$GENERATED_DIR/eve.toml" &
 EVE_DKG_PID=$!
 

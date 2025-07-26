@@ -1,7 +1,6 @@
-#[cfg(test)]
-mod tests;
-
-pub mod args;
-pub mod cli;
 pub mod comms;
-pub mod inputs;
+pub mod config;
+pub mod keygen;
+
+pub use config::Config;
+pub use keygen::keygen;

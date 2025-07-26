@@ -142,7 +142,6 @@ echo ""
 
 # Get Alice's public key for coordination
 ALICE_CONTACTS=$(cargo run --bin frost-client contacts -c "$GENERATED_DIR/alice.toml" 2>&1)
-echo "AAA $ALICE_CONTACTS"
 ALICE_PUBLIC_KEY=$(echo "$ALICE_CONTACTS" | grep -A1 "Name: Alice" | grep "Public Key:" | cut -d' ' -f3 || echo "")
 
 # Get Bob's public key
