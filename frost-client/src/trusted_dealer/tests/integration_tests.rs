@@ -1,10 +1,10 @@
 use frost_bluepallas as frost;
 
-use frost::aggregate;
 use super::helpers::{key_package, round_1, round_2};
-use rand::thread_rng;
 use crate::trusted_dealer::config::Config;
-use crate::trusted_dealer::trusted_dealer_keygen::trusted_dealer_keygen;
+use crate::trusted_dealer::keygen::keygen as trusted_dealer_keygen;
+use frost::aggregate;
+use rand::thread_rng;
 
 #[test]
 fn check_keygen_with_dealer() {
@@ -13,8 +13,7 @@ fn check_keygen_with_dealer() {
         min_signers: 2,
         max_signers: 3,
     };
-    let (shares, pubkeys) =
-        trusted_dealer_keygen(&config, &mut rng).unwrap();
+    let (shares, pubkeys) = trusted_dealer_keygen(&config, &mut rng).unwrap();
 
     let key_packages = key_package(&shares);
     let (nonces, commitments) = round_1(config.min_signers, &mut rng, &key_packages);
@@ -33,8 +32,7 @@ fn check_keygen_with_dealer_with_large_num_of_signers() {
         min_signers: 14,
         max_signers: 20,
     };
-    let (shares, pubkeys) =
-        trusted_dealer_keygen(&config, &mut rng).unwrap();
+    let (shares, pubkeys) = trusted_dealer_keygen(&config, &mut rng).unwrap();
 
     let key_packages = key_package(&shares);
     let (nonces, commitments) = round_1(config.min_signers, &mut rng, &key_packages);

@@ -1,8 +1,8 @@
 pub mod config;
-pub mod trusted_dealer_keygen;
+pub mod keygen;
 
 pub use config::Config;
-pub use trusted_dealer_keygen::{trusted_dealer_keygen};
+pub use keygen::keygen;
 
 #[cfg(test)]
 mod tests;

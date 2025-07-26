@@ -16,10 +16,10 @@ use super::{
 use crate::trusted_dealer;
 
 /// CLI entry point for trusted dealer key generation
-/// 
+///
 /// Generates FROST key shares using PallasPoseidon ciphersuite and updates
 /// participant config files with group information.
-/// 
+///
 /// **TESTING ONLY** - See security warnings in `Command::TrustedDealer`.
 pub fn trusted_dealer(args: &Command) -> Result<(), Box<dyn Error>> {
     trusted_dealer_for_ciphersuite::<PallasPoseidon>(args)
@@ -50,15 +50,12 @@ pub(crate) fn trusted_dealer_for_ciphersuite<C: Ciphersuite + 'static>(
         return Err(eyre!("The `names` option must specify `num_signers` names").into());
     }
 
-    let trusted_dealer_config = trusted_dealer::Config::new::<C>(
-        threshold,
-        num_signers, 
-    )?;
+    let trusted_dealer_config = trusted_dealer::Config::new::<C>(threshold, num_signers)?;
     let mut rng = thread_rng();
 
     // Generate key shares
     let (shares, public_key_package) =
-        trusted_dealer::trusted_dealer_keygen::<C, _>(&trusted_dealer_config, &mut rng)?;
+        trusted_dealer::keygen::<C, _>(&trusted_dealer_config, &mut rng)?;
 
     // Extract participant information from config files
     let (participants, contacts) = extract_participant_info(&shares, &config, &names)?;
@@ -78,7 +75,7 @@ pub(crate) fn trusted_dealer_for_ciphersuite<C: Ciphersuite + 'static>(
 }
 
 /// Extract participant information from config files
-/// 
+///
 /// This function reads each participant's config file and extracts their communication
 /// keys to build both the participants map and contacts list.
 fn extract_participant_info<C: Ciphersuite>(
@@ -88,7 +85,7 @@ fn extract_participant_info<C: Ciphersuite>(
 ) -> Result<(BTreeMap<String, Participant>, Vec<Contact>), Box<dyn Error>> {
     let mut participants = BTreeMap::new();
     let mut contacts = Vec::new();
-    
+
     for (identifier, path, name) in izip!(shares.keys(), config_paths.iter(), names.iter()) {
         let config = Config::read(Some(path.to_string()))?;
         let pubkey = config
@@ -108,12 +105,12 @@ fn extract_participant_info<C: Ciphersuite>(
         };
         contacts.push(contact);
     }
-    
+
     Ok((participants, contacts))
 }
 
 /// Update config files with group information
-/// 
+///
 /// This function takes the generated key shares and updates each participant's config
 /// file with the group information, including their key package and all participants.
 fn update_config_files<C: Ciphersuite + 'static>(
@@ -151,6 +148,6 @@ fn update_config_files<C: Ciphersuite + 'static>(
         }
         config.write()?;
     }
-    
+
     Ok(())
 }

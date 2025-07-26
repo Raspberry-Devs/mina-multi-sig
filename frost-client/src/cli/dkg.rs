@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use eyre::{eyre, Context as _, OptionExt};
+use eyre::{Context as _, OptionExt};
 
 use frost_core::Ciphersuite;
 use reqwest::Url;
@@ -16,20 +16,17 @@ use super::{
 };
 
 use crate::api;
-use crate::dkg::{args, cli};
+use crate::dkg;
 
+/// CLI entry point for distributed key generation
+///
+/// Generates FROST key shares using distributed key generation protocol
+/// and updates the participant config file with group information.
 pub async fn dkg(args: &Command) -> Result<(), Box<dyn Error>> {
-    let Command::Dkg { ciphersuite, .. } = (*args).clone() else {
-        panic!("invalid Command");
-    };
-
-    if ciphersuite == "bluepallas" {
-        dkg_for_ciphersuite::<frost_bluepallas::PallasPoseidon>(args).await
-    } else {
-        Err(eyre!("unsupported ciphersuite").into())
-    }
+    dkg_for_ciphersuite::<frost_bluepallas::PallasPoseidon>(args).await
 }
 
+/// Distributed key generation for a specific ciphersuite
 pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
 ) -> Result<(), Box<dyn Error>> {
@@ -37,7 +34,6 @@ pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + 'static>(
         config: config_path,
         description,
         server_url,
-        ciphersuite: _,
         threshold,
         participants,
     } = (*args).clone()
@@ -48,7 +44,42 @@ pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + 'static>(
     let mut input = Box::new(std::io::stdin().lock());
     let mut output = std::io::stdout();
 
-    let config = Config::read(config_path.clone())?;
+    // Setup DKG configuration
+    let dkg_config =
+        setup_dkg_config::<C>(config_path.clone(), &server_url, threshold, &participants)?;
+
+    // Generate key shares through DKG
+    let (key_package, public_key_package, pubkey_map) =
+        dkg::keygen::<C>(dkg_config, &mut input, &mut output).await?;
+    let key_package = Zeroizing::new(key_package);
+
+    // Create participants map from DKG results
+    let participants_map = create_participants_map(&public_key_package, pubkey_map)?;
+
+    // Update config file with group information
+    update_config_with_group::<C>(
+        config_path,
+        &description,
+        &server_url,
+        &key_package,
+        &public_key_package,
+        &participants_map,
+    )?;
+
+    Ok(())
+}
+
+/// Setup DKG configuration from command line arguments and config file
+///
+/// This function reads the participant's config file, parses the server URL,
+/// and constructs the DKG configuration needed for key generation.
+fn setup_dkg_config<C: Ciphersuite + 'static>(
+    config_path: Option<String>,
+    server_url: &str,
+    threshold: u16,
+    participants: &[String],
+) -> Result<dkg::Config, Box<dyn Error>> {
+    let config = Config::read(config_path)?;
 
     let server_url_parsed =
         Url::parse(&format!("https://{}", server_url)).wrap_err("error parsing server-url")?;
@@ -69,9 +100,7 @@ pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + 'static>(
         participants.push(comm_pubkey.clone());
     }
 
-    let dkg_config = args::ProcessedArgs {
-        cli: false,
-        http: true,
+    let dkg_config = dkg::Config {
         ip: server_url_parsed
             .host_str()
             .ok_or_eyre("host missing in URL")?
@@ -95,26 +124,32 @@ pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + 'static>(
                 .ok()
         })),
         min_signers: threshold,
-        max_signers: None,
         participants,
-        identifier: None,
     };
 
-    // Generate key shares
-    let (key_package, public_key_package, pubkey_map) =
-        cli::cli_for_processed_args::<C>(dkg_config, &mut input, &mut output).await?;
-    let key_package = Zeroizing::new(key_package);
+    Ok(dkg_config)
+}
 
-    // Reverse pubkey_map
-    let pubkey_map = pubkey_map
+/// Create participants map from DKG results
+///
+/// This function processes the DKG output to create a map of participants
+/// with their identifiers and public keys.
+fn create_participants_map<C: Ciphersuite>(
+    public_key_package: &frost_core::keys::PublicKeyPackage<C>,
+    pubkey_map: HashMap<api::PublicKey, frost_core::Identifier<C>>,
+) -> Result<BTreeMap<String, Participant>, Box<dyn Error>> {
+    // Reverse pubkey_map to get identifier -> pubkey mapping
+    let identifier_to_pubkey = pubkey_map
         .into_iter()
-        .map(|(k, v)| (v, k))
+        .map(|(pubkey, identifier)| (identifier, pubkey))
         .collect::<HashMap<_, _>>();
 
     // Create participants map
     let mut participants = BTreeMap::new();
     for identifier in public_key_package.verifying_shares().keys() {
-        let pubkey = pubkey_map.get(identifier).ok_or_eyre("missing pubkey")?;
+        let pubkey = identifier_to_pubkey
+            .get(identifier)
+            .ok_or_eyre("missing pubkey")?;
         let participant = Participant {
             identifier: identifier.serialize(),
             pubkey: pubkey.clone(),
@@ -122,14 +157,30 @@ pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + 'static>(
         participants.insert(hex::encode(identifier.serialize()), participant);
     }
 
+    Ok(participants)
+}
+
+/// Update config file with group information
+///
+/// This function takes the generated key package and updates the participant's config
+/// file with the group information.
+fn update_config_with_group<C: Ciphersuite + 'static>(
+    config_path: Option<String>,
+    description: &str,
+    server_url: &str,
+    key_package: &Zeroizing<frost_core::keys::KeyPackage<C>>,
+    public_key_package: &frost_core::keys::PublicKeyPackage<C>,
+    participants: &BTreeMap<String, Participant>,
+) -> Result<(), Box<dyn Error>> {
     let group = Group {
         ciphersuite: C::ID.to_string(),
-        description: description.clone(),
-        key_package: postcard::to_allocvec(&key_package)?,
-        public_key_package: postcard::to_allocvec(&public_key_package)?,
+        description: description.to_string(),
+        key_package: postcard::to_allocvec(key_package)?,
+        public_key_package: postcard::to_allocvec(public_key_package)?,
         participant: participants.clone(),
-        server_url: Some(server_url.clone()),
+        server_url: Some(server_url.to_string()),
     };
+
     // Re-read the config because the old instance is tied to the
     // `comm_participant_pubkey_getter` callback.
     // TODO: is this an issue?
