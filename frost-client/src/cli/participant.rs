@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::rc::Rc;
 
-use eyre::eyre;
 use eyre::Context;
 use eyre::OptionExt;
 use reqwest::Url;
@@ -10,32 +9,20 @@ use frost_bluepallas::PallasPoseidon;
 use frost_core::keys::KeyPackage;
 use frost_core::Ciphersuite;
 
-use super::{args::Command, config::Config};
+use super::{args::Command, config::Config as CliConfig};
 
-use crate::participant::args;
-use crate::participant::cli::cli_for_processed_args;
+use crate::participant::sign;
+use crate::participant::Config as ParticipantConfig;
 
 pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
-    let Command::Participant { config, group, .. } = (*args).clone() else {
-        panic!("invalid Command");
-    };
-
-    let config = Config::read(config)?;
-
-    let group = config.group.get(&group).ok_or_eyre("Group not found")?;
-
-    if group.ciphersuite == PallasPoseidon::ID {
-        run_for_ciphersuite::<PallasPoseidon>(args).await
-    } else {
-        Err(eyre!("unsupported ciphersuite").into())
-    }
+    run_for_ciphersuite::<PallasPoseidon>(args).await
 }
 
 pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
 ) -> Result<(), Box<dyn Error>> {
     let Command::Participant {
-        config,
+        config: config_path,
         server_url,
         group,
         session,
@@ -44,9 +31,12 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
         panic!("invalid Command");
     };
 
-    let config = Config::read(config)?;
+    let user_config = CliConfig::read(config_path)?;
 
-    let group = config.group.get(&group).ok_or_eyre("Group not found")?;
+    let group = user_config
+        .group
+        .get(&group)
+        .ok_or_eyre("Group not found")?;
 
     let key_package: KeyPackage<C> = postcard::from_bytes(&group.key_package)?;
 
@@ -62,9 +52,8 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
         Url::parse(&format!("https://{}", server_url)).wrap_err("error parsing server-url")?;
 
     let group_participants = group.participant.clone();
-    let pargs = args::ProcessedArgs {
-        cli: false,
-        http: true,
+    let pargs = ParticipantConfig::<C> {
+        socket: false,
         key_package,
         ip: server_url_parsed
             .host_str()
@@ -75,7 +64,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
             .expect("always works for https"),
         session_id: session.unwrap_or_default(),
         comm_privkey: Some(
-            config
+            user_config
                 .communication_key
                 .clone()
                 .ok_or_eyre("user not initialized")?
@@ -83,7 +72,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
                 .clone(),
         ),
         comm_pubkey: Some(
-            config
+            user_config
                 .communication_key
                 .ok_or_eyre("user not initialized")?
                 .pubkey
@@ -97,7 +86,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
         })),
     };
 
-    cli_for_processed_args(pargs, &mut input, &mut output).await?;
+    sign(pargs, &mut input, &mut output).await?;
 
     Ok(())
 }

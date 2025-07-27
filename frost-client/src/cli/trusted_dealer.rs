@@ -21,12 +21,12 @@ use crate::trusted_dealer;
 /// participant config files with group information.
 ///
 /// **TESTING ONLY** - See security warnings in `Command::TrustedDealer`.
-pub fn trusted_dealer(args: &Command) -> Result<(), Box<dyn Error>> {
-    trusted_dealer_for_ciphersuite::<PallasPoseidon>(args)
+pub fn run(args: &Command) -> Result<(), Box<dyn Error>> {
+    run_for_ciphersuite::<PallasPoseidon>(args)
 }
 
 /// Trusted dealer key generation for a specific ciphersuite
-pub(crate) fn trusted_dealer_for_ciphersuite<C: Ciphersuite + 'static>(
+pub(crate) fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
 ) -> Result<(), Box<dyn Error>> {
     let Command::TrustedDealer {

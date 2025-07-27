@@ -37,6 +37,7 @@ pub enum Message<C: Ciphersuite> {
 
 #[async_trait(?Send)]
 pub trait Comms<C: Ciphersuite> {
+    /// Get the signing package from the server.
     async fn get_signing_package(
         &mut self,
         input: &mut dyn BufRead,
@@ -71,6 +72,7 @@ pub trait Comms<C: Ciphersuite> {
         Ok(())
     }
 
+    /// Send the signature share to the server.
     async fn send_signature_share(
         &mut self,
         identifier: Identifier<C>,

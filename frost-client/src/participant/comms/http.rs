@@ -17,7 +17,7 @@ use crate::api::{self, SendSigningPackageArgs, Uuid};
 use crate::cipher::Cipher;
 use crate::client::Client;
 
-use super::super::args::ProcessedArgs;
+use super::super::config::Config;
 use super::Comms;
 
 /// A Noise state.
@@ -105,7 +105,7 @@ pub struct HTTPComms<C: Ciphersuite> {
     client: Client,
     session_id: Option<Uuid>,
     access_token: Option<String>,
-    args: ProcessedArgs<C>,
+    args: Config<C>,
     cipher: Option<Cipher>,
     _phantom: PhantomData<C>,
 }
@@ -115,7 +115,7 @@ impl<C> HTTPComms<C>
 where
     C: Ciphersuite,
 {
-    pub fn new(args: &ProcessedArgs<C>) -> Result<Self, Box<dyn Error>> {
+    pub fn new(args: &Config<C>) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             client: Client::new(format!("https://{}:{}", args.ip, args.port)),
             session_id: Uuid::parse_str(&args.session_id).ok(),

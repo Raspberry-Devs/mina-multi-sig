@@ -22,12 +22,12 @@ use crate::dkg;
 ///
 /// Generates FROST key shares using distributed key generation protocol
 /// and updates the participant config file with group information.
-pub async fn dkg(args: &Command) -> Result<(), Box<dyn Error>> {
-    dkg_for_ciphersuite::<frost_bluepallas::PallasPoseidon>(args).await
+pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
+    run_for_ciphersuite::<frost_bluepallas::PallasPoseidon>(args).await
 }
 
 /// Distributed key generation for a specific ciphersuite
-pub(crate) async fn dkg_for_ciphersuite<C: Ciphersuite + 'static>(
+pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
 ) -> Result<(), Box<dyn Error>> {
     let Command::Dkg {

@@ -18,8 +18,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Command::Groups { .. } => cli::group::list(&args.command),
         Command::RemoveGroup { .. } => cli::group::remove(&args.command),
         Command::Sessions { .. } => cli::session::list(&args.command).await,
-        Command::TrustedDealer { .. } => cli::trusted_dealer::trusted_dealer(&args.command),
-        Command::Dkg { .. } => cli::dkg::dkg(&args.command).await,
+        Command::TrustedDealer { .. } => cli::trusted_dealer::run(&args.command),
+        Command::Dkg { .. } => cli::dkg::run(&args.command).await,
         Command::Coordinator { .. } => cli::coordinator::run(&args.command).await,
         Command::Participant { .. } => cli::participant::run(&args.command).await,
     }?;
