@@ -7,6 +7,9 @@ use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
 use crate::{errors::BluePallasError, PallasScalarField};
 
+// Currently, the FROST interface only allows for static function calls, which means that passing context-related
+// information must be done through global variables or thread-local storage.
+// Since we expect FROST to be single-threaded, we use thread-local storage to pass in the NetworkID.
 thread_local! {
     // set network id to be the testnet by default
     static NETWORK_ID: RefCell<Option<NetworkId>> = const { RefCell::new(Some(NetworkId::TESTNET)) }
