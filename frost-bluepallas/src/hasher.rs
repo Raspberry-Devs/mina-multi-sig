@@ -5,14 +5,18 @@ use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
 use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
-use crate::PallasScalarField;
+use crate::{errors::BluePallasError, PallasScalarField};
 
+// Currently, the FROST interface only allows for static function calls, which means that passing context-related
+// information must be done through global variables or thread-local storage.
+// Since we expect FROST to be single-threaded, we use thread-local storage to pass in the NetworkID.
 thread_local! {
+    // set network id to be the testnet by default
     static NETWORK_ID: RefCell<Option<NetworkId>> = const { RefCell::new(Some(NetworkId::TESTNET)) }
 }
 
 /// Set the network ID for the current thread
-pub fn set_network_id(network_id: NetworkId) -> Result<(), String> {
+pub fn set_network_id(network_id: NetworkId) -> Result<(), BluePallasError> {
     NETWORK_ID.with(|id| {
         *id.borrow_mut() = Some(network_id);
     });
@@ -20,16 +24,14 @@ pub fn set_network_id(network_id: NetworkId) -> Result<(), String> {
 }
 
 /// Get the network ID for the current thread, returns error if not set
-pub fn get_network_id() -> Result<NetworkId, String> {
-    NETWORK_ID.with(|id| {
-        id.borrow()
-            .clone()
-            .ok_or_else(|| "NetworkId not set. Call set_network_id() first.".to_string())
-    })
+pub fn get_network_id() -> Result<NetworkId, BluePallasError> {
+    NETWORK_ID.with(|id| id.borrow().clone().ok_or(BluePallasError::NetworkIdNotSet))
 }
 
+/// This is a Hashable interface for an array of bytes
+/// This allows us to provide a easy-to-read interface for hashing FROST elements in H1, H3, H4, H5
 #[derive(Clone, Debug)]
-struct PallasHashElement<'a> {
+pub(crate) struct PallasHashElement<'a> {
     value: &'a [&'a [u8]],
 }
 
@@ -97,6 +99,8 @@ impl Hashable for PallasMessage {
     }
 }
 
+/// This allows us to hash a Mina/FROST signature
+/// Follows the Mina signing specification at https://github.com/MinaProtocol/mina/blob/develop/docs/specs/signatures/description.md
 #[derive(Clone)]
 struct Message<H: Hashable> {
     input: H,
@@ -124,11 +128,19 @@ where
     }
 }
 
-pub fn message_hash<H>(pub_key: &PubKey, rx: BaseField, input: H) -> ScalarField
+/// Hashes the message using the Mina hasher, given a hashable message and a NetworkId
+/// Currently, the FROST Ciphersuite implementation only allows for static function calls
+/// This means that any context related information must be passed either through global variables or thread-local values
+/// As we ONLY expect FROST to be single-threaded, we opt to use thread-local storage to pass in the NetworkID
+pub fn message_hash<H>(
+    pub_key: &PubKey,
+    rx: BaseField,
+    input: H,
+) -> Result<ScalarField, BluePallasError>
 where
     H: Hashable<D = NetworkId>,
 {
-    let network_id = get_network_id().expect("NetworkId must be set before calling message_hash");
+    let network_id = get_network_id()?;
     let mut hasher = mina_hasher::create_legacy::<Message<H>>(network_id);
 
     let schnorr_input = Message::<H> {
@@ -141,7 +153,7 @@ where
     // Squeeze and convert from base field element to scalar field element
     // Since the difference in modulus between the two fields is < 2^125, w.h.p., a
     // random value from one field will fit in the other field.
-    ScalarField::from(hasher.hash(&schnorr_input).into_bigint())
+    Ok(ScalarField::from(hasher.hash(&schnorr_input).into_bigint()))
 }
 
 type Fq = <PallasScalarField as Field>::Scalar;
@@ -162,4 +174,51 @@ pub fn hash_to_array(input: &[&[u8]]) -> <PallasScalarField as frost_core::Field
     let scalar = hash_to_scalar(input);
 
     PallasScalarField::serialize(&scalar)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mina_signer::Keypair;
+
+    #[test]
+    fn test_hash_to_scalar_is_deterministic_and_differs() {
+        let input = &[&b"abc"[..]];
+        let s1 = hash_to_scalar(input);
+        let s2 = hash_to_scalar(input);
+        assert_eq!(s1, s2, "same input must yield same scalar");
+
+        let other = &[&b"def"[..]];
+        let s3 = hash_to_scalar(other);
+        assert_ne!(s1, s3, "different input must yield a different scalar");
+    }
+
+    #[test]
+    fn test_hash_to_array_length() {
+        let arr = hash_to_array(&[&b"hello"[..]]);
+        // Serialization for PallasScalarField is 32 bytes
+        assert_eq!(arr.len(), 32);
+    }
+
+    #[test]
+    fn test_message_hash_is_consistent() {
+        let mut rng = rand_core::OsRng;
+        let pubkey = Keypair::rand(&mut rng).unwrap().public;
+        let rx = BaseField::from(42u64);
+
+        let msg = PallasMessage::new(b"unit test".to_vec());
+
+        // TESTNET
+        set_network_id(NetworkId::TESTNET).unwrap();
+        let h1 = message_hash(&pubkey, rx, msg.clone()).unwrap();
+
+        // repeat must be same
+        let h2 = message_hash(&pubkey, rx, msg.clone()).unwrap();
+        assert_eq!(h1, h2);
+
+        // MAINNET should give a different domain, hence a different hash
+        set_network_id(NetworkId::MAINNET).unwrap();
+        let h3 = message_hash(&pubkey, rx, msg).unwrap();
+        assert_ne!(h1, h3);
+    }
 }

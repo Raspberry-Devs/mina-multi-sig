@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate as frost;
+use crate::{self as frost};
 use rand_core::{CryptoRng, RngCore};
 
 /// Helper function to sign a message using existing key packages
@@ -31,8 +31,8 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
 
     // In practice, each iteration of this loop will be executed by its respective participant.
     for participant_index in 1..=min_signers {
-        let participant_identifier =
-            frost::Identifier::try_from(participant_index as u16).expect("should be nonzero");
+        let participant_identifier = frost::Identifier::try_from(participant_index as u16)
+            .map_err(|_| frost::Error::MalformedIdentifier)?;
         let key_package = &key_packages[&participant_identifier];
         // Generate one (1) nonce and one SigningCommitments instance for each
         // participant, up to _threshold_.
@@ -83,7 +83,6 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
 
 /// Helper function which uses FROST to generate a signature, message and verifying key to use in tests.
 /// This uses trusted dealer rather than DKG
-#[allow(dead_code)]
 pub fn generate_signature_random<R: RngCore + CryptoRng>(
     message: &[u8],
     mut rng: R,
@@ -102,7 +101,6 @@ pub fn generate_signature_random<R: RngCore + CryptoRng>(
 
 /// Helper function which splits an existing signing key into FROST shares and generates a signature.
 /// This uses the split function to create shares from a single signing key.
-#[allow(dead_code)]
 pub fn generate_signature_from_sk<R: RngCore + CryptoRng>(
     message: &[u8],
     signing_key: &frost::SigningKey,
