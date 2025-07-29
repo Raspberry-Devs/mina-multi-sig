@@ -4,6 +4,7 @@ use crate::cipher::{PrivateKey, PublicKey};
 use frost_core::{keys::KeyPackage, Ciphersuite};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
+/// Configuration for the participant in the FROST signing protocol.
 #[derive(Clone, Zeroize)]
 pub struct Config<C: Ciphersuite> {
     // Web Sockets mode. If enabled, it will use Web Sockets communication with a

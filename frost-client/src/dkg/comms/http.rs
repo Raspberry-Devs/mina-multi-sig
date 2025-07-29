@@ -62,7 +62,7 @@ impl<C: Ciphersuite> HTTPComms<C> {
         Ok(Self {
             client: Client::new(format!("https://{}:{}", config.ip, config.port)),
             session_id: None,
-            config: config,
+            config,
             state: DKGSessionState::default(),
             identifier: None,
             pubkeys: Default::default(),

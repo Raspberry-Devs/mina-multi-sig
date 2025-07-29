@@ -6,7 +6,7 @@ default-run = "frost-client"
 
 [[bin]]
 name = "test-vector"
-path = "src/test_vector_gen.rs"
+path = "src/scripts/test_vector_gen.rs"
 
 [[bin]]
 name = "frost-client"

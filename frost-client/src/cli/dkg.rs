@@ -45,8 +45,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     let mut output = std::io::stdout();
 
     // Setup DKG configuration
-    let dkg_config =
-        setup_dkg_config::<C>(config_path.clone(), &server_url, threshold, &participants)?;
+    let dkg_config = setup_dkg_config(config_path.clone(), &server_url, threshold, &participants)?;
 
     // Generate key shares through DKG
     let (key_package, public_key_package, pubkey_map) =
@@ -73,7 +72,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
 ///
 /// This function reads the participant's config file, parses the server URL,
 /// and constructs the DKG configuration needed for key generation.
-fn setup_dkg_config<C: Ciphersuite + 'static>(
+fn setup_dkg_config(
     config_path: Option<String>,
     server_url: &str,
     threshold: u16,

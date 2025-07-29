@@ -15,6 +15,10 @@ use super::{
 
 use crate::trusted_dealer;
 
+/// Type alias for participant extraction result
+type ParticipantExtractionResult =
+    Result<(BTreeMap<String, Participant>, Vec<Contact>), Box<dyn Error>>;
+
 /// CLI entry point for trusted dealer key generation
 ///
 /// Generates FROST key shares using PallasPoseidon ciphersuite and updates
@@ -82,7 +86,7 @@ fn extract_participant_info<C: Ciphersuite>(
     shares: &BTreeMap<frost_core::Identifier<C>, frost_core::keys::SecretShare<C>>,
     config_paths: &[String],
     names: &[String],
-) -> Result<(BTreeMap<String, Participant>, Vec<Contact>), Box<dyn Error>> {
+) -> ParticipantExtractionResult {
     let mut participants = BTreeMap::new();
     let mut contacts = Vec::new();
 

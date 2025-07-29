@@ -10,6 +10,9 @@ use rand::thread_rng;
 use std::io::{BufRead, Write};
 use zeroize::Zeroizing;
 
+/// Implementation of the participation in the FROST protocol.
+/// This function handles the signing process for a participant.
+/// The signing process needs to be started by a coordinator first.
 pub async fn sign<C: Ciphersuite + 'static>(
     config: Config<C>,
     input: &mut impl BufRead,
