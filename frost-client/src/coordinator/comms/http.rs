@@ -24,13 +24,13 @@ use crate::{
     session::CoordinatorSessionState,
 };
 
-use super::super::args::ProcessedArgs;
+use super::super::config::Config;
 use super::Comms;
 
 pub struct HTTPComms<C: Ciphersuite> {
     client: Client,
     session_id: Option<Uuid>,
-    args: ProcessedArgs<C>,
+    config: Config<C>,
     state: CoordinatorSessionState<C>,
     pubkeys: HashMap<PublicKey, Identifier<C>>,
     cipher: Option<Cipher>,
@@ -38,15 +38,15 @@ pub struct HTTPComms<C: Ciphersuite> {
 }
 
 impl<C: Ciphersuite> HTTPComms<C> {
-    pub fn new(args: &ProcessedArgs<C>) -> Result<Self, Box<dyn Error>> {
+    pub fn new(config: &Config<C>) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
-            client: Client::new(format!("https://{}:{}", args.ip, args.port)),
+            client: Client::new(format!("https://{}:{}", config.ip, config.port)),
             session_id: None,
-            args: args.clone(),
+            config: config.clone(),
             state: CoordinatorSessionState::new(
-                args.messages.len(),
-                args.num_signers as usize,
-                args.signers.clone(),
+                config.messages.len(),
+                config.num_signers as usize,
+                config.signers.clone(),
             ),
             pubkeys: Default::default(),
             cipher: None,
@@ -70,7 +70,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         let challenge = self.client.challenge().await?.challenge;
 
         let signature: [u8; 64] = self
-            .args
+            .config
             .comm_privkey
             .clone()
             .ok_or_eyre("comm_privkey must be specified")?
@@ -80,7 +80,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             .login(&api::LoginArgs {
                 challenge,
                 pubkey: self
-                    .args
+                    .config
                     .comm_pubkey
                     .clone()
                     .ok_or_eyre("comm_pubkey must be specified")?,
@@ -92,12 +92,12 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         let r = self
             .client
             .create_new_session(&api::CreateNewSessionArgs {
-                pubkeys: self.args.signers.keys().cloned().collect(),
+                pubkeys: self.config.signers.keys().cloned().collect(),
                 message_count: 1,
             })
             .await?;
 
-        if self.args.signers.is_empty() {
+        if self.config.signers.is_empty() {
             eprintln!(
                 "Send the following session ID to participants: {}",
                 r.session_id
@@ -105,7 +105,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         }
         self.session_id = Some(r.session_id);
 
-        let Some(comm_privkey) = &self.args.comm_privkey else {
+        let Some(comm_privkey) = &self.config.comm_privkey else {
             return Err(eyre!("comm_privkey must be specified").into());
         };
 
@@ -113,7 +113,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
 
         let mut cipher = Cipher::new(
             comm_privkey.clone(),
-            self.args.signers.keys().cloned().collect(),
+            self.config.signers.keys().cloned().collect(),
         )?;
 
         eprint!("Waiting for participants to send their commitments...");
@@ -158,7 +158,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             .cipher
             .as_mut()
             .expect("cipher must have been set before");
-        let send_signing_package_args = SendSigningPackageArgs {
+        let send_signing_package_config = SendSigningPackageArgs {
             signing_package: vec![signing_package.clone()],
             aux_msg: Default::default(),
         };
@@ -170,7 +170,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         for recipient in pubkeys {
             let msg = cipher.encrypt(
                 Some(&recipient),
-                serde_json::to_vec(&send_signing_package_args)?,
+                serde_json::to_vec(&send_signing_package_config)?,
             )?;
             let _r = self
                 .client

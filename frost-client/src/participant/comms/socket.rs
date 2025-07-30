@@ -20,7 +20,7 @@ use std::{
     marker::PhantomData,
 };
 
-use super::super::args::ProcessedArgs;
+use super::super::config::Config;
 use super::{Comms, Message};
 
 pub struct SocketComms<C: Ciphersuite> {
@@ -34,7 +34,7 @@ impl<C> SocketComms<C>
 where
     C: Ciphersuite,
 {
-    pub fn new(args: &ProcessedArgs<C>) -> Self {
+    pub fn new(args: &Config<C>) -> Self {
         let (handler, listener) = node::split::<()>();
         let addr = format!("{}:{}", args.ip, args.port);
         let (tx, rx) = mpsc::channel(2000); // Don't need to receive the endpoint. Change this

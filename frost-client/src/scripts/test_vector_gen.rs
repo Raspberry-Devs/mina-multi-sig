@@ -3,7 +3,6 @@ use frost_core::{
     keys::{IdentifierList, KeyPackage},
     round1, round2, SigningPackage,
 };
-use hex;
 use rand::SeedableRng;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -26,7 +25,7 @@ fn main() {
 
     // Pick participants for this signing round (1 and 3)
     let mut signers = BTreeMap::new();
-    let id_1 = shares.keys().nth(0).unwrap();
+    let id_1 = shares.keys().next().unwrap();
     let id_2 = shares.keys().nth(1).unwrap(); // Keep id_2 for the pubkey package
     let id_3 = shares.keys().nth(2).unwrap();
     signers.insert(*id_1, key_packages.get(id_1).unwrap());
@@ -62,7 +61,7 @@ fn main() {
 
     // 6. Print all values for mod.rs
     println!("// New values generated for bluepallas. Copy and paste this entire block into the get_helpers() function.");
-    println!("");
+    println!();
 
     println!(
         "let participant_id_1 = \"{}\".to_string();",
@@ -113,7 +112,7 @@ fn main() {
         "let verifying_key = \"{}\".to_string();",
         hex::encode(pubkey_package.verifying_key().serialize().unwrap())
     );
-    println!("");
+    println!();
 
     let hiding_commitment_1_str =
         hex::encode(commitments.get(id_1).unwrap().hiding().serialize().unwrap());
@@ -152,13 +151,13 @@ fn main() {
         "let binding_commitment_3 = \"{}\".to_string();",
         binding_commitment_3_str
     );
-    println!("");
+    println!();
     println!("let message = \"{}\".to_string();", message_hex);
     println!(
         "let group_signature = r#\"{}\"#.to_string();",
         serde_json::to_string(&group_signature).unwrap()
     );
-    println!("");
+    println!();
     println!("// JSON messages");
     println!(
         "let commitments_from_part_1 = r#\"{}\"#.to_string();",
@@ -180,12 +179,12 @@ fn main() {
             }
         })
     );
-    println!("");
+    println!();
     println!(
         "let signing_package_helper = r#\"{}\"#.to_string();",
         serde_json::to_string(&signing_package).unwrap()
     );
-    println!("");
+    println!();
     println!(
         "let signature_1 = r#\"{}\"#.to_string();",
         serde_json::to_string(signature_shares.get(id_1).unwrap()).unwrap()
@@ -194,12 +193,12 @@ fn main() {
         "let signature_3 = r#\"{}\"#.to_string();",
         serde_json::to_string(signature_shares.get(id_3).unwrap()).unwrap()
     );
-    println!("");
+    println!();
     println!(
         "let pub_key_package = r#\"{}\"#.to_string();",
         serde_json::to_string(&pubkey_package).unwrap()
     );
-    println!("");
+    println!();
     println!(
         "let commitments_input_1 = r#\"{}\"#.to_string();",
         json!({

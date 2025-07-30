@@ -1,4 +1,3 @@
-pub mod cli;
 pub mod http;
 pub mod socket;
 
@@ -20,6 +19,7 @@ use frost::{
     Identifier, SigningPackage,
 };
 
+/// Types of messages exchanged between coordinator and participants
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "self::serde")]
 #[serde(bound = "C: Ciphersuite")]
@@ -35,6 +35,8 @@ pub enum Message<C: Ciphersuite> {
     SignatureShare(SignatureShare<C>),
 }
 
+/// Trait for communication between coordinator and participants
+/// Implementations will most likely use forstd server
 #[async_trait(?Send)]
 pub trait Comms<C: Ciphersuite> {
     async fn get_signing_commitments(

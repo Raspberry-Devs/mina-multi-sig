@@ -1,10 +1,6 @@
-pub mod args;
-pub mod cli;
 pub mod comms;
+pub mod config;
+pub mod sign;
 
-pub mod input;
-pub mod round1;
-pub mod round2;
-
-#[cfg(test)]
-mod tests;
+pub use config::Config;
+pub use sign::sign;

@@ -1,4 +1,3 @@
-pub mod cli;
 pub mod http;
 pub mod socket;
 
@@ -35,8 +34,10 @@ pub enum Message<C: Ciphersuite> {
     SignatureShare(SignatureShare<C>),
 }
 
+/// Trait for communication with the server in the FROST protocol.
 #[async_trait(?Send)]
 pub trait Comms<C: Ciphersuite> {
+    /// Get the signing package from the server.
     async fn get_signing_package(
         &mut self,
         input: &mut dyn BufRead,
@@ -71,6 +72,7 @@ pub trait Comms<C: Ciphersuite> {
         Ok(())
     }
 
+    /// Send the signature share to the server.
     async fn send_signature_share(
         &mut self,
         identifier: Identifier<C>,
