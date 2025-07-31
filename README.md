@@ -64,7 +64,7 @@ cargo run --bin frost-client -- dkg \
   -d "Alice, Bob and Eve" \
   -s localhost:2744 \
   -S <BOB_PUBLIC_KEY>,<EVE_PUBLIC_KEY> \
-  -t 2 -C bluepallas -c alice.toml
+  -t 2 -c alice.toml
 
 # Each participant joins the DKG
 cargo run --bin frost-client -- dkg \
