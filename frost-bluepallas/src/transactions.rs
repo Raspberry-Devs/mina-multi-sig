@@ -1,8 +1,10 @@
-#![allow(dead_code)]
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::{CompressedPubKey, NetworkId, PubKey};
 
-use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde::{
+    ser::{Serialize, SerializeStruct, Serializer},
+    Deserialize,
+};
 
 /// Copied from https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs
 const MEMO_BYTES: usize = 34;
@@ -47,6 +49,38 @@ impl Serialize for Transaction {
         state.serialize_field("memo", &memo_str)?;
         state.serialize_field("valid_until", &self.valid_until.to_string())?;
         state.end()
+    }
+}
+impl<'de> Deserialize<'de> for Transaction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct TransactionData {
+            to: String,
+            from: String,
+            fee: String,
+            amount: String,
+            nonce: String,
+            memo: String,
+            valid_until: String,
+        }
+
+        let data = TransactionData::deserialize(deserializer)?;
+
+        let from = PubKey::from_address(&data.from).map_err(serde::de::Error::custom)?;
+        let to = PubKey::from_address(&data.to).map_err(serde::de::Error::custom)?;
+        let fee = data.fee.parse().map_err(serde::de::Error::custom)?;
+        let amount = data.amount.parse().map_err(serde::de::Error::custom)?;
+        let nonce = data.nonce.parse().map_err(serde::de::Error::custom)?;
+        let valid_until = data.valid_until.parse().map_err(serde::de::Error::custom)?;
+
+        let tx = Transaction::new_payment(from, to, amount, fee, nonce)
+            .set_memo_str(&data.memo)
+            .set_valid_until(valid_until);
+
+        Ok(tx)
     }
 }
 
@@ -145,5 +179,152 @@ impl Transaction {
         // Anything beyond MEMO_BYTES is truncated
 
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mina_signer::{PubKey, SecKey};
+    use rand_core::SeedableRng;
+
+    fn create_test_pubkey(seed: [u8; 32]) -> PubKey {
+        // Create a deterministic test pubkey
+        let mut rng = rand_chacha::ChaCha12Rng::from_seed(seed);
+        let sec = SecKey::rand(&mut rng);
+        PubKey::from_secret_key(sec).unwrap()
+    }
+
+    #[test]
+    fn test_payment_serialization_roundtrip() {
+        let from = create_test_pubkey([1; 32]);
+        let to = create_test_pubkey([2; 32]);
+        let original = Transaction::new_payment(from, to, 1000000, 10000, 42)
+            .set_memo_str("test memo")
+            .set_valid_until(12345);
+
+        let json = serde_json::to_string(&original).unwrap();
+        let deserialized: Transaction = serde_json::from_str(&json).unwrap();
+
+        // Compare key fields
+        assert_eq!(original.source_pk.x, deserialized.source_pk.x);
+        assert_eq!(original.receiver_pk.x, deserialized.receiver_pk.x);
+        assert_eq!(original.amount, deserialized.amount);
+        assert_eq!(original.fee, deserialized.fee);
+        assert_eq!(original.nonce, deserialized.nonce);
+        assert_eq!(original.valid_until, deserialized.valid_until);
+        assert_eq!(original.memo, deserialized.memo);
+    }
+
+    #[test]
+    fn test_delegation_serialization_roundtrip() {
+        let from = create_test_pubkey([3; 32]);
+        let to = create_test_pubkey([4; 32]);
+        let original = Transaction::new_delegation(from, to, 5000, 100).set_valid_until(54321);
+
+        let json = serde_json::to_string(&original).unwrap();
+        let deserialized: Transaction = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(original.source_pk.x, deserialized.source_pk.x);
+        assert_eq!(original.receiver_pk.x, deserialized.receiver_pk.x);
+        assert_eq!(original.amount, deserialized.amount);
+        assert_eq!(original.fee, deserialized.fee);
+        assert_eq!(original.nonce, deserialized.nonce);
+        assert_eq!(original.valid_until, deserialized.valid_until);
+    }
+
+    #[test]
+    fn test_deserialize_invalid_nonce_string() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "amount": "1000000",
+            "nonce": "not_a_number",
+            "memo": "test",
+            "valid_until": "12345"
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_invalid_fee_negative() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "-10000",
+            "amount": "1000000",
+            "nonce": "42",
+            "memo": "test",
+            "valid_until": "12345"
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_invalid_amount_overflow() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "amount": "18446744073709551616",
+            "nonce": "42",
+            "memo": "test",
+            "valid_until": "12345"
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_invalid_nonce_overflow() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "amount": "1000000",
+            "nonce": "4294967296",
+            "memo": "test",
+            "valid_until": "12345"
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_invalid_address() {
+        let json = r#"{
+            "to": "invalid_address",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "amount": "1000000",
+            "nonce": "42",
+            "memo": "test",
+            "valid_until": "12345"
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_missing_field() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "nonce": "42",
+            "memo": "test",
+            "valid_until": "12345"
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
     }
 }
