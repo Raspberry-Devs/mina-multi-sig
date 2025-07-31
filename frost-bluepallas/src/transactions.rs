@@ -53,7 +53,7 @@ impl Serialize for Transaction {
             .to_string();
 
         // Serialize memo as a string, dropping the header bytes
-        // If length of memo is less than MEMO_HEADER_BYTES, it means it's empty ---
+        // If length of memo is less than MEMO_HEADER_BYTES, it means it's empty
         if memo_str.len() < MEMO_HEADER_BYTES {
             state.serialize_field("memo", "")?;
         } else {
@@ -92,7 +92,7 @@ impl<'de> Deserialize<'de> for Transaction {
         let nonce = data.nonce.parse().map_err(serde::de::Error::custom)?;
         let valid_until = data.valid_until.parse().map_err(serde::de::Error::custom)?;
 
-        // Switch case statement
+        // Match transaction tag to determine whether we have a payment or delegation transaction
         let tx = match data.tag {
             PAYMENT_TX_TAG => Transaction::new_payment(from, to, amount, fee, nonce)
                 .set_memo_str(&data.memo)
