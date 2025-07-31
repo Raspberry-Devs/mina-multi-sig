@@ -5,7 +5,7 @@ use crate::{
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::{translate::Translatable, PallasPoseidon};
+use frost_bluepallas::{transactions::Transaction, PallasPoseidon};
 use frost_core::keys::PublicKeyPackage;
 use frost_core::Ciphersuite;
 use reqwest::Url;
@@ -73,10 +73,10 @@ pub fn read_messages(
     message_paths: &[String],
     output: &mut dyn Write,
     input: &mut dyn BufRead,
-) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
+) -> Result<Vec<Transaction>, Box<dyn Error>> {
     let messages = if message_paths.is_empty() {
         writeln!(output, "The message to be signed (json string)")?;
-        vec![load_transaction_from_stdin(input)?.translate_msg()]
+        vec![load_transaction_from_stdin(input)?]
     } else {
         message_paths
             .iter()
@@ -90,7 +90,6 @@ pub fn read_messages(
                 };
                 Ok(msg)
             })
-            .map(|res| res.map(|tx| tx.translate_msg()))
             .collect::<Result<_, Box<dyn Error>>>()?
     };
     Ok(messages)
