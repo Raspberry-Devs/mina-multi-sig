@@ -1,3 +1,5 @@
+use core::fmt;
+
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::{CompressedPubKey, NetworkId, PubKey};
 
@@ -145,6 +147,39 @@ impl Hashable for Transaction {
 impl Translatable for Transaction {
     fn translate_msg(&self) -> Vec<u8> {
         self.to_roinput().serialize()
+    }
+}
+
+impl fmt::Display for Transaction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let memo_str = match self.memo.len() {
+            len if len < MEMO_HEADER_BYTES => String::new(),
+            _ => self.memo[MEMO_HEADER_BYTES..]
+                .iter()
+                .take_while(|&&b| b != 0)
+                .map(|&b| b as char)
+                .collect::<String>(),
+        };
+
+        let tx_type = match self.tag {
+            PAYMENT_TX_TAG => "payment",
+            DELEGATION_TX_TAG => "delegation",
+            _ => "unknown",
+        };
+
+        write!(
+            f,
+            "{{\n  \"type\": \"{}\",\n  \"to\": \"{}\",\n  \"from\": \"{}\",\n  \"fee\": \"{}\",\n  \"amount\": \"{}\",\n  \"nonce\": \"{}\",\n  \"valid_until\": \"{}\",\n  \"memo\": \"{}\",\n  \"tag\": {:?}\n}}",
+            tx_type,
+            self.receiver_pk.into_address(),
+            self.source_pk.into_address(),
+            self.fee,
+            self.amount,
+            self.nonce,
+            self.valid_until,
+            memo_str,
+            self.tag
+        )
     }
 }
 

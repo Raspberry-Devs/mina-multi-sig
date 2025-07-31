@@ -122,6 +122,9 @@ pub struct SendSigningPackageArgs<C: Ciphersuite> {
         deserialize_with = "serdect::slice::deserialize_hex_or_bin_vec"
     )]
     pub aux_msg: Vec<u8>,
+    /// Optional JSON representation of the original message
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message_json: Option<String>,
 }
 
 /// An error. Wraps a StatusCode which is returned by the server when the

@@ -70,7 +70,7 @@ cargo run --bin frost-client -- dkg \
 cargo run --bin frost-client -- dkg \
   -d "Alice, Bob and Eve" \
   -s localhost:2744 \
-  -t 2 -C bluepallas -c bob.toml
+  -t 2 -c bob.toml
 ```
 
 ### View Groups
