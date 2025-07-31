@@ -6,6 +6,8 @@ use serde::{
     Deserialize,
 };
 
+use crate::translate::Translatable;
+
 /// Copied from https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs
 const MEMO_BYTES: usize = 34;
 const MEMO_HEADER_BYTES: usize = 2; // 0x01 + length byte
@@ -137,6 +139,12 @@ impl Hashable for Transaction {
         }
         .to_string()
         .into()
+    }
+}
+
+impl Translatable for Transaction {
+    fn translate_msg(&self) -> Vec<u8> {
+        self.to_roinput().serialize()
     }
 }
 

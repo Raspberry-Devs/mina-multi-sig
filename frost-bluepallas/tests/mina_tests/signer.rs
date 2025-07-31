@@ -4,7 +4,7 @@ use frost_bluepallas::{
     hasher::{set_network_id, PallasMessage},
     helper,
     transactions::Transaction,
-    translate::{translate_minask, translate_msg, translate_pk},
+    translate::{translate_minask, translate_pk, Translatable},
 };
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, NetworkId, PubKey, Signer};
@@ -40,7 +40,7 @@ fn signer_test_raw() {
     );
 
     // Generate FROST signature using the private key
-    let msg = translate_msg(&tx);
+    let msg = tx.translate_msg();
     let fr_sk =
         translate_minask(&kp).expect("failed to translate mina keypair to frost signing key");
 
@@ -101,7 +101,7 @@ fn sign_mina_tx() {
     .set_memo_str("Hello Mina!");
 
     // Generate FROST signature
-    let msg = translate_msg(&tx);
+    let msg = tx.translate_msg();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -153,7 +153,7 @@ fn sign_mina_tx_mainnet() {
     .set_memo_str("Mainnet Test!");
 
     // Generate FROST signature
-    let msg = translate_msg(&tx);
+    let msg = tx.translate_msg();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
