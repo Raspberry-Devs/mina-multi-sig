@@ -8,6 +8,7 @@ use serde::{
 
 /// Copied from https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs
 const MEMO_BYTES: usize = 34;
+const MEMO_HEADER_BYTES: usize = 2; // 0x01 + length byte
 const TAG_BITS: usize = 3;
 const PAYMENT_TX_TAG: [bool; TAG_BITS] = [false, false, false];
 const DELEGATION_TX_TAG: [bool; TAG_BITS] = [false, false, true];
@@ -46,11 +47,21 @@ impl Serialize for Transaction {
             .unwrap_or_default()
             .trim_end_matches(char::from(0))
             .to_string();
-        state.serialize_field("memo", &memo_str)?;
+
+        // Serialize memo as a string, dropping the header bytes
+        // If length of memo is less than MEMO_HEADER_BYTES, it means it's empty ---
+        if memo_str.len() < MEMO_HEADER_BYTES {
+            state.serialize_field("memo", "")?;
+        } else {
+            state.serialize_field("memo", &memo_str[MEMO_HEADER_BYTES..])?;
+        }
+
         state.serialize_field("valid_until", &self.valid_until.to_string())?;
+        state.serialize_field("tag", &self.tag)?;
         state.end()
     }
 }
+
 impl<'de> Deserialize<'de> for Transaction {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -65,6 +76,7 @@ impl<'de> Deserialize<'de> for Transaction {
             nonce: String,
             memo: String,
             valid_until: String,
+            tag: [bool; TAG_BITS],
         }
 
         let data = TransactionData::deserialize(deserializer)?;
@@ -76,9 +88,16 @@ impl<'de> Deserialize<'de> for Transaction {
         let nonce = data.nonce.parse().map_err(serde::de::Error::custom)?;
         let valid_until = data.valid_until.parse().map_err(serde::de::Error::custom)?;
 
-        let tx = Transaction::new_payment(from, to, amount, fee, nonce)
-            .set_memo_str(&data.memo)
-            .set_valid_until(valid_until);
+        // Switch case statement
+        let tx = match data.tag {
+            PAYMENT_TX_TAG => Transaction::new_payment(from, to, amount, fee, nonce)
+                .set_memo_str(&data.memo)
+                .set_valid_until(valid_until),
+            DELEGATION_TX_TAG => Transaction::new_delegation(from, to, fee, nonce)
+                .set_memo_str(&data.memo)
+                .set_valid_until(valid_until),
+            _ => return Err(serde::de::Error::custom("Invalid transaction tag")),
+        };
 
         Ok(tx)
     }
@@ -214,6 +233,7 @@ mod tests {
         assert_eq!(original.nonce, deserialized.nonce);
         assert_eq!(original.valid_until, deserialized.valid_until);
         assert_eq!(original.memo, deserialized.memo);
+        assert_eq!(original.tag, deserialized.tag);
     }
 
     #[test]
@@ -231,6 +251,7 @@ mod tests {
         assert_eq!(original.fee, deserialized.fee);
         assert_eq!(original.nonce, deserialized.nonce);
         assert_eq!(original.valid_until, deserialized.valid_until);
+        assert_eq!(original.tag, deserialized.tag);
     }
 
     #[test]
