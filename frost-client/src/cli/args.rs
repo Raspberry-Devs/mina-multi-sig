@@ -1,3 +1,4 @@
+use crate::network::Network;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Clone)]
@@ -189,6 +190,9 @@ pub enum Command {
         /// human-readable hex-string is printed to stdout.
         #[arg(short = 'o', long, default_value = "")]
         signature: String,
+        /// Network to use (testnet or mainnet)
+        #[arg(long, value_enum, default_value_t = Network::Testnet)]
+        network: Network,
     },
     /// Participate in a FROST signing session.
     Participant {

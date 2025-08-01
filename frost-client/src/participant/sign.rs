@@ -5,6 +5,8 @@ use super::comms::socket::SocketComms;
 
 use super::comms::Comms;
 
+use crate::network::Network;
+use frost_bluepallas::hasher::{set_network_mainnet, set_network_testnet};
 use frost_core::Ciphersuite;
 use rand::thread_rng;
 use std::io::{BufRead, Write};
@@ -42,6 +44,11 @@ pub async fn sign<C: Ciphersuite + 'static>(
     comms
         .confirm_message(input, logger, &round_2_config)
         .await?;
+
+    match Network::try_from(round_2_config.network_id).unwrap_or(Network::Testnet) {
+        Network::Testnet => set_network_testnet()?,
+        Network::Mainnet => set_network_mainnet()?,
+    }
 
     let signing_package = round_2_config.signing_package.first().unwrap();
 

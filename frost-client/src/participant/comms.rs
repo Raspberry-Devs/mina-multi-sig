@@ -30,6 +30,7 @@ pub enum Message<C: Ciphersuite> {
     },
     SigningPackage {
         signing_package: frost::SigningPackage<C>,
+        network_id: u8,
     },
     SignatureShare(SignatureShare<C>),
 }
@@ -61,7 +62,12 @@ pub trait Comms<C: Ciphersuite> {
     ) -> Result<(), Box<dyn Error>> {
         writeln!(
             output,
-            "Message to be signed (hex-encoded):\n{}\nDo you want to sign it? (y/n)",
+            "Network: {}\nMessage to be signed (hex-encoded):\n{}\nDo you want to sign it? (y/n)",
+            match signing_package.network_id {
+                0 => "TESTNET",
+                1 => "MAINNET",
+                _ => "UNKNOWN",
+            },
             hex::encode(signing_package.signing_package[0].message())
         )?;
         let mut sign_it = String::new();
