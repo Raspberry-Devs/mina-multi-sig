@@ -15,5 +15,15 @@ jobs:
         run: cargo build --verbose
       - name: Run tests
         run: cargo test --verbose
+      - name: Run DKG example
+        run: |
+          cd frost-client/examples/dkg_example
+          bash dkg_example.sh
+      - name: Run trusted dealer and signing examples
+        run: |
+          cd frost-client/examples/trusted_dealer_example
+          bash trusted_dealer_example.sh
+          cd ../signing_example
+          bash signing_example.sh
       - name: Check formatting
         run: cargo fmt --check
