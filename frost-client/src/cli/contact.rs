@@ -1,5 +1,8 @@
 use std::error::Error;
 
+/// Human readable part used when encoding/decoding contact strings.
+const CONTACT_HRP: &str = "minafrost";
+
 use crate::cipher::PublicKey;
 use eyre::{eyre, OptionExt};
 use serde::{Deserialize, Serialize};
@@ -33,14 +36,14 @@ impl Contact {
     /// Returns the contact encoded as a text string, with Bech32.
     pub fn as_text(&self) -> Result<String, Box<dyn Error>> {
         let bytes = postcard::to_allocvec(self)?;
-        let hrp = bech32::Hrp::parse("zffrost").expect("valid hrp");
+        let hrp = bech32::Hrp::parse(CONTACT_HRP).expect("valid hrp");
         Ok(bech32::encode::<bech32::Bech32m>(hrp, &bytes)?)
     }
 
     /// Creates a Contact from the given encoded text string.
     pub fn from_text(s: &str) -> Result<Self, Box<dyn Error>> {
         let (hrp, bytes) = bech32::decode(s)?;
-        if hrp.as_str() != "zffrost" {
+        if hrp.as_str() != CONTACT_HRP {
             return Err(eyre!("invalid contact format").into());
         }
         let contact: Contact = postcard::from_bytes(&bytes)?;

@@ -96,15 +96,15 @@ echo "========================================="
 echo "Generating contact strings..."
 
 echo "Generating Alice's contact..."
-ALICE_CONTACT=$(cargo run --bin frost-client -- export --name 'Alice' -c "$GENERATED_DIR/alice.toml" 2>&1 | grep "^zffrost" || true)
+ALICE_CONTACT=$(cargo run --bin frost-client -- export --name 'Alice' -c "$GENERATED_DIR/alice.toml" 2>&1 | grep "^minafrost" || true)
 echo "Alice's contact: '$ALICE_CONTACT'"
 
 echo "Generating Bob's contact..."
-BOB_CONTACT=$(cargo run --bin frost-client -- export --name 'Bob' -c "$GENERATED_DIR/bob.toml" 2>&1 | grep "^zffrost" || true)
+BOB_CONTACT=$(cargo run --bin frost-client -- export --name 'Bob' -c "$GENERATED_DIR/bob.toml" 2>&1 | grep "^minafrost" || true)
 echo "Bob's contact: '$BOB_CONTACT'"
 
 echo "Generating Eve's contact..."
-EVE_CONTACT=$(cargo run --bin frost-client -- export --name 'Eve' -c "$GENERATED_DIR/eve.toml" 2>&1 | grep "^zffrost" || true)
+EVE_CONTACT=$(cargo run --bin frost-client -- export --name 'Eve' -c "$GENERATED_DIR/eve.toml" 2>&1 | grep "^minafrost" || true)
 echo "Eve's contact: '$EVE_CONTACT'"
 
 echo ""
