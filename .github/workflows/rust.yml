@@ -22,12 +22,15 @@ jobs:
       - name: Run DKG example
         run: |
           cd frost-client/examples/dkg_example
+          mkcert localhost 127.0.0.1 ::1 2>/dev/null
           bash dkg_example.sh
       - name: Run trusted dealer and signing examples
         run: |
           cd frost-client/examples/trusted_dealer_example
+          mkcert localhost 127.0.0.1 ::1 2>/dev/null
           bash trusted_dealer_example.sh
           cd ../signing_example
+          mkcert localhost 127.0.0.1 ::1 2>/dev/null
           bash signing_example.sh
       - name: Check formatting
         run: cargo fmt --check
