@@ -4,6 +4,12 @@ Forked from https://github.com/ZcashFoundation/frost-zcash-demo/tree/main/frost-
 # Zcash Foundation original documentation
 https://frost.zfnd.org/zcash/ywallet-demo.html
 
+## Network selection
+
+The `coordinator` subcommand accepts a `--network` flag to choose between
+`testnet` (default) and `mainnet`. The chosen network is sent to participants
+for confirmation before signing.
+
 # Trusted Dealer
 
 ## Example

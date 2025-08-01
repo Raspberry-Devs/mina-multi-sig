@@ -31,6 +31,7 @@ pub enum Message<C: Ciphersuite> {
     },
     SigningPackage {
         signing_package: SigningPackage<C>,
+        network_id: u8,
     },
     SignatureShare(SignatureShare<C>),
 }
