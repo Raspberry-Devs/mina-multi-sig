@@ -4,7 +4,7 @@ use ark_ff::BigInteger;
 use frost_bluepallas::{
     hasher::{message_hash, PallasMessage},
     transactions::Transaction,
-    translate::{translate_msg, translate_pk, translate_sig},
+    translate::{translate_pk, translate_sig, Translatable},
     PallasGroup,
 };
 use frost_core::{Ciphersuite, Group};
@@ -127,7 +127,7 @@ fn roi_mina_tx() {
     .set_valid_until(271828)
     .set_memo_str("Hello Mina!");
 
-    let msg = PallasMessage::new(translate_msg(&tx));
+    let msg = PallasMessage::new(tx.translate_msg());
     assert_eq!(
         msg.to_roinput(),
         tx.to_roinput(),

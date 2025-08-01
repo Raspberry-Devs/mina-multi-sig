@@ -126,11 +126,25 @@ echo "Generating message to sign"
 echo "========================================="
 
 # Create a test message to sign
-TEST_MESSAGE="Hello, FROST signing world! This is a test message for the signing example."
+TEST_MESSAGE="
+{
+  \"to\": \"B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1\",
+  \"from\": \"B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1\",
+  \"fee\": \"1000000000\",
+  \"amount\": \"1000000000\",
+  \"nonce\": \"1\",
+  \"memo\": \"Hello Mina x FROST from the Rasp\",
+  \"valid_until\": \"4294967295\",
+  \"tag\": [
+    false,
+    false,
+    false
+  ]
+}"
 echo "Message to sign: $TEST_MESSAGE"
 
 # Save message to file for coordinator
-echo -n "$TEST_MESSAGE" > "$GENERATED_DIR/message.txt"
+echo -n "$TEST_MESSAGE" > "$GENERATED_DIR/message.json"
 
 echo ""
 echo "========================================="
@@ -147,7 +161,7 @@ ALICE_PUBLIC_KEY=$(echo "$ALICE_CONTACTS" | grep -A1 "Name: Alice" | grep "Publi
 # Get Bob's public key
 BOB_PUBLIC_KEY=$(echo "$ALICE_CONTACTS" | grep -A1 "Name: Bob" | grep "Public Key:" | cut -d' ' -f3)
 
-# Get Eve's public key  
+# Get Eve's public key
 EVE_PUBLIC_KEY=$(echo "$ALICE_CONTACTS" | grep -A1 "Name: Eve" | grep "Public Key:" | cut -d' ' -f3)
 
 echo "Alice's public key: $ALICE_PUBLIC_KEY"
@@ -172,7 +186,7 @@ cargo run --bin frost-client -- coordinator \
     --server-url "$SERVER_URL" \
     --group "$GROUP_PUBLIC_KEY" \
     -S "$BOB_PUBLIC_KEY,$EVE_PUBLIC_KEY" \
-    -m "$GENERATED_DIR/message.txt" \
+    -m "$GENERATED_DIR/message.json" \
     -o "$GENERATED_DIR/signature.hex" &
 COORDINATOR_PID=$!
 
@@ -235,7 +249,7 @@ if [ $COORDINATOR_EXIT -eq 0 ] && [ $BOB_EXIT -eq 0 ] && [ $EVE_EXIT -eq 0 ]; th
     echo ""
     echo "Original message: $TEST_MESSAGE"
     echo ""
-    
+
     if [ -f "$GENERATED_DIR/signature.hex" ]; then
         SIGNATURE=$(cat "$GENERATED_DIR/signature.hex")
         echo "Generated signature: $SIGNATURE"
@@ -244,7 +258,7 @@ if [ $COORDINATOR_EXIT -eq 0 ] && [ $BOB_EXIT -eq 0 ] && [ $EVE_EXIT -eq 0 ]; th
     else
         echo "⚠️  Signature file not found, but processes completed successfully."
     fi
-    
+
     echo ""
     echo "========================================="
     echo "Signature verification"
@@ -254,12 +268,12 @@ if [ $COORDINATOR_EXIT -eq 0 ] && [ $BOB_EXIT -eq 0 ] && [ $EVE_EXIT -eq 0 ]; th
     echo "against the original message using standard signature verification."
     echo ""
     echo "Files generated:"
-    echo "  - $GENERATED_DIR/message.txt (original message)"
+    echo "  - $GENERATED_DIR/message.json (original message)"
     echo "  - $GENERATED_DIR/signature.hex (FROST signature)"
     echo "  - $GENERATED_DIR/alice.toml (Alice's config)"
     echo "  - $GENERATED_DIR/bob.toml (Bob's config)"
     echo "  - $GENERATED_DIR/eve.toml (Eve's config)"
-    
+
 else
     echo "❌ FROST signing process failed!"
     echo "Exit codes: Coordinator=$COORDINATOR_EXIT, Bob=$BOB_EXIT, Eve=$EVE_EXIT"

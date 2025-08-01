@@ -27,12 +27,9 @@ pub fn translate_sig(fr_sig: &FrSig<PallasPoseidon>) -> Result<MinaSig> {
     Ok(MinaSig { rx, s: z })
 }
 
-/// Convert Hashable Mina message to Vec<u8>
-pub fn translate_msg<H>(msg: &H) -> Vec<u8>
-where
-    H: Hashable<D = NetworkId>,
-{
-    msg.to_roinput().serialize()
+/// Trait for types that can be translated to a Mina message
+pub trait Translatable: Hashable<D = NetworkId> {
+    fn translate_msg(&self) -> Vec<u8>;
 }
 
 pub fn translate_minask(msg: &mina_signer::Keypair) -> Result<SigningKey> {

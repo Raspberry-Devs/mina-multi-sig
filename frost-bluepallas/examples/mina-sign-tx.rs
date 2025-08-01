@@ -1,5 +1,5 @@
 use ark_ff::{BigInt, PrimeField};
-use frost_bluepallas::{transactions::Transaction, translate::translate_msg, Error};
+use frost_bluepallas::{transactions::Transaction, translate::Translatable, Error};
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, PubKey, Signer};
 use serde::{
@@ -69,11 +69,17 @@ fn main() -> Result<(), Error> {
         1,
     )
     .set_memo_str("Hello Mina x FROST from the Raspberry Devs!");
+
+    println!(
+        "Unsigned Transaction: {}",
+        serde_json::to_string_pretty(&tx).unwrap()
+    );
+
     //let tx = tx.set_memo_str("Hello World!");
     let signing_key = frost_bluepallas::translate::translate_minask(&mina_keypair)
         .map_err(|_| Error::DeserializationError)?;
 
-    let msg = translate_msg(&tx);
+    let msg = tx.translate_msg();
 
     // Sign the transaction with FROST
     let (sig, vk) =

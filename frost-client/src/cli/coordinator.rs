@@ -1,10 +1,11 @@
 use crate::{
     cipher::PublicKey,
     coordinator::{sign, Config as CoordinatorConfig},
+    helpers::txmsg::{load_transaction_from_json, load_transaction_from_stdin},
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::PallasPoseidon;
+use frost_bluepallas::{transactions::Transaction, PallasPoseidon};
 use frost_core::keys::PublicKeyPackage;
 use frost_core::Ciphersuite;
 use reqwest::Url;
@@ -72,24 +73,20 @@ pub fn read_messages(
     message_paths: &[String],
     output: &mut dyn Write,
     input: &mut dyn BufRead,
-) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
+) -> Result<Vec<Transaction>, Box<dyn Error>> {
     let messages = if message_paths.is_empty() {
-        writeln!(output, "The message to be signed (hex encoded)")?;
-        let mut msg = String::new();
-        input.read_line(&mut msg)?;
-        vec![hex::decode(msg.trim())?]
+        writeln!(output, "The message to be signed (json string)")?;
+        vec![load_transaction_from_stdin(input)?]
     } else {
         message_paths
             .iter()
             .map(|filename| {
                 let msg = if *filename == "-" || filename.is_empty() {
-                    writeln!(output, "The message to be signed (hex encoded)")?;
-                    let mut msg = String::new();
-                    input.read_line(&mut msg)?;
-                    hex::decode(msg.trim())?
+                    writeln!(output, "The message to be signed (json string)")?;
+                    load_transaction_from_stdin(input)?
                 } else {
                     eprintln!("Reading message from {}...", &filename);
-                    fs::read(filename)?
+                    load_transaction_from_json(filename)?
                 };
                 Ok(msg)
             })
