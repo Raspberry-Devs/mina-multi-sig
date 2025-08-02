@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::cipher::{PrivateKey, PublicKey};
-use frost_bluepallas::transactions::Transaction;
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Identifier};
 
 #[derive(Clone)]
@@ -19,7 +18,7 @@ pub struct Config<C: Ciphersuite> {
     pub public_key_package: PublicKeyPackage<C>,
 
     /// The messages to sign.
-    pub messages: Vec<Transaction>,
+    pub messages: Vec<Vec<u8>>,
 
     /// IP to bind to, if using socket comms.
     /// IP to connect to, if using HTTP mode.

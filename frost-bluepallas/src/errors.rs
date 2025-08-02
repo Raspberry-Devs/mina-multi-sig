@@ -2,6 +2,9 @@
 
 use std::fmt;
 
+// TODO: Replace with BluePallasError within
+pub type BluePallasResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
 /// Error enum for frost-bluepallas operations
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BluePallasError {

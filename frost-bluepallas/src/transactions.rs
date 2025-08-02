@@ -1,5 +1,6 @@
 use core::fmt;
 
+use mina_curves::pasta::Pallas;
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::{CompressedPubKey, NetworkId, PubKey};
 
@@ -8,7 +9,12 @@ use serde::{
     Deserialize,
 };
 
-use crate::translate::Translatable;
+const HEADER_BYTES: usize = 4;
+
+use crate::{
+    errors::{BluePallasError, BluePallasResult},
+    translate::Translatable,
+};
 
 /// Copied from https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs
 const MEMO_BYTES: usize = 34;
@@ -147,6 +153,43 @@ impl Hashable for Transaction {
 impl Translatable for Transaction {
     fn translate_msg(&self) -> Vec<u8> {
         self.to_roinput().serialize()
+    }
+
+    fn from_bytes(bytes: &[u8]) -> BluePallasResult<Self>
+    where
+        Self: Sized,
+    {
+        // Deserialize the bytes into ROInput
+        let roi = ROInput::deserialize(bytes)
+            .map_err(|_| BluePallasError::deserialization_error("Failed to deserialize ROInput"))?;
+
+        // TODO: Add pr to o1-labs/proof-systems so that we can directly retrieve the fields and bits
+
+        // Extract number of fields
+        let fields_len = u32::from_le_bytes(bytes[0..HEADER_BYTES].try_into().unwrap()) as usize;
+
+        // Convert to fields
+        let fields = roi
+            .to_fields()
+            .iter()
+            .take(fields_len)
+            .copied()
+            .collect::<Vec<_>>();
+
+        // First fields should be the x coordinates of the public keys
+        let fee_payer_pk = PubKey::from_point_unsafe(
+            Pallas::get_point_from_x_unchecked(fields[0], true).ok_or_else(|| {
+                BluePallasError::deserialization_error("Invalid fee payer public key")
+            })?,
+        );
+
+        let source_pk = PubKey::from_point_unsafe(
+            Pallas::get_point_from_x_unchecked(fields[1], true).ok_or_else(|| {
+                BluePallasError::deserialization_error("Invalid source public key")
+            })?,
+        );
+
+        todo!("Implement the rest of the deserialization logic for Transaction");
     }
 }
 

@@ -162,11 +162,6 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         let send_signing_package_config = SendSigningPackageArgs {
             signing_package: vec![signing_package.clone()],
             aux_msg: Default::default(),
-            message_json: self
-                .config
-                .messages
-                .first()
-                .and_then(|m| serde_json::to_string(m).ok()),
         };
 
         // We need to send a message separately for each recipient even if the
