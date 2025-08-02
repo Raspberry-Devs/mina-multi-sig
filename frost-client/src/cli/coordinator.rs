@@ -1,7 +1,6 @@
 use crate::{
     cipher::PublicKey,
     coordinator::{sign, Config as CoordinatorConfig},
-    helpers::txmsg::{load_transaction_from_json, load_transaction_from_stdin},
 };
 use eyre::Context;
 use eyre::OptionExt;
@@ -14,6 +13,7 @@ use std::{
     error::Error,
     fs,
     io::{BufRead, Write},
+    path::Path,
     vec,
 };
 
@@ -222,4 +222,21 @@ pub fn save_signature(
         println!("Signature saved to {}", signature_path);
     }
     Ok(())
+}
+
+fn load_transaction_from_json<P: AsRef<Path>>(
+    path: P,
+) -> Result<Transaction, Box<dyn std::error::Error>> {
+    let json_content = fs::read_to_string(path)?;
+    let transaction: Transaction = serde_json::from_str(json_content.trim())?;
+    Ok(transaction)
+}
+
+fn load_transaction_from_stdin(
+    input: &mut dyn BufRead,
+) -> Result<Transaction, Box<dyn std::error::Error>> {
+    let mut json_content = String::new();
+    input.read_to_string(&mut json_content)?;
+    let transaction: Transaction = serde_json::from_str(json_content.trim())?;
+    Ok(transaction)
 }

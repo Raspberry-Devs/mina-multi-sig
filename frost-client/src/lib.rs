@@ -4,7 +4,6 @@ pub mod cli;
 pub mod client;
 pub mod coordinator;
 pub mod dkg;
-pub mod helpers;
 pub mod participant;
 pub mod session;
 pub mod trusted_dealer;
