@@ -31,7 +31,6 @@ pub enum Message<C: Ciphersuite> {
     },
     SigningPackage {
         signing_package: SigningPackage<C>,
-        message_json: Option<String>,
     },
     SignatureShare(SignatureShare<C>),
 }

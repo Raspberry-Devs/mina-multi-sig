@@ -33,7 +33,6 @@ pub struct SocketComms<C: Ciphersuite> {
     input_rx: Receiver<(Endpoint, Vec<u8>)>,
     endpoints: BTreeMap<Identifier<C>, Endpoint>,
     handler: NodeHandler<()>,
-    message_json: Option<String>,
     _phantom: PhantomData<C>,
 }
 
@@ -52,10 +51,6 @@ impl<C: Ciphersuite> SocketComms<C> {
             input_rx: rx,
             endpoints: BTreeMap::new(),
             handler,
-            message_json: config
-                .messages
-                .first()
-                .and_then(|m| serde_json::to_string(m).ok()),
             _phantom: Default::default(),
         };
 
@@ -123,7 +118,6 @@ impl<C: Ciphersuite> Comms<C> for SocketComms<C> {
 
         let data = serde_json::to_vec(&Message::SigningPackage {
             signing_package: signing_package.clone(),
-            message_json: self.message_json.clone(),
         })?;
 
         for identifier in signing_package.signing_commitments().keys() {

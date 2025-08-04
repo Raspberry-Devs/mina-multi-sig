@@ -98,6 +98,24 @@ cargo run --bin frost-client -- participant \
   --group <GROUP_PUBLIC_KEY>
 ```
 
+## Example Transaction Message
+```json
+{
+  "to": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+  "from": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+  "fee": "1000000000",
+  "amount": "1000000000",
+  "nonce": "1",
+  "memo": "Hello Mina x FROST from the Rasp",
+  "valid_until": "4294967295",
+  "tag": [
+    false,
+    false,
+    false
+  ]
+}
+```
+
 ## Contributing
 
 Contributions are welcome!  Feel free to open issues or pull requests.  Please note that all code is licensed under the [Apache-2.0](LICENSE) license.

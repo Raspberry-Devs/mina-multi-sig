@@ -74,13 +74,16 @@ pub fn read_messages(
     output: &mut dyn Write,
     input: &mut dyn BufRead,
 ) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
+    // If no message paths are provided, read from stdin
     let messages = if message_paths.is_empty() {
         writeln!(output, "The message to be signed (json string)")?;
         vec![load_transaction_from_stdin(input)?.translate_msg()]
     } else {
+        // Otherwise, iterate over the provided paths and attempt to read each message
         message_paths
             .iter()
             .map(|filename| {
+                // If the filename is "-" or empty, read from stdin instead
                 let msg = if *filename == "-" || filename.is_empty() {
                     writeln!(output, "The message to be signed (json string)")?;
                     load_transaction_from_stdin(input)?
