@@ -7,6 +7,7 @@ edition = "2021"
 ark-ec.workspace = true
 ark-ff.workspace = true
 ark-serialize.workspace = true
+bitvec = "1.0.1"
 frost-core.workspace = true
 frost-rerandomized.workspace = true
 mina-curves.workspace = true

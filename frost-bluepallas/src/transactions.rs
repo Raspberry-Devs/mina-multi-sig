@@ -1,7 +1,9 @@
 use core::fmt;
 
+use ark_ff::PrimeField;
+use bitvec::prelude::*;
 use mina_curves::pasta::Pallas;
-use mina_hasher::{Hashable, ROInput};
+use mina_hasher::{Fp, Hashable, ROInput};
 use mina_signer::{CompressedPubKey, NetworkId, PubKey};
 
 use serde::{
@@ -23,7 +25,7 @@ const TAG_BITS: usize = 3;
 const PAYMENT_TX_TAG: [bool; TAG_BITS] = [false, false, false];
 const DELEGATION_TX_TAG: [bool; TAG_BITS] = [false, false, true];
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Transaction {
     // Common
     pub fee: u64,
@@ -177,19 +179,167 @@ impl Translatable for Transaction {
             .collect::<Vec<_>>();
 
         // First fields should be the x coordinates of the public keys
-        let fee_payer_pk = PubKey::from_point_unsafe(
-            Pallas::get_point_from_x_unchecked(fields[0], true).ok_or_else(|| {
-                BluePallasError::deserialization_error("Invalid fee payer public key")
-            })?,
-        );
+        let fee_payer_pk_x = fields[0];
+        let source_pk_x = fields[1];
+        let receiver_pk_x = fields[2];
 
-        let source_pk = PubKey::from_point_unsafe(
-            Pallas::get_point_from_x_unchecked(fields[1], true).ok_or_else(|| {
+        // Convert to bits using BitVec and skip field bits (each field is 255 bits)
+        let all_bits = BitVec::<u8, bitvec::order::Lsb0>::from_slice(&roi.to_bytes());
+        let field_bits_count = fields_len * Fp::MODULUS_BIT_SIZE as usize;
+        let remaining_bits = &all_bits[field_bits_count..];
+
+        // Helper functions using BitVec's optimized methods
+        let mut bit_index = 0;
+        let read_u64 = |start_idx: &mut usize| -> Result<u64, BluePallasError> {
+            if *start_idx + 64 > remaining_bits.len() {
+                return Err(BluePallasError::deserialization_error(
+                    "Not enough bits for u64",
+                ));
+            }
+            let value: u64 = remaining_bits[*start_idx..*start_idx + 64].load_le();
+            *start_idx += 64;
+            Ok(value)
+        };
+
+        let read_u32 = |start_idx: &mut usize| -> Result<u32, BluePallasError> {
+            if *start_idx + 32 > remaining_bits.len() {
+                return Err(BluePallasError::deserialization_error(
+                    "Not enough bits for u32",
+                ));
+            }
+            let value: u32 = remaining_bits[*start_idx..*start_idx + 32].load_le();
+            *start_idx += 32;
+            Ok(value)
+        };
+
+        let read_bool = |start_idx: &mut usize| -> Result<bool, BluePallasError> {
+            if *start_idx >= remaining_bits.len() {
+                return Err(BluePallasError::deserialization_error(
+                    "Not enough bits for bool",
+                ));
+            }
+            let value = remaining_bits[*start_idx];
+            *start_idx += 1;
+            Ok(value)
+        };
+
+        let read_bytes =
+            |start_idx: &mut usize, count: usize| -> Result<Vec<u8>, BluePallasError> {
+                if *start_idx + count * 8 > remaining_bits.len() {
+                    return Err(BluePallasError::deserialization_error(
+                        "Not enough bits for bytes",
+                    ));
+                }
+                let mut bytes = Vec::with_capacity(count);
+                for _ in 0..count {
+                    let byte: u8 = remaining_bits[*start_idx..*start_idx + 8].load_le();
+                    bytes.push(byte);
+                    *start_idx += 8;
+                }
+                Ok(bytes)
+            };
+
+        // Extract fields in the same order as to_roinput
+        let fee = read_u64(&mut bit_index)?;
+        let fee_token = read_u64(&mut bit_index)?;
+        let fee_payer_is_odd = read_bool(&mut bit_index)?;
+        let nonce = read_u32(&mut bit_index)?;
+        let valid_until = read_u32(&mut bit_index)?;
+
+        // Read memo bytes
+        let memo_bytes = read_bytes(&mut bit_index, MEMO_BYTES)?;
+        let mut memo = [0u8; MEMO_BYTES];
+        memo.copy_from_slice(&memo_bytes);
+
+        // Read tag bits
+        let mut tag = [false; TAG_BITS];
+        for tag_bit in tag.iter_mut() {
+            *tag_bit = read_bool(&mut bit_index)?;
+        }
+
+        let source_pk_is_odd = read_bool(&mut bit_index)?;
+        let receiver_pk_is_odd = read_bool(&mut bit_index)?;
+        let token_id = read_u64(&mut bit_index)?;
+        let amount = read_u64(&mut bit_index)?;
+        let token_locked = read_bool(&mut bit_index)?;
+
+        // Reconstruct public keys with correct is_odd flags
+        let fee_payer_pk = {
+            let point =
+                Pallas::get_point_from_x_unchecked(fee_payer_pk_x, true).ok_or_else(|| {
+                    BluePallasError::deserialization_error("Invalid fee payer public key")
+                })?;
+
+            // Validate point is on curve
+            if !point.is_on_curve() {
+                return Err(Box::new(BluePallasError::deserialization_error(
+                    "Fee payer public key point not on curve",
+                )));
+            }
+
+            let mut pubkey = PubKey::from_point_unsafe(point);
+            if pubkey.into_compressed().is_odd != fee_payer_is_odd {
+                let neg_point = -point;
+                pubkey = PubKey::from_point_unsafe(neg_point);
+            }
+            pubkey
+        };
+
+        let source_pk = {
+            let point = Pallas::get_point_from_x_unchecked(source_pk_x, true).ok_or_else(|| {
                 BluePallasError::deserialization_error("Invalid source public key")
-            })?,
-        );
+            })?;
 
-        todo!("Implement the rest of the deserialization logic for Transaction");
+            // Validate point is on curve
+            if !point.is_on_curve() {
+                return Err(Box::new(BluePallasError::deserialization_error(
+                    "Source public key point not on curve",
+                )));
+            }
+
+            let mut pubkey = PubKey::from_point_unsafe(point);
+            if pubkey.into_compressed().is_odd != source_pk_is_odd {
+                let neg_point = -point;
+                pubkey = PubKey::from_point_unsafe(neg_point);
+            }
+            pubkey
+        };
+
+        let receiver_pk = {
+            let point =
+                Pallas::get_point_from_x_unchecked(receiver_pk_x, true).ok_or_else(|| {
+                    BluePallasError::deserialization_error("Invalid receiver public key")
+                })?;
+
+            // Validate point is on curve
+            if !point.is_on_curve() {
+                return Err(Box::new(BluePallasError::deserialization_error(
+                    "Receiver public key point not on curve",
+                )));
+            }
+
+            let mut pubkey = PubKey::from_point_unsafe(point);
+            if pubkey.into_compressed().is_odd != receiver_pk_is_odd {
+                let neg_point = -point;
+                pubkey = PubKey::from_point_unsafe(neg_point);
+            }
+            pubkey
+        };
+
+        Ok(Transaction {
+            fee,
+            fee_token,
+            fee_payer_pk: fee_payer_pk.into_compressed(),
+            nonce,
+            valid_until,
+            memo,
+            tag,
+            source_pk: source_pk.into_compressed(),
+            receiver_pk: receiver_pk.into_compressed(),
+            token_id,
+            amount,
+            token_locked,
+        })
     }
 }
 
@@ -212,16 +362,22 @@ impl fmt::Display for Transaction {
 
         write!(
             f,
-            "{{\n  \"type\": \"{}\",\n  \"to\": \"{}\",\n  \"from\": \"{}\",\n  \"fee\": \"{}\",\n  \"amount\": \"{}\",\n  \"nonce\": \"{}\",\n  \"valid_until\": \"{}\",\n  \"memo\": \"{}\",\n  \"tag\": {:?}\n}}",
+            "{{\n  \"type\": \"{}\",\n  \"to\": \"{}\",\n  \"from\": \"{}\",\n  \"fee\": \"{}\",\n  \"fee_token\": \"{}\",\n  \"fee_payer_pk\": \"{}\",\n  \"amount\": \"{}\",\n  \"nonce\": \"{}\",\n  \"valid_until\": \"{}\",\n  \"memo\": \"{}\",\n  \"tag\": {:?},\n  \"source_pk\": \"{}\",\n  \"receiver_pk\": \"{}\",\n  \"token_id\": \"{}\",\n  \"token_locked\": {}\n}}",
             tx_type,
             self.receiver_pk.into_address(),
             self.source_pk.into_address(),
             self.fee,
+            self.fee_token,
+            self.fee_payer_pk.into_address(),
             self.amount,
             self.nonce,
             self.valid_until,
             memo_str,
-            self.tag
+            self.tag,
+            self.source_pk.into_address(),
+            self.receiver_pk.into_address(),
+            self.token_id,
+            self.token_locked
         )
     }
 }
@@ -341,6 +497,80 @@ mod tests {
     }
 
     #[test]
+    fn test_bytes_roundtrip_payment() {
+        let from = create_test_pubkey([5; 32]);
+        let to = create_test_pubkey([6; 32]);
+        let original = Transaction::new_payment(from, to, 2500000, 15000, 123)
+            .set_memo_str("roundtrip test")
+            .set_valid_until(98765);
+
+        // Convert to bytes and back
+        let bytes = original.translate_msg();
+        let reconstructed =
+            Transaction::from_bytes(&bytes).expect("Should reconstruct successfully");
+
+        // Verify all fields are identical
+        assert_eq!(original.fee, reconstructed.fee);
+        assert_eq!(original.fee_token, reconstructed.fee_token);
+        assert_eq!(original.fee_payer_pk.x, reconstructed.fee_payer_pk.x);
+        assert_eq!(
+            original.fee_payer_pk.is_odd,
+            reconstructed.fee_payer_pk.is_odd
+        );
+        assert_eq!(original.nonce, reconstructed.nonce);
+        assert_eq!(original.valid_until, reconstructed.valid_until);
+        assert_eq!(original.memo, reconstructed.memo);
+        assert_eq!(original.tag, reconstructed.tag);
+        assert_eq!(original.source_pk.x, reconstructed.source_pk.x);
+        assert_eq!(original.source_pk.is_odd, reconstructed.source_pk.is_odd);
+        assert_eq!(original.receiver_pk.x, reconstructed.receiver_pk.x);
+        assert_eq!(
+            original.receiver_pk.is_odd,
+            reconstructed.receiver_pk.is_odd
+        );
+        assert_eq!(original.token_id, reconstructed.token_id);
+        assert_eq!(original.amount, reconstructed.amount);
+        assert_eq!(original.token_locked, reconstructed.token_locked);
+    }
+
+    #[test]
+    fn test_bytes_roundtrip_delegation() {
+        let from = create_test_pubkey([7; 32]);
+        let to = create_test_pubkey([8; 32]);
+        let original = Transaction::new_delegation(from, to, 8000, 456)
+            .set_memo_str("delegation test")
+            .set_valid_until(11111);
+
+        // Convert to bytes and back
+        let bytes = original.translate_msg();
+        let reconstructed =
+            Transaction::from_bytes(&bytes).expect("Should reconstruct successfully");
+
+        // Verify all fields are identical
+        assert_eq!(original.fee, reconstructed.fee);
+        assert_eq!(original.fee_token, reconstructed.fee_token);
+        assert_eq!(original.fee_payer_pk.x, reconstructed.fee_payer_pk.x);
+        assert_eq!(
+            original.fee_payer_pk.is_odd,
+            reconstructed.fee_payer_pk.is_odd
+        );
+        assert_eq!(original.nonce, reconstructed.nonce);
+        assert_eq!(original.valid_until, reconstructed.valid_until);
+        assert_eq!(original.memo, reconstructed.memo);
+        assert_eq!(original.tag, reconstructed.tag);
+        assert_eq!(original.source_pk.x, reconstructed.source_pk.x);
+        assert_eq!(original.source_pk.is_odd, reconstructed.source_pk.is_odd);
+        assert_eq!(original.receiver_pk.x, reconstructed.receiver_pk.x);
+        assert_eq!(
+            original.receiver_pk.is_odd,
+            reconstructed.receiver_pk.is_odd
+        );
+        assert_eq!(original.token_id, reconstructed.token_id);
+        assert_eq!(original.amount, reconstructed.amount);
+        assert_eq!(original.token_locked, reconstructed.token_locked);
+    }
+
+    #[test]
     fn test_deserialize_invalid_nonce_string() {
         let json = r#"{
             "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
@@ -432,6 +662,70 @@ mod tests {
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_invalid_curve_points() {
+        // Create a transaction with valid data first
+        let from = create_test_pubkey([9; 32]);
+        let to = create_test_pubkey([10; 32]);
+        let mut tx = Transaction::new_payment(from, to, 1000000, 10000, 42);
+
+        // Manually corrupt the public key x-coordinate to an invalid curve point
+        // Use a field element that doesn't correspond to a valid curve point
+        tx.fee_payer_pk.x = Fp::from(999999999u64); // Invalid x coordinate
+
+        let bytes = tx.translate_msg();
+        let result = Transaction::from_bytes(&bytes);
+
+        // Should fail with curve validation error
+        assert!(result.is_err());
+        let error_msg = format!("{:?}", result.unwrap_err());
+        assert!(error_msg.contains("curve") || error_msg.contains("public key"));
+    }
+
+    #[test]
+    fn test_from_bytes_arbitrary_bytes() {
+        // Test with completely random bytes
+        let random_bytes = vec![0xDE, 0xAD, 0xBE, 0xEF, 0xFF, 0x00, 0x11, 0x22];
+        let result = Transaction::from_bytes(&random_bytes);
+        assert!(result.is_err());
+
+        // Test with insufficient bytes
+        let short_bytes = vec![0x01, 0x00];
+        let result = Transaction::from_bytes(&short_bytes);
+        assert!(result.is_err());
+
+        // Test with header indicating more fields than available
+        let mut malformed_bytes = vec![0xFF, 0xFF, 0xFF, 0xFF]; // Claims huge number of fields
+        malformed_bytes.extend_from_slice(&[0u8; 100]); // But not enough data
+        let result = Transaction::from_bytes(&malformed_bytes);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_from_bytes_insufficient_bits() {
+        // Create valid transaction bytes but truncate them
+        let from = create_test_pubkey([11; 32]);
+        let to = create_test_pubkey([12; 32]);
+        let tx = Transaction::new_payment(from, to, 1000000, 10000, 42);
+        let mut bytes = tx.translate_msg();
+
+        // Truncate to simulate insufficient bits for complete reconstruction
+        bytes.truncate(bytes.len() / 2);
+
+        let result = Transaction::from_bytes(&bytes);
+        assert!(result.is_err());
+        let error_msg = format!("{:?}", result.unwrap_err());
+        assert!(error_msg.contains("Not enough bits") || error_msg.contains("deserialize"));
+    }
+
+    #[test]
+    fn test_from_bytes_zero_fields() {
+        // Test with zero fields in header
+        let bytes = vec![0x00, 0x00, 0x00, 0x00]; // Zero fields
+        let result = Transaction::from_bytes(&bytes);
         assert!(result.is_err());
     }
 }
