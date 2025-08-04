@@ -10,7 +10,6 @@ use super::comms::http::HTTPComms;
 use super::comms::socket::SocketComms;
 use super::comms::Comms;
 use super::config::Config;
-use frost_bluepallas::hasher::{set_network_mainnet, set_network_testnet};
 
 #[derive(Debug, PartialEq)]
 pub struct ParticipantsConfig<C: Ciphersuite> {
@@ -23,10 +22,7 @@ pub async fn sign<C: Ciphersuite + 'static>(
     reader: &mut impl BufRead,
     logger: &mut impl Write,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    match config.network {
-        crate::network::Network::Testnet => set_network_testnet()?,
-        crate::network::Network::Mainnet => set_network_mainnet()?,
-    }
+    config.network.configure_hasher()?;
     let mut comms: Box<dyn Comms<C>> = if config.socket {
         Box::new(SocketComms::new(config))
     } else {

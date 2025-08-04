@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use eyre::eyre;
 
 use crate::api::SendSigningPackageArgs;
+use crate::network::Network;
 use frost_core::{self as frost, Ciphersuite};
 
 use std::{
@@ -60,14 +61,12 @@ pub trait Comms<C: Ciphersuite> {
         output: &mut dyn Write,
         signing_package: &SendSigningPackageArgs<C>,
     ) -> Result<(), Box<dyn Error>> {
+        let network = Network::try_from(signing_package.network_id)?;
+
         writeln!(
             output,
             "Network: {}\nMessage to be signed (hex-encoded):\n{}\nDo you want to sign it? (y/n)",
-            match signing_package.network_id {
-                0 => "TESTNET",
-                1 => "MAINNET",
-                _ => "UNKNOWN",
-            },
+            network,
             hex::encode(signing_package.signing_package[0].message())
         )?;
         let mut sign_it = String::new();
