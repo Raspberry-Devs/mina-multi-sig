@@ -99,7 +99,7 @@ pub enum Command {
         #[arg(short = 't', long)]
         threshold: u16,
         /// The total number of participants (maximum number of signers).
-        #[arg(short = 'n', long, default_value_t = 3)]
+        #[arg(short = 'n', long)]
         num_signers: u16,
     },
     /// Generate FROST shares using Distributed Key Generation.
