@@ -8,10 +8,16 @@ use frost_bluepallas::errors::BluePallasError;
 pub const TESTNET_ID: u8 = 0;
 pub const MAINNET_ID: u8 = 1;
 
-/// Network to use for signing operations.
+/// Network configuration for FROST signing operations.
+///
+/// This enum determines which Mina network the signatures will be valid for.
+/// Network selection affects domain separation in cryptographic operations,
+/// ensuring signatures generated for one network cannot be replayed on another.
 #[derive(Copy, Clone, Debug, ValueEnum, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Network {
+    /// Mina testnet - for development and testing
     Testnet,
+    /// Mina mainnet - for production use
     Mainnet,
 }
 
@@ -45,8 +51,10 @@ impl From<Network> for u8 {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("Invalid network ID: {0}. Expected {TESTNET_ID} (testnet) or {MAINNET_ID} (mainnet)")]
-pub struct InvalidNetworkId(pub u8);
+#[error("Invalid network ID: {id}. Expected {TESTNET_ID} (testnet) or {MAINNET_ID} (mainnet)")]
+pub struct InvalidNetworkId {
+    pub id: u8,
+}
 
 impl TryFrom<u8> for Network {
     type Error = InvalidNetworkId;
@@ -55,7 +63,29 @@ impl TryFrom<u8> for Network {
         match value {
             TESTNET_ID => Ok(Network::Testnet),
             MAINNET_ID => Ok(Network::Mainnet),
-            _ => Err(InvalidNetworkId(value)),
+            id => Err(InvalidNetworkId { id }),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_network_id_conversion() {
+        assert_eq!(u8::from(Network::Testnet), TESTNET_ID);
+        assert_eq!(u8::from(Network::Mainnet), MAINNET_ID);
+
+        assert_eq!(Network::try_from(TESTNET_ID).unwrap(), Network::Testnet);
+        assert_eq!(Network::try_from(MAINNET_ID).unwrap(), Network::Mainnet);
+
+        assert!(Network::try_from(255).is_err());
+    }
+
+    #[test]
+    fn test_display() {
+        assert_eq!(Network::Testnet.to_string(), "TESTNET");
+        assert_eq!(Network::Mainnet.to_string(), "MAINNET");
     }
 }
