@@ -126,21 +126,7 @@ echo "Generating message to sign"
 echo "========================================="
 
 # Create a test message to sign
-TEST_MESSAGE="
-{
-  \"to\": \"B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1\",
-  \"from\": \"B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1\",
-  \"fee\": \"1000000000\",
-  \"amount\": \"1000000000\",
-  \"nonce\": \"1\",
-  \"memo\": \"Hello Mina x FROST from the Rasp\",
-  \"valid_until\": \"4294967295\",
-  \"tag\": [
-    false,
-    false,
-    false
-  ]
-}"
+TEST_MESSAGE=$(cat message.json)
 echo "Message to sign: $TEST_MESSAGE"
 
 # Save message to file for coordinator

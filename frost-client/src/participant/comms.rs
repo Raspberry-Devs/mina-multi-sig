@@ -67,11 +67,10 @@ pub trait Comms<C: Ciphersuite> {
             .message();
 
         let transaction = Transaction::from_bytes(transaction_bytes)?;
-        let tx_json = serde_json::to_string_pretty(&transaction)?;
         writeln!(
             output,
             "Message to be signed (json):\n{}\nDo you want to sign it? (y/n)\n",
-            tx_json
+            transaction
         )?;
 
         let mut sign_it = String::new();
