@@ -24,8 +24,9 @@ echo "Generating FROST key shares using trusted dealer..."
 cargo run --bin frost-client -- trusted-dealer \
     -d "Alice, Bob and Eve's group" \
     --names Alice,Bob,Eve \
+    -t 2 -n 3 \
     -c "$GENERATED_DIR/alice.toml" \
     -c "$GENERATED_DIR/bob.toml" \
     -c "$GENERATED_DIR/eve.toml"
 
-echo "Key generation complete. Check the generated directory for the config files." 
+echo "Key generation complete. Check the generated directory for the config files."

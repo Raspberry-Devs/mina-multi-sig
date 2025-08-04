@@ -31,6 +31,7 @@ cargo run --bin frost-client -- init -c eve.toml
 cargo run --bin frost-client -- trusted-dealer \
   -d "Alice, Bob and Eve's group" \
   --names Alice,Bob,Eve \
+  -t 2 -n 3 \
   -c alice.toml -c bob.toml -c eve.toml \
   -C bluepallas
 ```

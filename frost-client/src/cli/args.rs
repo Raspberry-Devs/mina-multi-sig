@@ -96,7 +96,7 @@ pub enum Command {
         #[arg(short, long)]
         server_url: Option<String>,
         /// The threshold (minimum number of signers).
-        #[arg(short = 't', long, default_value_t = 2)]
+        #[arg(short = 't', long)]
         threshold: u16,
         /// The total number of participants (maximum number of signers).
         #[arg(short = 'n', long, default_value_t = 3)]
