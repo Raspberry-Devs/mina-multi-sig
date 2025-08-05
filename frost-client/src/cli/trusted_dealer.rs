@@ -37,7 +37,6 @@ pub(crate) fn run_for_ciphersuite<C: Ciphersuite + 'static>(
         config,
         description,
         threshold,
-        num_signers,
         names,
         server_url,
     } = (*args).clone()
@@ -45,13 +44,17 @@ pub(crate) fn run_for_ciphersuite<C: Ciphersuite + 'static>(
         panic!("invalid Command");
     };
 
+    let num_signers = names.len() as u16;
+    // QUESTION: Should we make the user confirm after that?
+    print!("Running Trusted Dealer with {} participants and threshold {}", num_signers, threshold);
+
     if config.len() != num_signers as usize {
         return Err(
             eyre!("The `config` option must specify `num_signers` different config files").into(),
         );
     }
-    if names.len() != num_signers as usize {
-        return Err(eyre!("The `names` option must specify `num_signers` names").into());
+    if threshold > num_signers {
+        return Err(eyre!("Threshold cannot be greater than the number of signers").into());
     }
 
     let trusted_dealer_config = trusted_dealer::Config::new::<C>(threshold, num_signers)?;
