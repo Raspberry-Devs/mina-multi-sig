@@ -1,4 +1,4 @@
-use crate::network::Network;
+use crate::mina_network::Network;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Clone)]

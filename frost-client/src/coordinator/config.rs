@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::cipher::{PrivateKey, PublicKey};
-use crate::network::Network;
+use crate::mina_network::Network;
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Identifier};
 
 #[derive(Clone)]

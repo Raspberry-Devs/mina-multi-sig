@@ -19,7 +19,7 @@ use std::{
 
 use super::args::Command;
 use super::config::Config as ConfigFile;
-use crate::network::Network;
+use crate::mina_network::Network;
 
 pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
     run_for_ciphersuite::<PallasPoseidon>(args).await

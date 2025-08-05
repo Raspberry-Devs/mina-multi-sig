@@ -5,7 +5,7 @@ use super::comms::socket::SocketComms;
 
 use super::comms::Comms;
 
-use crate::network::Network;
+use crate::mina_network::Network;
 use frost_core::Ciphersuite;
 use rand::thread_rng;
 use std::io::{BufRead, Write};

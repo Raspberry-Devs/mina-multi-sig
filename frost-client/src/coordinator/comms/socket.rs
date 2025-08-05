@@ -6,7 +6,7 @@ use frost_core as frost;
 
 use frost_core::Ciphersuite;
 
-use crate::network::Network;
+use crate::mina_network::Network;
 use eyre::eyre;
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
