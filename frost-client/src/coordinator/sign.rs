@@ -22,6 +22,7 @@ pub async fn sign<C: Ciphersuite + 'static>(
     reader: &mut impl BufRead,
     logger: &mut impl Write,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    config.network.configure_hasher()?;
     let mut comms: Box<dyn Comms<C>> = if config.socket {
         Box::new(SocketComms::new(config))
     } else {

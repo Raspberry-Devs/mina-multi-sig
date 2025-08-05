@@ -105,9 +105,14 @@ where
             .ok_or(eyre!("Did not receive signing package!"))?;
 
         let message: Message<C> = serde_json::from_slice(&data)?;
-        if let Message::SigningPackage { signing_package } = message {
+        if let Message::SigningPackage {
+            signing_package,
+            network_id,
+        } = message
+        {
             Ok(SendSigningPackageArgs::<C> {
                 signing_package: vec![signing_package],
+                network_id,
                 aux_msg: vec![],
             })
         } else {

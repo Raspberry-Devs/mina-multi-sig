@@ -6,6 +6,7 @@ use frost_core as frost;
 
 use frost_core::Ciphersuite;
 
+use crate::mina_network::Network;
 use eyre::eyre;
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
@@ -33,6 +34,7 @@ pub struct SocketComms<C: Ciphersuite> {
     input_rx: Receiver<(Endpoint, Vec<u8>)>,
     endpoints: BTreeMap<Identifier<C>, Endpoint>,
     handler: NodeHandler<()>,
+    network: Network,
     _phantom: PhantomData<C>,
 }
 
@@ -51,6 +53,7 @@ impl<C: Ciphersuite> SocketComms<C> {
             input_rx: rx,
             endpoints: BTreeMap::new(),
             handler,
+            network: config.network,
             _phantom: Default::default(),
         };
 
@@ -118,6 +121,7 @@ impl<C: Ciphersuite> Comms<C> for SocketComms<C> {
 
         let data = serde_json::to_vec(&Message::SigningPackage {
             signing_package: signing_package.clone(),
+            network_id: self.network.into(),
         })?;
 
         for identifier in signing_package.signing_commitments().keys() {

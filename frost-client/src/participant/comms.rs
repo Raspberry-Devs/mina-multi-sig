@@ -6,6 +6,7 @@ use eyre::eyre;
 use frost_bluepallas::{transactions::Transaction, translate::Translatable};
 
 use crate::api::SendSigningPackageArgs;
+use crate::mina_network::Network;
 use frost_core::{self as frost, Ciphersuite};
 
 use std::{
@@ -31,6 +32,7 @@ pub enum Message<C: Ciphersuite> {
     },
     SigningPackage {
         signing_package: frost::SigningPackage<C>,
+        network_id: u8,
     },
     SignatureShare(SignatureShare<C>),
 }
@@ -60,6 +62,8 @@ pub trait Comms<C: Ciphersuite> {
         output: &mut dyn Write,
         signing_package: &SendSigningPackageArgs<C>,
     ) -> Result<(), Box<dyn Error>> {
+        let network = Network::try_from(signing_package.network_id)?;
+
         let transaction_bytes = signing_package
             .signing_package
             .first()
@@ -69,8 +73,8 @@ pub trait Comms<C: Ciphersuite> {
         let transaction = Transaction::from_bytes(transaction_bytes)?;
         writeln!(
             output,
-            "Message to be signed (json):\n{}\nDo you want to sign it? (y/n)\n",
-            transaction
+            "Network: {}\nMessage to be signed (json):\n{}\nDo you want to sign it? (y/n)\n",
+            network, transaction
         )?;
 
         let mut sign_it = String::new();

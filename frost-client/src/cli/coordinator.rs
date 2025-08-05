@@ -19,6 +19,7 @@ use std::{
 
 use super::args::Command;
 use super::config::Config as ConfigFile;
+use crate::mina_network::Network;
 
 pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
     run_for_ciphersuite::<PallasPoseidon>(args).await
@@ -34,6 +35,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
         signers,
         message,
         signature: signature_path,
+        network,
     } = (*args).clone()
     else {
         panic!("invalid Command");
@@ -57,6 +59,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
         message_paths: &message,
         output: &mut output,
         input: &mut input,
+        network,
     };
 
     let coordinator_config = setup_coordinator_config::<C>(public_key_package, signers, params)?;
@@ -150,6 +153,7 @@ struct CoordinatorSetupParams<'a> {
     message_paths: &'a [String],
     output: &'a mut dyn Write,
     input: &'a mut dyn BufRead,
+    network: Network,
 }
 
 /// Setup coordinator configuration for signing
@@ -210,6 +214,7 @@ fn setup_coordinator_config<C: Ciphersuite + 'static>(
                 .pubkey
                 .clone(),
         ),
+        network: params.network,
     };
 
     Ok(coordinator_config)

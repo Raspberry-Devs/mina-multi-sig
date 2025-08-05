@@ -46,11 +46,10 @@ frost-bluepallas = { git = "https://github.com/Raspberry-Devs/mina-multi-sig" }
 ### Basic Usage with Trusted Dealer
 
 ```rust
-use frost_bluepallas::{self as frost, hasher::set_network_id};
-use mina_signer::NetworkId;
+use frost_bluepallas::{self as frost, hasher::set_network_testnet};
 
-// Set network (TESTNET or MAINNET)
-set_network_id(NetworkId::TESTNET)?;
+// Set network (TESTNET)
+set_network_testnet()?;
 
 // Generate key shares using trusted dealer
 let max_signers = 5;
@@ -149,14 +148,13 @@ cargo run --example mina-sign-tx
 Set the network ID before signing:
 
 ```rust
-use frost_bluepallas::hasher::set_network_id;
-use mina_signer::NetworkId;
+use frost_bluepallas::hasher::{set_network_mainnet, set_network_testnet};
 
 // For Testnet
-set_network_id(NetworkId::TESTNET)?;
+set_network_testnet()?;
 
 // For Mainnet
-set_network_id(NetworkId::MAINNET)?;
+set_network_mainnet()?;
 ```
 
 The network ID affects the domain separation in signatures, so signatures generated for one network will not verify on another.

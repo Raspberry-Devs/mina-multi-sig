@@ -23,6 +23,16 @@ pub fn set_network_id(network_id: NetworkId) -> Result<(), BluePallasError> {
     Ok(())
 }
 
+/// Convenience function to set the network to TESTNET
+pub fn set_network_testnet() -> Result<(), BluePallasError> {
+    set_network_id(NetworkId::TESTNET)
+}
+
+/// Convenience function to set the network to MAINNET
+pub fn set_network_mainnet() -> Result<(), BluePallasError> {
+    set_network_id(NetworkId::MAINNET)
+}
+
 /// Get the network ID for the current thread, returns error if not set
 pub fn get_network_id() -> Result<NetworkId, BluePallasError> {
     NETWORK_ID.with(|id| id.borrow().clone().ok_or(BluePallasError::NetworkIdNotSet))
