@@ -1,6 +1,5 @@
 use std::{error::Error, marker::PhantomData};
 
-use eyre::eyre;
 use frost_core::{
     keys::{KeyPackage, PublicKeyPackage},
     Ciphersuite,
@@ -18,7 +17,7 @@ pub struct GroupInfo {
 }
 
 /// A trait that helps obtaining ciphersuite-dependent information.
-pub trait CiphersuiteHelper {
+pub trait CiphersuiteHelper<C: Ciphersuite> {
     fn group_info(
         &self,
         encoded_key_package: &[u8],
@@ -43,16 +42,11 @@ where
 }
 
 /// Get a CiphersuiteHelper for the given ciphersuite.
-pub(crate) fn ciphersuite_helper(
-    ciphersuite_id: &str,
-) -> Result<Box<dyn CiphersuiteHelper>, Box<dyn Error>> {
-    if ciphersuite_id == PallasPoseidon::ID {
-        return Ok(Box::new(CiphersuiteHelperImpl::<PallasPoseidon>::default()));
-    }
-    Err(eyre!("invalid ciphersuite ID").into())
+pub(crate) fn ciphersuite_helper<C: Ciphersuite>() -> Box<dyn CiphersuiteHelper<C>> {
+    Box::new(CiphersuiteHelperImpl::<C>::default())
 }
 
-impl<C> CiphersuiteHelper for CiphersuiteHelperImpl<C>
+impl<C> CiphersuiteHelper<C> for CiphersuiteHelperImpl<C>
 where
     C: Ciphersuite + 'static,
 {

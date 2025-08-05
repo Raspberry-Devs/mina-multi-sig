@@ -64,7 +64,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
 fn load_participant_config<C: Ciphersuite>(
     config_path: Option<String>,
     group_id: &str,
-) -> Result<(ConfigFile, crate::cli::config::Group, KeyPackage<C>), Box<dyn Error>> {
+) -> Result<(ConfigFile<C>, crate::cli::config::Group<C>, KeyPackage<C>), Box<dyn Error>> {
     let user_config = ConfigFile::read(config_path)?;
 
     let group_config = user_config
@@ -83,8 +83,8 @@ fn load_participant_config<C: Ciphersuite>(
 /// This function constructs the ParticipantConfig with all necessary parameters
 /// including network settings, keys, and coordinator lookup functionality.
 fn setup_participant_config<C: Ciphersuite + 'static>(
-    user_config: &ConfigFile,
-    group_config: &crate::cli::config::Group,
+    user_config: &ConfigFile<C>,
+    group_config: &crate::cli::config::Group<C>,
     key_package: KeyPackage<C>,
     server_url: Option<String>,
     session: Option<String>,

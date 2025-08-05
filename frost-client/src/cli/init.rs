@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use frost_bluepallas::PallasPoseidon;
+
 use crate::cipher::Cipher;
 
 use super::{
@@ -12,7 +14,9 @@ pub async fn init(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let mut config = Config::read(config)?;
+    // To make frost client truly ciphersuite agnostic provide the ciphersuite as user flag
+    // We don't do this cause it would just be more boilerplate at the moment
+    let mut config = Config::<PallasPoseidon>::read(config)?;
 
     if config.communication_key.is_some() {
         eprintln!("Skipping keypair generation; keypair already generated and stored");

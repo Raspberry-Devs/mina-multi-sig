@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use eyre::{eyre, OptionExt as _};
+use frost_bluepallas::PallasPoseidon;
 use rand::thread_rng;
 
 use crate::{api, client::Client};
@@ -18,7 +19,7 @@ pub async fn list(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let config = Config::read(config)?;
+    let config = Config::<PallasPoseidon>::read(config)?;
 
     let server_url = if let Some(server_url) = server_url {
         server_url

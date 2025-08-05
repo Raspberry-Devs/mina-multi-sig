@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use eyre::OptionExt;
+use frost_bluepallas::PallasPoseidon;
 
 use super::{args::Command, config::Config};
 
@@ -9,7 +10,7 @@ pub fn list(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let config = Config::read(config)?;
+    let config = Config::<PallasPoseidon>::read(config)?;
 
     for group in config.group.values() {
         eprint!("{}", group.as_human_readable_summary(&config)?);
@@ -25,7 +26,7 @@ pub fn remove(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let mut config = Config::read(config)?;
+    let mut config = Config::<PallasPoseidon>::read(config)?;
 
     config.group.remove(&group).ok_or_eyre("group not found")?;
 

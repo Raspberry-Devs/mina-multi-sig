@@ -6,6 +6,7 @@ use std::{
 
 use eyre::{Context as _, OptionExt};
 
+use frost_bluepallas::PallasPoseidon;
 use frost_core::Ciphersuite;
 use reqwest::Url;
 use zeroize::Zeroizing;
@@ -78,7 +79,7 @@ fn setup_dkg_config(
     threshold: u16,
     participants: &[String],
 ) -> Result<dkg::Config, Box<dyn Error>> {
-    let config = Config::read(config_path)?;
+    let config = Config::<PallasPoseidon>::read(config_path)?;
 
     let server_url_parsed =
         Url::parse(&format!("https://{}", server_url)).wrap_err("error parsing server-url")?;
@@ -171,8 +172,8 @@ fn update_config_with_group<C: Ciphersuite + 'static>(
     public_key_package: &frost_core::keys::PublicKeyPackage<C>,
     participants: &BTreeMap<String, Participant>,
 ) -> Result<(), Box<dyn Error>> {
-    let group = Group {
-        ciphersuite: C::ID.to_string(),
+    let group = Group::<C> {
+        _phantom: Default::default(),
         description: description.to_string(),
         key_package: postcard::to_allocvec(key_package)?,
         public_key_package: postcard::to_allocvec(public_key_package)?,

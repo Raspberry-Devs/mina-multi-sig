@@ -5,6 +5,7 @@ const CONTACT_HRP: &str = "minafrost";
 
 use crate::cipher::PublicKey;
 use eyre::{eyre, OptionExt};
+use frost_bluepallas::PallasPoseidon;
 use serde::{Deserialize, Serialize};
 
 use super::{args::Command, config::Config};
@@ -64,7 +65,7 @@ pub fn import(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let mut config = Config::read(config)?;
+    let mut config = Config::<PallasPoseidon>::read(config)?;
 
     let mut contact = Contact::from_text(&text_contact)?;
     if config.contact.contains_key(&contact.name) {
@@ -108,7 +109,7 @@ pub fn export(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let config = Config::read(config)?;
+    let config = Config::<PallasPoseidon>::read(config)?;
 
     // Build the contact to export.
     let contact = Contact {
@@ -138,7 +139,7 @@ pub fn list(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let config = Config::read(config)?;
+    let config = Config::<PallasPoseidon>::read(config)?;
 
     for contact in config.contact.values() {
         eprint!("{}", contact.as_human_readable_summary());
@@ -155,7 +156,7 @@ pub fn remove(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let mut config = Config::read(config)?;
+    let mut config = Config::<PallasPoseidon>::read(config)?;
 
     let name = config
         .contact

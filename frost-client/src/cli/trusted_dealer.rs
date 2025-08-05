@@ -91,7 +91,7 @@ fn extract_participant_info<C: Ciphersuite>(
     let mut contacts = Vec::new();
 
     for (identifier, path, name) in izip!(shares.keys(), config_paths.iter(), names.iter()) {
-        let config = Config::read(Some(path.to_string()))?;
+        let config = Config::<PallasPoseidon>::read(Some(path.to_string()))?;
         let pubkey = config
             .communication_key
             .ok_or_eyre("config not initialized")?
@@ -135,8 +135,8 @@ fn update_config_files<C: Ciphersuite + 'static>(
         // [`SecretShare::commitment()`] is the same for all participants using
         // a broadcast channel.
         let key_package: KeyPackage<C> = share.clone().try_into()?;
-        let group = Group {
-            ciphersuite: C::ID.to_string(),
+        let group = Group::<C> {
+            _phantom: Default::default(),
             description: description.to_string(),
             key_package: postcard::to_allocvec(&key_package)?,
             public_key_package: postcard::to_allocvec(public_key_package)?,
