@@ -90,7 +90,7 @@ let tx = Transaction::new_payment(
 .set_memo_str("FROST payment");
 
 // Convert transaction to signable message
-let message = translate_msg(&tx);
+let message = tx.translate_msg();
 
 // Sign with FROST (using existing shares and pubkey_package)
 let (frost_sig, frost_vk) = frost::helper::sign_from_packages(

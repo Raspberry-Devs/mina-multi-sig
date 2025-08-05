@@ -4,7 +4,7 @@ use crate::{
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::PallasPoseidon;
+use frost_bluepallas::{transactions::Transaction, translate::Translatable, PallasPoseidon};
 use frost_core::keys::PublicKeyPackage;
 use frost_core::Ciphersuite;
 use reqwest::Url;
@@ -13,6 +13,7 @@ use std::{
     error::Error,
     fs,
     io::{BufRead, Write},
+    path::Path,
     vec,
 };
 
@@ -76,26 +77,26 @@ pub fn read_messages(
     output: &mut dyn Write,
     input: &mut dyn BufRead,
 ) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
+    // If no message paths are provided, read from stdin
     let messages = if message_paths.is_empty() {
-        writeln!(output, "The message to be signed (hex encoded)")?;
-        let mut msg = String::new();
-        input.read_line(&mut msg)?;
-        vec![hex::decode(msg.trim())?]
+        writeln!(output, "The message to be signed (json string)")?;
+        vec![load_transaction_from_stdin(input)?.translate_msg()]
     } else {
+        // Otherwise, iterate over the provided paths and attempt to read each message
         message_paths
             .iter()
             .map(|filename| {
+                // If the filename is "-" or empty, read from stdin instead
                 let msg = if *filename == "-" || filename.is_empty() {
-                    writeln!(output, "The message to be signed (hex encoded)")?;
-                    let mut msg = String::new();
-                    input.read_line(&mut msg)?;
-                    hex::decode(msg.trim())?
+                    writeln!(output, "The message to be signed (json string)")?;
+                    load_transaction_from_stdin(input)?
                 } else {
                     eprintln!("Reading message from {}...", &filename);
-                    fs::read(filename)?
+                    load_transaction_from_json(filename)?
                 };
                 Ok(msg)
             })
+            .map(|res| res.map(|msg| msg.translate_msg()))
             .collect::<Result<_, Box<dyn Error>>>()?
     };
     Ok(messages)
@@ -230,4 +231,23 @@ pub fn save_signature(
         println!("Signature saved to {}", signature_path);
     }
     Ok(())
+}
+
+fn load_transaction_from_json<P: AsRef<Path>>(
+    path: P,
+) -> Result<Transaction, Box<dyn std::error::Error>> {
+    let json_content = fs::read_to_string(path)?;
+    let transaction: Transaction = serde_json::from_str(json_content.trim())
+        .map_err(|e| eyre::eyre!("Failed to parse transaction from JSON: {}", e))?;
+    Ok(transaction)
+}
+
+fn load_transaction_from_stdin(
+    input: &mut dyn BufRead,
+) -> Result<Transaction, Box<dyn std::error::Error>> {
+    let mut json_content = String::new();
+    input.read_to_string(&mut json_content)?;
+    let transaction: Transaction = serde_json::from_str(json_content.trim())
+        .map_err(|e| eyre::eyre!("Failed to parse transaction from JSON: {}", e))?;
+    Ok(transaction)
 }

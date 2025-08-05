@@ -64,13 +64,13 @@ cargo run --bin frost-client -- dkg \
   -d "Alice, Bob and Eve" \
   -s localhost:2744 \
   -S <BOB_PUBLIC_KEY>,<EVE_PUBLIC_KEY> \
-  -t 2 -C bluepallas -c alice.toml
+  -t 2 -c alice.toml
 
 # Each participant joins the DKG
 cargo run --bin frost-client -- dkg \
   -d "Alice, Bob and Eve" \
   -s localhost:2744 \
-  -t 2 -C bluepallas -c bob.toml
+  -t 2 -c bob.toml
 ```
 
 ### View Groups
@@ -96,6 +96,24 @@ cargo run --bin frost-client -- participant \
   -c bob.toml \
   --server-url localhost:2744 \
   --group <GROUP_PUBLIC_KEY>
+```
+
+## Example Transaction Message
+```json
+{
+  "to": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+  "from": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+  "fee": "1000000000",
+  "amount": "1000000000",
+  "nonce": "1",
+  "memo": "Hello Mina x FROST from the Rasp",
+  "valid_until": "4294967295",
+  "tag": [
+    false,
+    false,
+    false
+  ]
+}
 ```
 
 ## Contributing

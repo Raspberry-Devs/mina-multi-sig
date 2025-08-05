@@ -12,6 +12,7 @@ use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
 };
+use serde_json;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
 use frost::{

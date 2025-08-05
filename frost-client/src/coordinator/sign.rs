@@ -48,6 +48,7 @@ pub async fn sign<C: Ciphersuite + 'static>(
     };
 
     // Round 2 - Create signing package and get signature shares
+    // TODO: Currently, we ignore all messages other than the first one. Either we restrict to using one message or we need to handle multiple messages.
     let signing_package = SigningPackage::new(commitments.clone(), &config.messages[0]);
 
     let signatures_list = comms

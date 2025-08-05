@@ -1,12 +1,10 @@
-use crate::{PallasPoseidon, SigningKey};
+use crate::{errors::BluePallasResult, PallasPoseidon, SigningKey};
 use ark_ec::CurveGroup;
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::Hashable;
 // Fr for frost
 use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, NetworkId};
 
-// temporary till we sort out proper error messages
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 // Note
 // CurvePoint = Affine<PallasParameters>                                        mina side
 // PallasProjective = Projective<PallasParameters> (= Element<PallasPoseidon>)  frost side
@@ -14,28 +12,28 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 /// Convert FROST public key to Mina public key
 /// The `VerifyingKey` is the public key in FROST, which is a point on the curve.
-pub fn translate_pk(fr_pk: &VerifyingKey<PallasPoseidon>) -> Result<PubKey> {
+pub fn translate_pk(fr_pk: &VerifyingKey<PallasPoseidon>) -> BluePallasResult<PubKey> {
     Ok(PubKey::from_point_unsafe(fr_pk.to_element().into_affine()))
 }
 
 /// Convert FROST signature to Mina signature
 /// The `R` field is the commitment to the nonce, and `z` is the response to the challenge.
-pub fn translate_sig(fr_sig: &FrSig<PallasPoseidon>) -> Result<MinaSig> {
+pub fn translate_sig(fr_sig: &FrSig<PallasPoseidon>) -> BluePallasResult<MinaSig> {
     let rx = fr_sig.R().into_affine().x;
     let z: Scalar<PallasPoseidon> = *fr_sig.z();
 
     Ok(MinaSig { rx, s: z })
 }
 
-/// Convert Hashable Mina message to Vec<u8>
-pub fn translate_msg<H>(msg: &H) -> Vec<u8>
-where
-    H: Hashable<D = NetworkId>,
-{
-    msg.to_roinput().serialize()
+/// Trait for types that can be translated to a Mina message
+pub trait Translatable: Hashable<D = NetworkId> {
+    fn translate_msg(&self) -> Vec<u8>;
+    fn from_bytes(bytes: &[u8]) -> BluePallasResult<Self>
+    where
+        Self: Sized;
 }
 
-pub fn translate_minask(msg: &mina_signer::Keypair) -> Result<SigningKey> {
+pub fn translate_minask(msg: &mina_signer::Keypair) -> BluePallasResult<SigningKey> {
     // Convert mina SecKey to FROST SigningKey
     let scalar = msg.secret.scalar();
     SigningKey::from_scalar(*scalar).map_err(|e| e.into())
@@ -52,7 +50,7 @@ mod tests {
     use mina_signer::{seckey::SecKey, NetworkId};
 
     #[test]
-    fn test_translate_pk() -> Result<()> {
+    fn test_translate_pk() -> BluePallasResult<()> {
         // We generate scalars (SecretKey) for both the frost and mina sides in the same way
         // Then on each side the appropriate elements (PublicKey) representations are generated
         // Then use the translation function to check if it's the same element on both sides
@@ -74,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    fn check_hashable_impl() -> Result<()> {
+    fn check_hashable_impl() -> BluePallasResult<()> {
         // panics if prefix.len() > MAX_DOMAIN_STRING_LEN
         mina_signer::create_legacy::<PallasMessage>(NetworkId::TESTNET);
         Ok(())

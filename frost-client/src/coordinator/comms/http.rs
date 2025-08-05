@@ -16,6 +16,7 @@ use frost_core::{
     Identifier, SigningPackage,
 };
 use rand::thread_rng;
+use serde_json;
 
 use crate::cipher::Cipher;
 use crate::client::Client;
