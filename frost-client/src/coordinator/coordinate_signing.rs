@@ -17,7 +17,11 @@ pub struct ParticipantsConfig<C: Ciphersuite> {
     pub pub_key_package: PublicKeyPackage<C>,
 }
 
-pub async fn sign<C: Ciphersuite + 'static>(
+// This function orchestrates the signing process for a given ciphersuite.
+// It handles the communication with the signers, collects their commitments,
+// sends the signing package, and aggregates the signatures.
+// It returns the final aggregated signature as a byte vector.
+pub async fn coordinate_signing<C: Ciphersuite + 'static>(
     config: &Config<C>,
     reader: &mut impl BufRead,
     logger: &mut impl Write,
