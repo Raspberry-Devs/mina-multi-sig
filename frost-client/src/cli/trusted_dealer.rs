@@ -46,7 +46,10 @@ pub(crate) fn run_for_ciphersuite<C: Ciphersuite + 'static>(
 
     let num_signers = names.len() as u16;
     // QUESTION: Should we make the user confirm after that?
-    print!("Running Trusted Dealer with {} participants and threshold {}", num_signers, threshold);
+    print!(
+        "Running Trusted Dealer with {} participants and threshold {}",
+        num_signers, threshold
+    );
 
     if config.len() != num_signers as usize {
         return Err(

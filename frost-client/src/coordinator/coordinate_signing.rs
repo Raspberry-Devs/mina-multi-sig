@@ -7,7 +7,6 @@ use frost_core::{
 };
 
 use super::comms::http::HTTPComms;
-use super::comms::socket::SocketComms;
 use super::comms::Comms;
 use super::config::Config;
 
@@ -27,11 +26,7 @@ pub async fn coordinate_signing<C: Ciphersuite + 'static>(
     logger: &mut impl Write,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     config.network.configure_hasher()?;
-    let mut comms: Box<dyn Comms<C>> = if config.socket {
-        Box::new(SocketComms::new(config))
-    } else {
-        Box::new(HTTPComms::new(config)?)
-    };
+    let mut comms: Box<dyn Comms<C>> = Box::new(HTTPComms::new(config)?);
 
     // Round 1 - Get commitments
     let commitments_list = comms

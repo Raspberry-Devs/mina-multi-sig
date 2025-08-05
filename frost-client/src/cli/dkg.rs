@@ -43,7 +43,11 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
 
     // QUESTION: Should we make the user confirm after that?
     // +1 because the user is also a participant
-    println!("Running DKG with {} participants and threshold {}", participants.len() + 1, threshold);
+    println!(
+        "Running DKG with {} participants and threshold {}",
+        participants.len() + 1,
+        threshold
+    );
 
     let mut input = Box::new(std::io::stdin().lock());
     let mut output = std::io::stdout();

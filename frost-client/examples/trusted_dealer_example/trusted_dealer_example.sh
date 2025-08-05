@@ -29,4 +29,4 @@ cargo run --bin frost-client -- trusted-dealer \
     -c "$GENERATED_DIR/eve.toml" \
     -t 2
 
-echo "Key generation complete. Check the generated directory for the config files." 
+echo "Key generation complete. Check the generated directory for the config files."

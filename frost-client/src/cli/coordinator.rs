@@ -184,7 +184,6 @@ fn setup_coordinator_config<C: Ciphersuite + 'static>(
     let messages = read_messages(params.message_paths, params.output, params.input)?;
 
     let coordinator_config = CoordinatorConfig {
-        socket: false,
         signers,
         num_signers,
         public_key_package,

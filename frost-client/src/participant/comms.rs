@@ -1,5 +1,4 @@
 pub mod http;
-pub mod socket;
 
 use async_trait::async_trait;
 use eyre::eyre;
