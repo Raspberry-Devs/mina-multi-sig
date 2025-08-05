@@ -3,6 +3,7 @@ pub mod socket;
 
 use async_trait::async_trait;
 use eyre::eyre;
+use frost_bluepallas::{transactions::Transaction, translate::Translatable};
 
 use crate::api::SendSigningPackageArgs;
 use frost_core::{self as frost, Ciphersuite};
@@ -59,11 +60,19 @@ pub trait Comms<C: Ciphersuite> {
         output: &mut dyn Write,
         signing_package: &SendSigningPackageArgs<C>,
     ) -> Result<(), Box<dyn Error>> {
+        let transaction_bytes = signing_package
+            .signing_package
+            .first()
+            .ok_or_else(|| eyre!("No signing package found"))?
+            .message();
+
+        let transaction = Transaction::from_bytes(transaction_bytes)?;
         writeln!(
             output,
-            "Message to be signed (hex-encoded):\n{}\nDo you want to sign it? (y/n)",
-            hex::encode(signing_package.signing_package[0].message())
+            "Message to be signed (json):\n{}\nDo you want to sign it? (y/n)\n",
+            transaction
         )?;
+
         let mut sign_it = String::new();
         input.read_line(&mut sign_it)?;
         if sign_it.trim() != "y" {

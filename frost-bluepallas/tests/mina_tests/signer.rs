@@ -4,7 +4,7 @@ use frost_bluepallas::{
     hasher::{set_network_id, PallasMessage},
     helper,
     transactions::Transaction,
-    translate::{translate_minask, translate_msg, translate_pk},
+    translate::{translate_minask, translate_pk, Translatable},
 };
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, NetworkId, PubKey, Signer};
@@ -40,7 +40,7 @@ fn signer_test_raw() {
     );
 
     // Generate FROST signature using the private key
-    let msg = translate_msg(&tx);
+    let msg = tx.translate_msg();
     let fr_sk =
         translate_minask(&kp).expect("failed to translate mina keypair to frost signing key");
 
@@ -101,7 +101,7 @@ fn sign_mina_tx() {
     .set_memo_str("Hello Mina!");
 
     // Generate FROST signature
-    let msg = translate_msg(&tx);
+    let msg = tx.translate_msg();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -153,7 +153,7 @@ fn sign_mina_tx_mainnet() {
     .set_memo_str("Mainnet Test!");
 
     // Generate FROST signature
-    let msg = translate_msg(&tx);
+    let msg = tx.translate_msg();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -171,4 +171,68 @@ fn sign_mina_tx_mainnet() {
     let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
     assert!(is_valid, "Mina signature verification failed on MAINNET");
+}
+
+#[test]
+fn transaction_json_deser_with_mina_sign() {
+    let mut rng = rand_core::OsRng;
+
+    // Use trusted dealer to setup public and packages
+    let max_signers = 5;
+    let min_signers = 3;
+    let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
+        max_signers,
+        min_signers,
+        frost_bluepallas::keys::IdentifierList::Default,
+        &mut rng,
+    )
+    .expect("Failed to generate key shares");
+
+    // Convert pubkey package to Mina format
+
+    // Create a transaction
+    let tx = Transaction::new_payment(
+        translate_pk(pubkey_package.verifying_key())
+            .expect("failed to translate verifying key to Mina public key"),
+        PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
+            .expect("invalid address"),
+        1729000000000,
+        2000000000,
+        16,
+    )
+    .set_valid_until(271828)
+    .set_memo_str("Hello Mina!");
+
+    // Serialize the transaction to JSON
+    let tx_json = serde_json::to_string(&tx).expect("Failed to serialize transaction to JSON");
+
+    // Deserialize the transaction from JSON
+    let deserialized_tx: Transaction =
+        serde_json::from_str(&tx_json).expect("Failed to deserialize transaction from JSON");
+
+    // Now sign the deserialized transaction
+    let msg = deserialized_tx.translate_msg();
+
+    let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+        .expect("Failed to sign message with FROST");
+
+    // Convert signature to Mina format
+    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+        .expect("Failed to translate FROST signature to Mina signature");
+    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+        .expect("Failed to translate FROST verifying key to Mina public key");
+
+    // Verify the signature using Mina Signer with TESTNET
+    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx);
+
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid2 = ctx2.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+
+    let mut ctx3 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid3 = ctx3.verify(&mina_sig, &mina_vk, &deserialized_tx);
+
+    assert!(is_valid, "Mina signature verification failed on TESTNET");
+    assert!(is_valid2, "Mina signature verification failed on TESTNET");
+    assert!(is_valid3, "Mina signature verification failed on TESTNET");
 }
