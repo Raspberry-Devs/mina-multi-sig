@@ -46,7 +46,10 @@ pub(crate) fn run_for_ciphersuite<C: Ciphersuite + 'static>(
 
     let num_signers = names.len() as u16;
     // QUESTION: Should we make the user confirm after that?
-    print!(
+    println!(
+        "IMPORTANT: This command is for testing and demonstration purposes only. In production, use DKG."
+    );
+    println!(
         "Running Trusted Dealer with {} participants and threshold {}",
         num_signers, threshold
     );
