@@ -5,7 +5,7 @@ const CONTACT_HRP: &str = "minafrost";
 
 use crate::cipher::PublicKey;
 use eyre::{eyre, OptionExt};
-use frost_bluepallas::PallasPoseidon;
+use frost_core::Ciphersuite;
 use serde::{Deserialize, Serialize};
 
 use super::{args::Command, config::Config};
@@ -56,7 +56,7 @@ impl Contact {
 }
 
 /// Import a contact into the user's address book, in the config file.
-pub fn import(args: &Command) -> Result<(), Box<dyn Error>> {
+pub fn import<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Import {
         contact: text_contact,
         config,
@@ -65,7 +65,7 @@ pub fn import(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let mut config = Config::<PallasPoseidon>::read(config)?;
+    let mut config = Config::<C>::read(config)?;
 
     let mut contact = Contact::from_text(&text_contact)?;
     if config.contact.contains_key(&contact.name) {
@@ -104,12 +104,12 @@ pub fn import(args: &Command) -> Result<(), Box<dyn Error>> {
 }
 
 /// Export a contact from the user's address book in the config file.
-pub fn export(args: &Command) -> Result<(), Box<dyn Error>> {
+pub fn export<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Export { name, config } = (*args).clone() else {
         panic!("invalid Command");
     };
 
-    let config = Config::<PallasPoseidon>::read(config)?;
+    let config = Config::<C>::read(config)?;
 
     // Build the contact to export.
     let contact = Contact {
@@ -134,12 +134,12 @@ pub fn export(args: &Command) -> Result<(), Box<dyn Error>> {
 }
 
 /// List the contacts in the address book in the config file.
-pub fn list(args: &Command) -> Result<(), Box<dyn Error>> {
+pub fn list<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Contacts { config } = (*args).clone() else {
         panic!("invalid Command");
     };
 
-    let config = Config::<PallasPoseidon>::read(config)?;
+    let config = Config::<C>::read(config)?;
 
     for contact in config.contact.values() {
         eprint!("{}", contact.as_human_readable_summary());
@@ -151,12 +151,12 @@ pub fn list(args: &Command) -> Result<(), Box<dyn Error>> {
 }
 
 /// Remove a contact from the user's address book in the config file.
-pub fn remove(args: &Command) -> Result<(), Box<dyn Error>> {
+pub fn remove<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::RemoveContact { config, pubkey } = (*args).clone() else {
         panic!("invalid Command");
     };
 
-    let mut config = Config::<PallasPoseidon>::read(config)?;
+    let mut config = Config::<C>::read(config)?;
 
     let name = config
         .contact

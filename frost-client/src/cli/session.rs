@@ -1,14 +1,14 @@
 use std::error::Error;
 
 use eyre::{eyre, OptionExt as _};
-use frost_bluepallas::PallasPoseidon;
+use frost_core::Ciphersuite;
 use rand::thread_rng;
 
 use crate::{api, client::Client};
 
 use super::{args::Command, config::Config};
 
-pub async fn list(args: &Command) -> Result<(), Box<dyn Error>> {
+pub async fn list<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Sessions {
         config,
         group,
@@ -19,7 +19,7 @@ pub async fn list(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let config = Config::<PallasPoseidon>::read(config)?;
+    let config = Config::<C>::read(config)?;
 
     let server_url = if let Some(server_url) = server_url {
         server_url

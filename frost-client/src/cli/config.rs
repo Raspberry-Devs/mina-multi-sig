@@ -10,6 +10,7 @@ use crate::cipher::{PrivateKey, PublicKey};
 use eyre::{eyre, OptionExt};
 use frost_core::{Ciphersuite, Identifier};
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 use super::{ciphersuite_helper::ciphersuite_helper, contact::Contact, write_atomic};
@@ -87,11 +88,10 @@ pub struct CommunicationKey {
     pub pubkey: PublicKey,
 }
 
-use std::marker::PhantomData;
-
 /// A FROST group the user belongs to.
 #[derive(Clone, Debug, Serialize, Deserialize, Zeroize)]
 pub struct Group<C: Ciphersuite> {
+    #[serde(skip)]
     pub _phantom: PhantomData<C>,
     /// A human-readable description of the group to make it easier to select
     /// groups

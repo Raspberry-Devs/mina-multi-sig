@@ -1,10 +1,9 @@
-use std::{collections::BTreeMap, error::Error};
+use std::{collections::BTreeMap, error::Error, marker::PhantomData};
 
 use eyre::{eyre, OptionExt};
 use itertools::izip;
 use rand::thread_rng;
 
-use frost_bluepallas::PallasPoseidon;
 use frost_core::{keys::KeyPackage, Ciphersuite};
 
 use super::{
@@ -21,18 +20,12 @@ type ParticipantExtractionResult =
 
 /// CLI entry point for trusted dealer key generation
 ///
-/// Generates FROST key shares using PallasPoseidon ciphersuite and updates
+/// Generates FROST key shares using ciphersuite and updates
 /// participant config files with group information.
 ///
 /// **TESTING ONLY** - See security warnings in `Command::TrustedDealer`.
-pub fn run(args: &Command) -> Result<(), Box<dyn Error>> {
-    run_for_ciphersuite::<PallasPoseidon>(args)
-}
-
 /// Trusted dealer key generation for a specific ciphersuite
-pub(crate) fn run_for_ciphersuite<C: Ciphersuite + 'static>(
-    args: &Command,
-) -> Result<(), Box<dyn Error>> {
+pub fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::TrustedDealer {
         config,
         description,
@@ -91,7 +84,7 @@ fn extract_participant_info<C: Ciphersuite>(
     let mut contacts = Vec::new();
 
     for (identifier, path, name) in izip!(shares.keys(), config_paths.iter(), names.iter()) {
-        let config = Config::<PallasPoseidon>::read(Some(path.to_string()))?;
+        let config = Config::<C>::read(Some(path.to_string()))?;
         let pubkey = config
             .communication_key
             .ok_or_eyre("config not initialized")?
@@ -136,7 +129,7 @@ fn update_config_files<C: Ciphersuite + 'static>(
         // a broadcast channel.
         let key_package: KeyPackage<C> = share.clone().try_into()?;
         let group = Group::<C> {
-            _phantom: Default::default(),
+            _phantom: PhantomData,
             description: description.to_string(),
             key_package: postcard::to_allocvec(&key_package)?,
             public_key_package: postcard::to_allocvec(public_key_package)?,

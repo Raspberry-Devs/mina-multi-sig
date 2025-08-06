@@ -4,7 +4,7 @@ use crate::{
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::{transactions::Transaction, translate::Translatable, PallasPoseidon};
+use frost_bluepallas::{transactions::Transaction, translate::Translatable};
 use frost_core::keys::PublicKeyPackage;
 use frost_core::Ciphersuite;
 use reqwest::Url;
@@ -21,13 +21,7 @@ use super::args::Command;
 use super::config::Config as ConfigFile;
 use crate::mina_network::Network;
 
-pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
-    run_for_ciphersuite::<PallasPoseidon>(args).await
-}
-
-pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
-    args: &Command,
-) -> Result<(), Box<dyn Error>> {
+pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Coordinator {
         config: config_path,
         server_url,
@@ -167,7 +161,7 @@ struct CoordinatorSetupParams<'a, C: Ciphersuite> {
 ///
 /// This function constructs the CoordinatorConfig with all necessary parameters
 /// including network settings, keys, signers, and messages.
-fn setup_coordinator_config<C: Ciphersuite + 'static>(
+fn setup_coordinator_config<C: Ciphersuite>(
     public_key_package: PublicKeyPackage<C>,
     signers: HashMap<PublicKey, frost_core::Identifier<C>>,
     params: CoordinatorSetupParams<C>,
