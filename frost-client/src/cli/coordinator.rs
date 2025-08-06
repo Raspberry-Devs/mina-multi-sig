@@ -92,7 +92,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     // Execute signing
     let signature_bytes = sign(&coordinator_config, &mut input, &mut output).await?;
 
-    // Get first message (and ONLY, this vector message stuff annoys me)
+    // Get first message (only one is expected)
     let msg_bytes = coordinator_config
         .messages
         .first()
