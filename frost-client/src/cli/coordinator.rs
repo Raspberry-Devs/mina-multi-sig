@@ -31,25 +31,24 @@ pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
     // Match on command type early to ensure we are running the coordinator command, panic otherwise
     let Command::Coordinator {
         signature: signature_path,
-        message,
         ..
     } = args
     else {
         panic!("invalid Command");
     };
 
-    // Run for ciphersuite will return the signatures bytes and the verifying key of the group
-    let (bytes, vk) = run_for_ciphersuite::<PallasPoseidon>(args).await?;
+    let (bytes, message, vk) = run_for_ciphersuite::<PallasPoseidon>(args).await?;
 
     // Save signature to the specified path or stdout
-    save_signature(signature_path, bytes, message, vk)?;
+    save_signature(signature_path, bytes, &message, vk)
+        .map_err(|e| BluePallasError::SaveSignatureError(e.to_string()))?;
 
     Ok(())
 }
 
 pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
-) -> Result<(Vec<u8>, VerifyingKey<C>), Box<dyn Error>> {
+) -> Result<(Vec<u8>, Vec<u8>, VerifyingKey<C>), Box<dyn Error>> {
     // Note, we duplicate pattern matching code here and in run(), but given that there is no way to pass a Command::Coordinator type
     // to this function, we must instead repeat the check again
     // The alternative is to create a struct which contains the same parameters, not worth it for only one use
@@ -93,7 +92,18 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     // Execute signing
     let signature_bytes = sign(&coordinator_config, &mut input, &mut output).await?;
 
-    Ok((signature_bytes, *public_key_package.verifying_key()))
+    // Get first message (and ONLY, this vector message stuff annoys me)
+    let msg_bytes = coordinator_config
+        .messages
+        .first()
+        .ok_or(BluePallasError::NoMessageProvided)?
+        .clone();
+
+    Ok((
+        signature_bytes,
+        msg_bytes,
+        *public_key_package.verifying_key(),
+    ))
 }
 
 // Read message from the provided file or stdin
@@ -250,20 +260,13 @@ fn setup_coordinator_config<C: Ciphersuite + 'static>(
 pub fn save_signature(
     signature_path: &str,
     signature_bytes: Vec<u8>,
-    message: &[String],
+    message: &[u8],
     vk: VerifyingKey<PallasPoseidon>,
 ) -> Result<(), Box<dyn Error>> {
     // Read signature from bytes
     let signature: Sig = Signature::<PallasPoseidon>::deserialize(&signature_bytes)?.try_into()?;
 
-    // Take the first message as the transaction
-    let transaction_str = message
-        .first()
-        .map(|tx| load_transaction_from_str(tx))
-        .transpose()?;
-    let tx = transaction_str.ok_or_else(|| {
-        BluePallasError::DeSerializationError("Failed to deserialize transaction".to_string())
-    })?;
+    let tx = Transaction::from_bytes(message)?;
 
     let pubkey: PubKeySer = vk.try_into()?;
 
