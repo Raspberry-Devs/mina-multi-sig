@@ -102,9 +102,10 @@ impl Group {
         let helper = ciphersuite_helper(&self.ciphersuite)?;
         let info = helper.group_info(&self.key_package, &self.public_key_package)?;
         let mut s = format!(
-            "Group \"{}\"\nPublic key {}\nServer URL: {}\nThreshold: {}\nParticipants: {}\n",
+            "Group \"{}\"\nPublic key (hex format): {}\nPublic key (mina format): {}\nServer URL: {}\nThreshold: {}\nParticipants: {}\n",
             self.description,
             info.hex_verifying_key,
+            info.mina_verifying_key,
             self.server_url.clone().unwrap_or_default(),
             info.threshold,
             info.num_participants
