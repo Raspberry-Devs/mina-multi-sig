@@ -7,7 +7,10 @@ use serde::{
     Serialize,
 };
 
-use crate::{errors::BluePallasError, transactions::Transaction, PallasPoseidon};
+use crate::{
+    errors::BluePallasError, transactions::Transaction, translate::translate_pk, PallasPoseidon,
+    VerifyingKey,
+};
 
 pub struct Sig {
     pub field: BigInt<4>,
@@ -56,6 +59,16 @@ impl From<PubKey> for PubKeySer {
     #[allow(non_snake_case)]
     fn from(pubKey: PubKey) -> Self {
         PubKeySer { pubKey }
+    }
+}
+
+impl TryFrom<VerifyingKey> for PubKeySer {
+    type Error = BluePallasError;
+
+    fn try_from(vk: VerifyingKey) -> Result<Self, Self::Error> {
+        translate_pk(&vk)
+            .map(|pub_key| PubKeySer { pubKey: pub_key })
+            .map_err(|e| BluePallasError::InvalidPublicKey(e.to_string()))
     }
 }
 

@@ -4,9 +4,15 @@ use crate::{
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::{transactions::Transaction, translate::Translatable, PallasPoseidon};
-use frost_core::keys::PublicKeyPackage;
+use frost_bluepallas::{
+    errors::BluePallasError,
+    signature::{PubKeySer, Sig, TransactionSignature},
+    transactions::Transaction,
+    translate::Translatable,
+    PallasPoseidon,
+};
 use frost_core::Ciphersuite;
+use frost_core::{keys::PublicKeyPackage, Signature, VerifyingKey};
 use reqwest::Url;
 use std::{
     collections::HashMap,
@@ -22,19 +28,38 @@ use super::config::Config as ConfigFile;
 use crate::mina_network::Network;
 
 pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
-    run_for_ciphersuite::<PallasPoseidon>(args).await
+    // Match on command type early to ensure we are running the coordinator command, panic otherwise
+    let Command::Coordinator {
+        signature: signature_path,
+        message,
+        ..
+    } = args
+    else {
+        panic!("invalid Command");
+    };
+
+    // Run for ciphersuite will return the signatures bytes and the verifying key of the group
+    let (bytes, vk) = run_for_ciphersuite::<PallasPoseidon>(args).await?;
+
+    // Save signature to the specified path or stdout
+    save_signature(signature_path, bytes, message, vk)?;
+
+    Ok(())
 }
 
 pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     args: &Command,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(Vec<u8>, VerifyingKey<C>), Box<dyn Error>> {
+    // Note, we duplicate pattern matching code here and in run(), but given that there is no way to pass a Command::Coordinator type
+    // to this function, we must instead repeat the check again
+    // The alternative is to create a struct which contains the same parameters, not worth it for only one use
     let Command::Coordinator {
         config: config_path,
         server_url,
         group: group_id,
         signers,
         message,
-        signature: signature_path,
+        signature: _,
         network,
     } = (*args).clone()
     else {
@@ -62,13 +87,13 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
         network,
     };
 
-    let coordinator_config = setup_coordinator_config::<C>(public_key_package, signers, params)?;
+    let coordinator_config =
+        setup_coordinator_config::<C>(public_key_package.clone(), signers, params)?;
 
     // Execute signing
     let signature_bytes = sign(&coordinator_config, &mut input, &mut output).await?;
 
-    save_signature(&signature_path, &signature_bytes)?;
-    Ok(())
+    Ok((signature_bytes, *public_key_package.verifying_key()))
 }
 
 // Read message from the provided file or stdin
@@ -220,14 +245,42 @@ fn setup_coordinator_config<C: Ciphersuite + 'static>(
     Ok(coordinator_config)
 }
 
+/// Combine the signature with the message and public key to generate the final signed output in json
+/// This is BluePallas specific, and so is called in the run() function which specifically uses the PallasPosiedon ciphersuite.
 pub fn save_signature(
     signature_path: &str,
-    signature_bytes: &Vec<u8>,
+    signature_bytes: Vec<u8>,
+    message: &[String],
+    vk: VerifyingKey<PallasPoseidon>,
 ) -> Result<(), Box<dyn Error>> {
+    // Read signature from bytes
+    let signature: Sig = Signature::<PallasPoseidon>::deserialize(&signature_bytes)?.try_into()?;
+
+    // Take the first message as the transaction
+    let transaction_str = message
+        .first()
+        .map(|tx| load_transaction_from_str(tx))
+        .transpose()?;
+    let tx = transaction_str.ok_or_else(|| {
+        BluePallasError::DeSerializationError("Failed to deserialize transaction".to_string())
+    })?;
+
+    let pubkey: PubKeySer = vk.try_into()?;
+
+    // Create transaction signature
+    let transaction_signature = TransactionSignature {
+        signature,
+        payload: tx,
+        publicKey: pubkey,
+    };
+
+    let output_str = serde_json::to_string_pretty(&transaction_signature)
+        .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
+
     if signature_path == "-" {
-        println!("{}", hex::encode(signature_bytes));
+        println!("{}", output_str);
     } else {
-        fs::write(signature_path, signature_bytes)?;
+        fs::write(signature_path, output_str)?;
         println!("Signature saved to {}", signature_path);
     }
     Ok(())
@@ -237,9 +290,8 @@ fn load_transaction_from_json<P: AsRef<Path>>(
     path: P,
 ) -> Result<Transaction, Box<dyn std::error::Error>> {
     let json_content = fs::read_to_string(path)?;
-    let transaction: Transaction = serde_json::from_str(json_content.trim())
-        .map_err(|e| eyre::eyre!("Failed to parse transaction from JSON: {}", e))?;
-    Ok(transaction)
+
+    load_transaction_from_str(&json_content)
 }
 
 fn load_transaction_from_stdin(
@@ -247,7 +299,14 @@ fn load_transaction_from_stdin(
 ) -> Result<Transaction, Box<dyn std::error::Error>> {
     let mut json_content = String::new();
     input.read_to_string(&mut json_content)?;
-    let transaction: Transaction = serde_json::from_str(json_content.trim())
+
+    load_transaction_from_str(&json_content)
+}
+
+fn load_transaction_from_str(
+    transaction_str: &str,
+) -> Result<Transaction, Box<dyn std::error::Error>> {
+    let transaction: Transaction = serde_json::from_str(transaction_str.trim())
         .map_err(|e| eyre::eyre!("Failed to parse transaction from JSON: {}", e))?;
     Ok(transaction)
 }

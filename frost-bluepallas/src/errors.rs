@@ -25,6 +25,9 @@ pub enum BluePallasError {
 
     /// Invalid Signature provided
     InvalidSignature(String),
+
+    /// Invalid Public Key
+    InvalidPublicKey(String),
 }
 
 impl fmt::Display for BluePallasError {
@@ -40,6 +43,7 @@ impl fmt::Display for BluePallasError {
             }
             BluePallasError::InvalidCommitment(msg) => write!(f, "Invalid commitment: {}", msg),
             BluePallasError::InvalidSignature(msg) => write!(f, "Invalid signature: {}", msg),
+            BluePallasError::InvalidPublicKey(msg) => write!(f, "Invalid public key: {}", msg),
         }
     }
 }
