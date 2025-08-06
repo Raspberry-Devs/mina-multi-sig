@@ -173,7 +173,7 @@ cargo run --bin frost-client -- coordinator \
     --group "$GROUP_PUBLIC_KEY" \
     -S "$BOB_PUBLIC_KEY,$EVE_PUBLIC_KEY" \
     -m "$GENERATED_DIR/message.json" \
-    -o "$GENERATED_DIR/signature.hex" &
+    -o "$GENERATED_DIR/signature.json" &
 COORDINATOR_PID=$!
 
 # Wait for coordinator to start
@@ -236,11 +236,11 @@ if [ $COORDINATOR_EXIT -eq 0 ] && [ $BOB_EXIT -eq 0 ] && [ $EVE_EXIT -eq 0 ]; th
     echo "Original message: $TEST_MESSAGE"
     echo ""
 
-    if [ -f "$GENERATED_DIR/signature.hex" ]; then
-        SIGNATURE=$(cat "$GENERATED_DIR/signature.hex")
+    if [ -f "$GENERATED_DIR/signature.json" ]; then
+        SIGNATURE=$(cat "$GENERATED_DIR/signature.json")
         echo "Generated signature: $SIGNATURE"
         echo ""
-        echo "Signature saved to: $GENERATED_DIR/signature.hex"
+        echo "Signature saved to: $GENERATED_DIR/signature.json"
     else
         echo "⚠️  Signature file not found, but processes completed successfully."
     fi
@@ -255,7 +255,7 @@ if [ $COORDINATOR_EXIT -eq 0 ] && [ $BOB_EXIT -eq 0 ] && [ $EVE_EXIT -eq 0 ]; th
     echo ""
     echo "Files generated:"
     echo "  - $GENERATED_DIR/message.json (original message)"
-    echo "  - $GENERATED_DIR/signature.hex (FROST signature)"
+    echo "  - $GENERATED_DIR/signature.json (FROST signature)"
     echo "  - $GENERATED_DIR/alice.toml (Alice's config)"
     echo "  - $GENERATED_DIR/bob.toml (Bob's config)"
     echo "  - $GENERATED_DIR/eve.toml (Eve's config)"
