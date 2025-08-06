@@ -22,6 +22,9 @@ pub enum BluePallasError {
 
     /// Invalid commitment provided
     InvalidCommitment(String),
+
+    /// Invalid Signature provided
+    InvalidSignature(String),
 }
 
 impl fmt::Display for BluePallasError {
@@ -36,6 +39,7 @@ impl fmt::Display for BluePallasError {
                 write!(f, "Deserialization error: {}", msg)
             }
             BluePallasError::InvalidCommitment(msg) => write!(f, "Invalid commitment: {}", msg),
+            BluePallasError::InvalidSignature(msg) => write!(f, "Invalid signature: {}", msg),
         }
     }
 }
