@@ -5,26 +5,17 @@ use eyre::Context;
 use eyre::OptionExt;
 use reqwest::Url;
 
-use frost_bluepallas::PallasPoseidon;
 use frost_core::keys::KeyPackage;
 use frost_core::Ciphersuite;
 
 use super::{args::Command, config::Config as ConfigFile};
 
+use crate::cli::config::{Group, Participant};
 use crate::participant::sign;
 use crate::participant::Config as ParticipantConfig;
 
 /// CLI entry point for participant signing
-///
-/// Participates in a FROST signing session using PallasPoseidon ciphersuite.
-pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
-    run_for_ciphersuite::<PallasPoseidon>(args).await
-}
-
-/// Participant signing for a specific ciphersuite
-pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
-    args: &Command,
-) -> Result<(), Box<dyn Error>> {
+pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Participant {
         config: config_path,
         server_url,
@@ -64,7 +55,7 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
 fn load_participant_config<C: Ciphersuite>(
     config_path: Option<String>,
     group_id: &str,
-) -> Result<(ConfigFile, crate::cli::config::Group, KeyPackage<C>), Box<dyn Error>> {
+) -> Result<(ConfigFile<C>, Group<C>, KeyPackage<C>), Box<dyn Error>> {
     let user_config = ConfigFile::read(config_path)?;
 
     let group_config = user_config
@@ -82,9 +73,9 @@ fn load_participant_config<C: Ciphersuite>(
 ///
 /// This function constructs the ParticipantConfig with all necessary parameters
 /// including network settings, keys, and coordinator lookup functionality.
-fn setup_participant_config<C: Ciphersuite + 'static>(
-    user_config: &ConfigFile,
-    group_config: &crate::cli::config::Group,
+fn setup_participant_config<C: Ciphersuite>(
+    user_config: &ConfigFile<C>,
+    group_config: &Group<C>,
     key_package: KeyPackage<C>,
     server_url: Option<String>,
     session: Option<String>,
@@ -148,7 +139,7 @@ type CoordinatorPubkeyGetter = Rc<dyn Fn(&crate::api::PublicKey) -> Option<crate
 /// This function creates a closure that can look up coordinator public keys
 /// from the group participants.
 fn create_coordinator_pubkey_getter(
-    group_participants: std::collections::BTreeMap<String, crate::cli::config::Participant>,
+    group_participants: std::collections::BTreeMap<String, Participant>,
 ) -> CoordinatorPubkeyGetter {
     Rc::new(move |coordinator_pubkey| {
         group_participants
