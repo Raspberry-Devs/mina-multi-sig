@@ -25,7 +25,7 @@ const TAG_BITS: usize = 3;
 const PAYMENT_TX_TAG: [bool; TAG_BITS] = [false, false, false];
 const DELEGATION_TX_TAG: [bool; TAG_BITS] = [false, false, true];
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {
     // Common
     pub fee: u64,
@@ -54,19 +54,13 @@ impl Serialize for Transaction {
         state.serialize_field("fee", &self.fee.to_string())?;
         state.serialize_field("amount", &self.amount.to_string())?;
         state.serialize_field("nonce", &self.nonce.to_string())?;
-        // Memo: drop trailing zeros, or replace with empty string if all zero?
-        let memo_str = String::from_utf8(self.memo.to_vec())
-            .unwrap_or_default()
-            .trim_end_matches(char::from(0))
-            .to_string();
 
+        // Read the length parameter
+        let memo_len = self.memo[1] as usize;
         // Serialize memo as a string, dropping the header bytes
-        // If length of memo is less than MEMO_HEADER_BYTES, it means it's empty
-        if memo_str.len() < MEMO_HEADER_BYTES {
-            state.serialize_field("memo", "")?;
-        } else {
-            state.serialize_field("memo", &memo_str[MEMO_HEADER_BYTES..])?;
-        }
+        let memo_str =
+            String::from_utf8_lossy(&self.memo[MEMO_HEADER_BYTES..MEMO_HEADER_BYTES + memo_len]);
+        state.serialize_field("memo", &memo_str)?;
 
         state.serialize_field("valid_until", &self.valid_until.to_string())?;
         state.serialize_field("tag", &self.tag)?;
@@ -494,6 +488,8 @@ mod tests {
         assert_eq!(original.nonce, deserialized.nonce);
         assert_eq!(original.valid_until, deserialized.valid_until);
         assert_eq!(original.tag, deserialized.tag);
+
+        assert_eq!(original, deserialized);
     }
 
     #[test]
@@ -531,6 +527,8 @@ mod tests {
         assert_eq!(original.token_id, reconstructed.token_id);
         assert_eq!(original.amount, reconstructed.amount);
         assert_eq!(original.token_locked, reconstructed.token_locked);
+
+        assert_eq!(original, reconstructed);
     }
 
     #[test]
@@ -568,6 +566,8 @@ mod tests {
         assert_eq!(original.token_id, reconstructed.token_id);
         assert_eq!(original.amount, reconstructed.amount);
         assert_eq!(original.token_locked, reconstructed.token_locked);
+
+        assert_eq!(original, reconstructed);
     }
 
     #[test]
