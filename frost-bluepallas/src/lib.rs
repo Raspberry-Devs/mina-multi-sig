@@ -45,6 +45,7 @@ pub mod hasher;
 pub mod helper;
 pub mod keys;
 mod negate;
+pub mod signature;
 pub mod transactions;
 pub mod translate;
 

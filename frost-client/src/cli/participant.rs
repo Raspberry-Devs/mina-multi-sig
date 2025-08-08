@@ -48,6 +48,10 @@ pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// Avoid clippy warnings about complex return types
+type LoadParticipantConfigResult<C> =
+    Result<(ConfigFile<C>, Group<C>, KeyPackage<C>), Box<dyn Error>>;
+
 /// Load and validate participant configuration
 ///
 /// This function reads the user config file, extracts the specified group,
@@ -55,7 +59,7 @@ pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
 fn load_participant_config<C: Ciphersuite>(
     config_path: Option<String>,
     group_id: &str,
-) -> Result<(ConfigFile<C>, Group<C>, KeyPackage<C>), Box<dyn Error>> {
+) -> LoadParticipantConfigResult<C> {
     let user_config = ConfigFile::read(config_path)?;
 
     let group_config = user_config

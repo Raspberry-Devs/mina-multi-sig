@@ -1,52 +1,12 @@
 use ark_ff::{BigInt, PrimeField};
-use frost_bluepallas::{transactions::Transaction, translate::Translatable, Error};
+use frost_bluepallas::{
+    signature::{PubKeySer, Sig, TransactionSignature},
+    transactions::Transaction,
+    translate::Translatable,
+    Error,
+};
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, PubKey, Signer};
-use serde::{
-    ser::{SerializeStruct, Serializer},
-    Serialize,
-};
-
-struct Sig {
-    field: BigInt<4>,
-    scalar: BigInt<4>,
-}
-
-impl Serialize for Sig {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut state = serializer.serialize_struct("signature", 2)?;
-        state.serialize_field("field", &self.field.to_string())?;
-        state.serialize_field("scalar", &self.scalar.to_string())?;
-        state.end()
-    }
-}
-
-#[allow(non_snake_case)]
-struct PubKeySer {
-    pubKey: PubKey,
-}
-
-impl Serialize for PubKeySer {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut state = serializer.serialize_struct("publicKey", 1)?;
-        state.serialize_field("address", &self.pubKey.into_address())?;
-        state.end()
-    }
-}
-
-#[allow(non_snake_case)]
-#[derive(Serialize)]
-struct TransactionSignature {
-    publicKey: PubKeySer,
-    signature: Sig,
-    payload: Transaction,
-}
 
 fn main() -> Result<(), Error> {
     // Private key in hex format
