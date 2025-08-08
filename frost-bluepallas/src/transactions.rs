@@ -52,7 +52,10 @@ impl Serialize for Transaction {
         state.serialize_field("to", &self.receiver_pk.into_address())?;
         state.serialize_field("from", &self.source_pk.into_address())?;
         state.serialize_field("fee", &self.fee.to_string())?;
-        state.serialize_field("amount", &self.amount.to_string())?;
+        match self.tag {
+            DELEGATION_TX_TAG => {} // Noop
+            _ => state.serialize_field("amount", &self.amount.to_string())?,
+        }
         state.serialize_field("nonce", &self.nonce.to_string())?;
 
         // Read the length parameter
@@ -79,7 +82,8 @@ impl<'de> Deserialize<'de> for Transaction {
             to: String,
             from: String,
             fee: String,
-            amount: String,
+            #[serde(default)]
+            amount: Option<String>,
             nonce: String,
             memo: String,
             valid_until: String,
@@ -91,15 +95,21 @@ impl<'de> Deserialize<'de> for Transaction {
         let from = PubKey::from_address(&data.from).map_err(serde::de::Error::custom)?;
         let to = PubKey::from_address(&data.to).map_err(serde::de::Error::custom)?;
         let fee = data.fee.parse().map_err(serde::de::Error::custom)?;
-        let amount = data.amount.parse().map_err(serde::de::Error::custom)?;
         let nonce = data.nonce.parse().map_err(serde::de::Error::custom)?;
         let valid_until = data.valid_until.parse().map_err(serde::de::Error::custom)?;
 
         // Match transaction tag to determine whether we have a payment or delegation transaction
         let tx = match data.tag {
-            PAYMENT_TX_TAG => Transaction::new_payment(from, to, amount, fee, nonce)
-                .set_memo_str(&data.memo)
-                .set_valid_until(valid_until),
+            PAYMENT_TX_TAG => {
+                // Expect data.amount to exist
+                let ser_amount = data.amount.ok_or(serde::de::Error::custom(
+                    "Missing amount for payment transaction",
+                ))?;
+                let amount = ser_amount.parse().map_err(serde::de::Error::custom)?;
+                Transaction::new_payment(from, to, amount, fee, nonce)
+                    .set_memo_str(&data.memo)
+                    .set_valid_until(valid_until)
+            }
             DELEGATION_TX_TAG => Transaction::new_delegation(from, to, fee, nonce)
                 .set_memo_str(&data.memo)
                 .set_valid_until(valid_until),
