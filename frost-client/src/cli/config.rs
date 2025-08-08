@@ -10,13 +10,18 @@ use crate::cipher::{PrivateKey, PublicKey};
 use eyre::{eyre, OptionExt};
 use frost_core::{Ciphersuite, Identifier};
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 use super::{ciphersuite_helper::ciphersuite_helper, contact::Contact, write_atomic};
 
 /// The config file, which is serialized with serde.
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
-pub struct Config {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(bound(
+    serialize = "BTreeMap<String, Group<C>>: Serialize",
+    deserialize = "BTreeMap<String, Group<C>>: Deserialize<'de>"
+))]
+pub struct Config<C: Ciphersuite> {
     /// The path the config was loaded from.
     #[serde(skip)]
     path: Option<PathBuf>,
@@ -28,18 +33,35 @@ pub struct Config {
     pub contact: BTreeMap<String, Contact>,
     /// The FROST groups the user belongs to, keyed by hex-encoded verifying key
     #[serde(default)]
-    pub group: BTreeMap<String, Group>,
+    pub group: BTreeMap<String, Group<C>>,
 }
 
-impl Zeroize for Config {
+/// Manual derive to place a bound on BTreeMap<...> since otherwise the compiler
+/// will demand that C: Default
+impl<C: Ciphersuite> Default for Config<C>
+where
+    BTreeMap<String, Group<C>>: Default,
+{
+    fn default() -> Self {
+        Self {
+            path: None,
+            version: 0,
+            communication_key: None,
+            contact: BTreeMap::new(),
+            group: BTreeMap::new(),
+        }
+    }
+}
+
+impl<C: Ciphersuite> Zeroize for Config<C> {
     fn zeroize(&mut self) {
         self.group.iter_mut().for_each(|(_, g)| g.zeroize());
     }
 }
 
-impl ZeroizeOnDrop for Config {}
+impl<C: Ciphersuite> ZeroizeOnDrop for Config<C> {}
 
-impl Config {
+impl<C: Ciphersuite> Config<C> {
     pub fn contact_by_pubkey(&self, pubkey: &PublicKey) -> Result<Contact, Box<dyn Error>> {
         if Some(pubkey) == self.communication_key.as_ref().map(|c| &c.pubkey) {
             return Ok(Contact {
@@ -68,12 +90,12 @@ pub struct CommunicationKey {
 
 /// A FROST group the user belongs to.
 #[derive(Clone, Debug, Serialize, Deserialize, Zeroize)]
-pub struct Group {
+pub struct Group<C: Ciphersuite> {
+    #[serde(skip)]
+    pub _phantom: PhantomData<C>,
     /// A human-readable description of the group to make it easier to select
     /// groups
     pub description: String,
-    /// The ciphersuite being used for the group
-    pub ciphersuite: String,
     /// The encoded public key package for the group.
     #[serde(
         serialize_with = "serdect::slice::serialize_hex_lower_or_bin",
@@ -93,18 +115,19 @@ pub struct Group {
     pub participant: BTreeMap<String, Participant>,
 }
 
-impl ZeroizeOnDrop for Group {}
+impl<C: Ciphersuite> ZeroizeOnDrop for Group<C> {}
 
-impl Group {
+impl<C: Ciphersuite> Group<C> {
     /// Returns a human-readable summary of the contact; used when it is
     /// printed to the terminal.
-    pub fn as_human_readable_summary(&self, config: &Config) -> Result<String, Box<dyn Error>> {
-        let helper = ciphersuite_helper(&self.ciphersuite)?;
+    pub fn as_human_readable_summary(&self, config: &Config<C>) -> Result<String, Box<dyn Error>> {
+        let helper = ciphersuite_helper::<C>();
         let info = helper.group_info(&self.key_package, &self.public_key_package)?;
         let mut s = format!(
-            "Group \"{}\"\nPublic key {}\nServer URL: {}\nThreshold: {}\nParticipants: {}\n",
+            "Group \"{}\"\nPublic key (hex format): {}\nPublic key (mina format): {}\nServer URL: {}\nThreshold: {}\nParticipants: {}\n",
             self.description,
             info.hex_verifying_key,
+            info.mina_verifying_key,
             self.server_url.clone().unwrap_or_default(),
             info.threshold,
             info.num_participants
@@ -147,7 +170,7 @@ impl Participant {
     }
 }
 
-impl Config {
+impl<C: Ciphersuite> Config<C> {
     /// Returns the default path of the config
     /// ($HOME/.config/frost/credentials.toml in Linux) if `path` is None,
     /// otherwise parse the given path and return it.
@@ -179,7 +202,7 @@ impl Config {
         }
         let bytes = Zeroizing::new(std::fs::read(&path)?);
         let s = str::from_utf8(&bytes)?;
-        let mut config: Config = toml::from_str(s)?;
+        let mut config: Config<C> = toml::from_str(s)?;
         config.path = Some(path);
         Ok(config)
     }

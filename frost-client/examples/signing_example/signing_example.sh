@@ -110,7 +110,7 @@ ALICE_GROUPS=$(cargo run --bin frost-client groups -c "$GENERATED_DIR/alice.toml
 echo "Alice ggg: $ALICE_GROUPS"
 
 # Extract the group public key (first group's public key)
-GROUP_PUBLIC_KEY=$(echo "$ALICE_GROUPS" | grep -o "Public key [a-f0-9]*" | head -1 | cut -d' ' -f3)
+GROUP_PUBLIC_KEY=$(echo "$ALICE_GROUPS" | grep "Public key (hex format):" | head -1 | sed 's/.*Public key (hex format): \([a-f0-9]*\).*/\1/')
 if [ -z "$GROUP_PUBLIC_KEY" ]; then
     echo "ERROR: Could not extract group public key from Alice's groups!"
     echo "Make sure the trusted dealer example was run successfully."

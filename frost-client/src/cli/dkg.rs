@@ -1,6 +1,7 @@
 use std::{
     collections::{BTreeMap, HashMap},
     error::Error,
+    marker::PhantomData,
     rc::Rc,
 };
 
@@ -22,14 +23,7 @@ use crate::dkg;
 ///
 /// Generates FROST key shares using distributed key generation protocol
 /// and updates the participant config file with group information.
-pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
-    run_for_ciphersuite::<frost_bluepallas::PallasPoseidon>(args).await
-}
-
-/// Distributed key generation for a specific ciphersuite
-pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
-    args: &Command,
-) -> Result<(), Box<dyn Error>> {
+pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Dkg {
         config: config_path,
         description,
@@ -45,7 +39,8 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
     let mut output = std::io::stdout();
 
     // Setup DKG configuration
-    let dkg_config = setup_dkg_config(config_path.clone(), &server_url, threshold, &participants)?;
+    let dkg_config =
+        setup_dkg_config::<C>(config_path.clone(), &server_url, threshold, &participants)?;
 
     // Generate key shares through DKG
     let (key_package, public_key_package, pubkey_map) =
@@ -72,13 +67,13 @@ pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
 ///
 /// This function reads the participant's config file, parses the server URL,
 /// and constructs the DKG configuration needed for key generation.
-fn setup_dkg_config(
+fn setup_dkg_config<C: Ciphersuite>(
     config_path: Option<String>,
     server_url: &str,
     threshold: u16,
     participants: &[String],
 ) -> Result<dkg::Config, Box<dyn Error>> {
-    let config = Config::read(config_path)?;
+    let config = Config::<C>::read(config_path)?;
 
     let server_url_parsed =
         Url::parse(&format!("https://{}", server_url)).wrap_err("error parsing server-url")?;
@@ -163,7 +158,7 @@ fn create_participants_map<C: Ciphersuite>(
 ///
 /// This function takes the generated key package and updates the participant's config
 /// file with the group information.
-fn update_config_with_group<C: Ciphersuite + 'static>(
+fn update_config_with_group<C: Ciphersuite>(
     config_path: Option<String>,
     description: &str,
     server_url: &str,
@@ -171,8 +166,8 @@ fn update_config_with_group<C: Ciphersuite + 'static>(
     public_key_package: &frost_core::keys::PublicKeyPackage<C>,
     participants: &BTreeMap<String, Participant>,
 ) -> Result<(), Box<dyn Error>> {
-    let group = Group {
-        ciphersuite: C::ID.to_string(),
+    let group = Group::<C> {
+        _phantom: PhantomData,
         description: description.to_string(),
         key_package: postcard::to_allocvec(key_package)?,
         public_key_package: postcard::to_allocvec(public_key_package)?,

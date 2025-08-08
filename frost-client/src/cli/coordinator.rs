@@ -11,8 +11,7 @@ use frost_bluepallas::{
     translate::Translatable,
     PallasPoseidon,
 };
-use frost_core::Ciphersuite;
-use frost_core::{keys::PublicKeyPackage, Signature, VerifyingKey};
+use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};
 use reqwest::Url;
 use std::{
     collections::HashMap,
@@ -137,6 +136,16 @@ pub fn read_messages(
     Ok(messages)
 }
 
+// Avoid clippy warnings about complex return types
+type LoadCoordinatorConfigResult<C> = Result<
+    (
+        ConfigFile<C>,
+        crate::cli::config::Group<C>,
+        PublicKeyPackage<C>,
+    ),
+    Box<dyn Error>,
+>;
+
 /// Load and validate coordinator configuration
 ///
 /// This function reads the user config file, extracts the specified group,
@@ -144,7 +153,7 @@ pub fn read_messages(
 fn load_coordinator_config<C: Ciphersuite>(
     config_path: Option<String>,
     group_id: &str,
-) -> Result<(ConfigFile, crate::cli::config::Group, PublicKeyPackage<C>), Box<dyn Error>> {
+) -> LoadCoordinatorConfigResult<C> {
     let user_config = ConfigFile::read(config_path)?;
 
     let group_config = user_config
@@ -165,7 +174,7 @@ fn load_coordinator_config<C: Ciphersuite>(
 /// and maps them to their corresponding identifiers from the group config.
 fn parse_signers<C: Ciphersuite>(
     signer_args: &[String],
-    group_config: &crate::cli::config::Group,
+    group_config: &crate::cli::config::Group<C>,
 ) -> Result<HashMap<PublicKey, frost_core::Identifier<C>>, Box<dyn Error>> {
     signer_args
         .iter()
@@ -181,9 +190,9 @@ fn parse_signers<C: Ciphersuite>(
 ///
 /// This structure groups related parameters to avoid the Clippy warning about
 /// functions with too many arguments.
-struct CoordinatorSetupParams<'a> {
-    user_config: &'a ConfigFile,
-    group_config: &'a crate::cli::config::Group,
+struct CoordinatorSetupParams<'a, C: Ciphersuite> {
+    user_config: &'a ConfigFile<C>,
+    group_config: &'a crate::cli::config::Group<C>,
     server_url: Option<String>,
     message_paths: &'a [String],
     output: &'a mut dyn Write,
@@ -195,10 +204,10 @@ struct CoordinatorSetupParams<'a> {
 ///
 /// This function constructs the CoordinatorConfig with all necessary parameters
 /// including network settings, keys, signers, and messages.
-fn setup_coordinator_config<C: Ciphersuite + 'static>(
+fn setup_coordinator_config<C: Ciphersuite>(
     public_key_package: PublicKeyPackage<C>,
     signers: HashMap<PublicKey, frost_core::Identifier<C>>,
-    params: CoordinatorSetupParams,
+    params: CoordinatorSetupParams<C>,
 ) -> Result<CoordinatorConfig<C>, Box<dyn Error>> {
     // Determine server URL
     let server_url = if let Some(server_url) = params.server_url {
