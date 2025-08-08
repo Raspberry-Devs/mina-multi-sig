@@ -6,9 +6,6 @@ use frost_core::{keys::PublicKeyPackage, Ciphersuite, Identifier};
 
 #[derive(Clone)]
 pub struct Config<C: Ciphersuite> {
-    /// Use Web Socket communication if true. Otherwise, use HTTP.
-    pub socket: bool,
-
     /// Signers to use in HTTP mode, as a map of public keys to identifiers.
     pub signers: HashMap<PublicKey, Identifier<C>>,
 

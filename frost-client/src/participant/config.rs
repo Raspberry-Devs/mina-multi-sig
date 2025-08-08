@@ -7,10 +7,6 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// Configuration for the participant in the FROST signing protocol.
 #[derive(Clone, Zeroize)]
 pub struct Config<C: Ciphersuite> {
-    // Web Sockets mode. If enabled, it will use Web Sockets communication with a
-    // FROST server. Otherwise http mode is used.
-    pub socket: bool,
-
     /// Key package to use.
     pub key_package: KeyPackage<C>,
 

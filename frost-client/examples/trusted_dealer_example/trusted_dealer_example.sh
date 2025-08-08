@@ -26,6 +26,7 @@ cargo run --bin frost-client -- trusted-dealer \
     --names Alice,Bob,Eve \
     -c "$GENERATED_DIR/alice.toml" \
     -c "$GENERATED_DIR/bob.toml" \
-    -c "$GENERATED_DIR/eve.toml"
+    -c "$GENERATED_DIR/eve.toml" \
+    -t 2
 
-echo "Key generation complete. Check the generated directory for the config files." 
+echo "Key generation complete. Check the generated directory for the config files."

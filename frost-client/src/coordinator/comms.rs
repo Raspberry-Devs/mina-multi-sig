@@ -1,5 +1,4 @@
 pub mod http;
-pub mod socket;
 
 use frost_core::{self as frost, Ciphersuite};
 
