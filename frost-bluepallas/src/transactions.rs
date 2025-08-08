@@ -110,9 +110,16 @@ impl<'de> Deserialize<'de> for Transaction {
                     .set_memo_str(&data.memo)
                     .set_valid_until(valid_until)
             }
-            DELEGATION_TX_TAG => Transaction::new_delegation(from, to, fee, nonce)
-                .set_memo_str(&data.memo)
-                .set_valid_until(valid_until),
+            DELEGATION_TX_TAG => {
+                if data.amount.is_some() {
+                    return Err(serde::de::Error::custom(
+                        "Unexpected amount for delegation transaction",
+                    ));
+                }
+                Transaction::new_delegation(from, to, fee, nonce)
+                    .set_memo_str(&data.memo)
+                    .set_valid_until(valid_until)
+            }
             _ => return Err(serde::de::Error::custom("Invalid transaction tag")),
         };
 
@@ -495,6 +502,7 @@ mod tests {
         assert_eq!(original.source_pk.x, deserialized.source_pk.x);
         assert_eq!(original.receiver_pk.x, deserialized.receiver_pk.x);
         assert_eq!(original.amount, deserialized.amount);
+        assert_eq!(deserialized.amount, 0);
         assert_eq!(original.fee, deserialized.fee);
         assert_eq!(original.nonce, deserialized.nonce);
         assert_eq!(original.valid_until, deserialized.valid_until);
@@ -576,6 +584,7 @@ mod tests {
         );
         assert_eq!(original.token_id, reconstructed.token_id);
         assert_eq!(original.amount, reconstructed.amount);
+        assert_eq!(reconstructed.amount, 0);
         assert_eq!(original.token_locked, reconstructed.token_locked);
 
         assert_eq!(original, reconstructed);
@@ -590,11 +599,57 @@ mod tests {
             "amount": "1000000",
             "nonce": "not_a_number",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_invalid_delegation_with_amount_string() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "amount": "1000000",
+            "nonce": "0",
+            "memo": "test",
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    true
+                ]
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_valid_delegation_string() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "nonce": "0",
+            "memo": "test",
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    true
+                ]
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -606,7 +661,12 @@ mod tests {
             "amount": "1000000",
             "nonce": "42",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
@@ -622,7 +682,12 @@ mod tests {
             "amount": "18446744073709551616",
             "nonce": "42",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
@@ -638,7 +703,12 @@ mod tests {
             "amount": "1000000",
             "nonce": "4294967296",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
@@ -654,7 +724,12 @@ mod tests {
             "amount": "1000000",
             "nonce": "42",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
