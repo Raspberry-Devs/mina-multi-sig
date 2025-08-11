@@ -25,7 +25,7 @@ const TAG_BITS: usize = 3;
 const PAYMENT_TX_TAG: [bool; TAG_BITS] = [false, false, false];
 const DELEGATION_TX_TAG: [bool; TAG_BITS] = [false, false, true];
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {
     // Common
     pub fee: u64,
@@ -52,21 +52,19 @@ impl Serialize for Transaction {
         state.serialize_field("to", &self.receiver_pk.into_address())?;
         state.serialize_field("from", &self.source_pk.into_address())?;
         state.serialize_field("fee", &self.fee.to_string())?;
-        state.serialize_field("amount", &self.amount.to_string())?;
-        state.serialize_field("nonce", &self.nonce.to_string())?;
-        // Memo: drop trailing zeros, or replace with empty string if all zero?
-        let memo_str = String::from_utf8(self.memo.to_vec())
-            .unwrap_or_default()
-            .trim_end_matches(char::from(0))
-            .to_string();
-
-        // Serialize memo as a string, dropping the header bytes
-        // If length of memo is less than MEMO_HEADER_BYTES, it means it's empty
-        if memo_str.len() < MEMO_HEADER_BYTES {
-            state.serialize_field("memo", "")?;
-        } else {
-            state.serialize_field("memo", &memo_str[MEMO_HEADER_BYTES..])?;
+        match self.tag {
+            DELEGATION_TX_TAG => {} // Noop
+            _ => state.serialize_field("amount", &self.amount.to_string())?,
         }
+        state.serialize_field("nonce", &self.nonce.to_string())?;
+
+        // Read the length parameter
+        let memo_len = self.memo[1] as usize;
+        // Serialize memo as a string, dropping the header bytes
+        let memo_str =
+            String::from_utf8(self.memo[MEMO_HEADER_BYTES..MEMO_HEADER_BYTES + memo_len].to_vec())
+                .map_err(serde::ser::Error::custom)?;
+        state.serialize_field("memo", &memo_str)?;
 
         state.serialize_field("valid_until", &self.valid_until.to_string())?;
         state.serialize_field("tag", &self.tag)?;
@@ -84,7 +82,8 @@ impl<'de> Deserialize<'de> for Transaction {
             to: String,
             from: String,
             fee: String,
-            amount: String,
+            #[serde(default)]
+            amount: Option<String>,
             nonce: String,
             memo: String,
             valid_until: String,
@@ -96,18 +95,31 @@ impl<'de> Deserialize<'de> for Transaction {
         let from = PubKey::from_address(&data.from).map_err(serde::de::Error::custom)?;
         let to = PubKey::from_address(&data.to).map_err(serde::de::Error::custom)?;
         let fee = data.fee.parse().map_err(serde::de::Error::custom)?;
-        let amount = data.amount.parse().map_err(serde::de::Error::custom)?;
         let nonce = data.nonce.parse().map_err(serde::de::Error::custom)?;
         let valid_until = data.valid_until.parse().map_err(serde::de::Error::custom)?;
 
         // Match transaction tag to determine whether we have a payment or delegation transaction
         let tx = match data.tag {
-            PAYMENT_TX_TAG => Transaction::new_payment(from, to, amount, fee, nonce)
-                .set_memo_str(&data.memo)
-                .set_valid_until(valid_until),
-            DELEGATION_TX_TAG => Transaction::new_delegation(from, to, fee, nonce)
-                .set_memo_str(&data.memo)
-                .set_valid_until(valid_until),
+            PAYMENT_TX_TAG => {
+                // Expect data.amount to exist
+                let ser_amount = data.amount.ok_or(serde::de::Error::custom(
+                    "Missing amount for payment transaction",
+                ))?;
+                let amount = ser_amount.parse().map_err(serde::de::Error::custom)?;
+                Transaction::new_payment(from, to, amount, fee, nonce)
+                    .set_memo_str(&data.memo)
+                    .set_valid_until(valid_until)
+            }
+            DELEGATION_TX_TAG => {
+                if data.amount.is_some() {
+                    return Err(serde::de::Error::custom(
+                        "Unexpected amount for delegation transaction",
+                    ));
+                }
+                Transaction::new_delegation(from, to, fee, nonce)
+                    .set_memo_str(&data.memo)
+                    .set_valid_until(valid_until)
+            }
             _ => return Err(serde::de::Error::custom("Invalid transaction tag")),
         };
 
@@ -490,10 +502,13 @@ mod tests {
         assert_eq!(original.source_pk.x, deserialized.source_pk.x);
         assert_eq!(original.receiver_pk.x, deserialized.receiver_pk.x);
         assert_eq!(original.amount, deserialized.amount);
+        assert_eq!(deserialized.amount, 0);
         assert_eq!(original.fee, deserialized.fee);
         assert_eq!(original.nonce, deserialized.nonce);
         assert_eq!(original.valid_until, deserialized.valid_until);
         assert_eq!(original.tag, deserialized.tag);
+
+        assert_eq!(original, deserialized);
     }
 
     #[test]
@@ -531,6 +546,8 @@ mod tests {
         assert_eq!(original.token_id, reconstructed.token_id);
         assert_eq!(original.amount, reconstructed.amount);
         assert_eq!(original.token_locked, reconstructed.token_locked);
+
+        assert_eq!(original, reconstructed);
     }
 
     #[test]
@@ -567,7 +584,10 @@ mod tests {
         );
         assert_eq!(original.token_id, reconstructed.token_id);
         assert_eq!(original.amount, reconstructed.amount);
+        assert_eq!(reconstructed.amount, 0);
         assert_eq!(original.token_locked, reconstructed.token_locked);
+
+        assert_eq!(original, reconstructed);
     }
 
     #[test]
@@ -579,11 +599,57 @@ mod tests {
             "amount": "1000000",
             "nonce": "not_a_number",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_invalid_delegation_with_amount_string() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "amount": "1000000",
+            "nonce": "0",
+            "memo": "test",
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    true
+                ]
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_deserialize_valid_delegation_string() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "nonce": "0",
+            "memo": "test",
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    true
+                ]
+        }"#;
+
+        let result: Result<Transaction, _> = serde_json::from_str(json);
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -595,7 +661,12 @@ mod tests {
             "amount": "1000000",
             "nonce": "42",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
@@ -611,7 +682,12 @@ mod tests {
             "amount": "18446744073709551616",
             "nonce": "42",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
@@ -627,7 +703,12 @@ mod tests {
             "amount": "1000000",
             "nonce": "4294967296",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
@@ -643,7 +724,12 @@ mod tests {
             "amount": "1000000",
             "nonce": "42",
             "memo": "test",
-            "valid_until": "12345"
+            "valid_until": "12345",
+            "tag": [
+                    false,
+                    false,
+                    false
+                ]
         }"#;
 
         let result: Result<Transaction, _> = serde_json::from_str(json);
@@ -727,5 +813,84 @@ mod tests {
         let bytes = vec![0x00, 0x00, 0x00, 0x00]; // Zero fields
         let result = Transaction::from_bytes(&bytes);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_memo_with_embedded_nulls() {
+        // This test would fail with the previous buggy implementation
+        // because it relied on string conversion and trimming instead of using the length parameter
+        let from = create_test_pubkey([13; 32]);
+        let to = create_test_pubkey([14; 32]);
+
+        // Create a transaction and manually set memo with embedded nulls and non-UTF8 bytes
+        let mut tx = Transaction::new_payment(from, to, 1000000, 10000, 42);
+
+        // Set up memo with: [0x01, 0x08, 'h', 'e', 'l', 0x00, 'l', 'o', 0xFF, 0x80, padding...]
+        // Length = 8, but contains null byte at position 3 and invalid UTF-8 at the end
+        tx.memo[0] = 0x01; // Format marker
+        tx.memo[1] = 0x08; // Length = 8 bytes
+        tx.memo[2] = b'h';
+        tx.memo[3] = b'e';
+        tx.memo[4] = b'l';
+        tx.memo[5] = 0x00; // Embedded null byte
+        tx.memo[6] = b'l';
+        tx.memo[7] = b'o';
+        tx.memo[8] = 0x00; // Invalid UTF-8 start byte
+        tx.memo[9] = 0x00; // Invalid UTF-8 continuation
+                           // Rest should be zeros (padding)
+
+        // Test JSON serialization/deserialization roundtrip
+        let json = serde_json::to_string(&tx).unwrap();
+        let deserialized: Transaction = serde_json::from_str(&json).unwrap();
+
+        // With the current correct implementation, this should work
+        assert_eq!(tx.memo, deserialized.memo);
+
+        // Test that the serialized JSON contains the expected memo content
+        // The memo should serialize as "hel\u0000lo\u0000" (with lossy UTF-8 conversion)
+        assert!(json.contains("hel"));
+
+        // Test bytes roundtrip as well
+        let bytes = tx.translate_msg();
+        let reconstructed =
+            Transaction::from_bytes(&bytes).expect("Should reconstruct successfully");
+        assert_eq!(tx.memo, reconstructed.memo);
+        assert_eq!(tx, reconstructed);
+    }
+
+    #[test]
+    fn test_memo_length_parameter_correctness() {
+        // This test specifically targets the length parameter usage
+        // The old implementation would fail because it didn't respect the length byte
+        let from = create_test_pubkey([15; 32]);
+        let to = create_test_pubkey([16; 32]);
+
+        let mut tx = Transaction::new_payment(from, to, 1000000, 10000, 42);
+
+        // Set memo with length=5 but put more data after those 5 bytes
+        tx.memo[0] = 0x01; // Format marker
+        tx.memo[1] = 0x05; // Length = 5 bytes only
+        tx.memo[2] = b'h';
+        tx.memo[3] = b'e';
+        tx.memo[4] = b'l';
+        tx.memo[5] = b'l';
+        tx.memo[6] = b'o';
+        tx.memo[7] = b'j'; // This should be ignored (beyond length)
+        tx.memo[8] = b'u'; // This should be ignored (beyond length)
+        tx.memo[9] = b'n'; // This should be ignored (beyond length)
+        tx.memo[10] = b'k'; // This should be ignored (beyond length)
+                            // Rest zeros
+
+        // Serialize to JSON
+        let json = serde_json::to_string(&tx).unwrap();
+
+        // The memo should only include the first 5 characters: "hello"
+        // The old implementation would have included the junk data or failed
+        assert!(json.contains("\"memo\":\"hello\""));
+        assert!(!json.contains("junk"));
+
+        // Roundtrip test
+        let deserialized: Transaction = serde_json::from_str(&json).unwrap();
+        assert_ne!(tx.memo, deserialized.memo);
     }
 }

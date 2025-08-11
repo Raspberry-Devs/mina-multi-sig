@@ -4,9 +4,14 @@ use crate::{
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::{transactions::Transaction, translate::Translatable};
-use frost_core::keys::PublicKeyPackage;
-use frost_core::Ciphersuite;
+use frost_bluepallas::{
+    errors::BluePallasError,
+    signature::{PubKeySer, Sig, TransactionSignature},
+    transactions::Transaction,
+    translate::Translatable,
+    PallasPoseidon,
+};
+use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};
 use reqwest::Url;
 use std::{
     collections::HashMap,
@@ -21,14 +26,40 @@ use super::args::Command;
 use super::config::Config as ConfigFile;
 use crate::mina_network::Network;
 
-pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
+/// This is the PallasPoseidon/BluePallas specific run command for the coordinator which will save the output
+/// of the signing session into a Mina-specific transaction. The generic logic has been moved into `run()`
+pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
+    // Match on command type early to ensure we are running the coordinator command, panic otherwise
+    let Command::Coordinator {
+        signature: signature_path,
+        ..
+    } = args
+    else {
+        panic!("invalid Command");
+    };
+
+    let (bytes, message, vk) = run::<PallasPoseidon>(args).await?;
+
+    // Save signature to the specified path or stdout
+    save_signature(signature_path, bytes, &message, vk)
+        .map_err(|e| BluePallasError::SaveSignatureError(e.to_string()))?;
+
+    Ok(())
+}
+
+pub(crate) async fn run<C: Ciphersuite>(
+    args: &Command,
+) -> Result<(Vec<u8>, Vec<u8>, VerifyingKey<C>), Box<dyn Error>> {
+    // Note, we duplicate pattern matching code here and in run(), but given that there is no way to pass a Command::Coordinator type
+    // to this function, we must instead repeat the check again
+    // The alternative is to create a struct which contains the same parameters, not worth it for only one use
     let Command::Coordinator {
         config: config_path,
         server_url,
         group: group_id,
         signers,
         message,
-        signature: signature_path,
+        signature: _,
         network,
     } = (*args).clone()
     else {
@@ -56,13 +87,24 @@ pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
         network,
     };
 
-    let coordinator_config = setup_coordinator_config::<C>(public_key_package, signers, params)?;
+    let coordinator_config =
+        setup_coordinator_config::<C>(public_key_package.clone(), signers, params)?;
 
     // Execute signing
     let signature_bytes = coordinate_signing(&coordinator_config, &mut input, &mut output).await?;
 
-    save_signature(&signature_path, &signature_bytes)?;
-    Ok(())
+    // Get first message (only one is expected)
+    let msg_bytes = coordinator_config
+        .messages
+        .first()
+        .ok_or(BluePallasError::NoMessageProvided)?
+        .clone();
+
+    Ok((
+        signature_bytes,
+        msg_bytes,
+        *public_key_package.verifying_key(),
+    ))
 }
 
 // Read message from the provided file or stdin
@@ -96,6 +138,16 @@ pub fn read_messages(
     Ok(messages)
 }
 
+// Avoid clippy warnings about complex return types
+type LoadCoordinatorConfigResult<C> = Result<
+    (
+        ConfigFile<C>,
+        crate::cli::config::Group<C>,
+        PublicKeyPackage<C>,
+    ),
+    Box<dyn Error>,
+>;
+
 /// Load and validate coordinator configuration
 ///
 /// This function reads the user config file, extracts the specified group,
@@ -103,14 +155,7 @@ pub fn read_messages(
 fn load_coordinator_config<C: Ciphersuite>(
     config_path: Option<String>,
     group_id: &str,
-) -> Result<
-    (
-        ConfigFile<C>,
-        crate::cli::config::Group<C>,
-        PublicKeyPackage<C>,
-    ),
-    Box<dyn Error>,
-> {
+) -> LoadCoordinatorConfigResult<C> {
     let user_config = ConfigFile::read(config_path)?;
 
     let group_config = user_config
@@ -220,14 +265,35 @@ fn setup_coordinator_config<C: Ciphersuite>(
     Ok(coordinator_config)
 }
 
+/// Combine the signature with the message and public key to generate the final signed output in json
+/// This is BluePallas specific, and so is called in the run() function which specifically uses the PallasPosiedon ciphersuite.
 pub fn save_signature(
     signature_path: &str,
-    signature_bytes: &Vec<u8>,
+    signature_bytes: Vec<u8>,
+    message: &[u8],
+    vk: VerifyingKey<PallasPoseidon>,
 ) -> Result<(), Box<dyn Error>> {
+    // Read signature from bytes
+    let signature: Sig = Signature::<PallasPoseidon>::deserialize(&signature_bytes)?.try_into()?;
+
+    let tx = Transaction::from_bytes(message)?;
+
+    let pubkey: PubKeySer = vk.try_into()?;
+
+    // Create transaction signature
+    let transaction_signature = TransactionSignature {
+        signature,
+        payload: tx,
+        publicKey: pubkey,
+    };
+
+    let output_str = serde_json::to_string_pretty(&transaction_signature)
+        .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
+
     if signature_path == "-" {
-        println!("{}", hex::encode(signature_bytes));
+        println!("{}", output_str);
     } else {
-        fs::write(signature_path, signature_bytes)?;
+        fs::write(signature_path, output_str)?;
         println!("Signature saved to {}", signature_path);
     }
     Ok(())
@@ -237,9 +303,8 @@ fn load_transaction_from_json<P: AsRef<Path>>(
     path: P,
 ) -> Result<Transaction, Box<dyn std::error::Error>> {
     let json_content = fs::read_to_string(path)?;
-    let transaction: Transaction = serde_json::from_str(json_content.trim())
-        .map_err(|e| eyre::eyre!("Failed to parse transaction from JSON: {}", e))?;
-    Ok(transaction)
+
+    load_transaction_from_str(&json_content)
 }
 
 fn load_transaction_from_stdin(
@@ -247,7 +312,14 @@ fn load_transaction_from_stdin(
 ) -> Result<Transaction, Box<dyn std::error::Error>> {
     let mut json_content = String::new();
     input.read_to_string(&mut json_content)?;
-    let transaction: Transaction = serde_json::from_str(json_content.trim())
+
+    load_transaction_from_str(&json_content)
+}
+
+fn load_transaction_from_str(
+    transaction_str: &str,
+) -> Result<Transaction, Box<dyn std::error::Error>> {
+    let transaction: Transaction = serde_json::from_str(transaction_str.trim())
         .map_err(|e| eyre::eyre!("Failed to parse transaction from JSON: {}", e))?;
     Ok(transaction)
 }

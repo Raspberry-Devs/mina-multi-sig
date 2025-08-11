@@ -21,7 +21,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Command::Sessions { .. } => cli::session::list::<PallasPoseidon>(&args.command).await,
         Command::TrustedDealer { .. } => cli::trusted_dealer::run::<PallasPoseidon>(&args.command),
         Command::Dkg { .. } => cli::dkg::run::<PallasPoseidon>(&args.command).await,
-        Command::Coordinator { .. } => cli::coordinator::run::<PallasPoseidon>(&args.command).await,
+        // Coordinator implicitly assumes within the run() function that we use PallasPoseidon
+        Command::Coordinator { .. } => cli::coordinator::run_bluepallas(&args.command).await,
         Command::Participant { .. } => cli::participant::run::<PallasPoseidon>(&args.command).await,
     }?;
 

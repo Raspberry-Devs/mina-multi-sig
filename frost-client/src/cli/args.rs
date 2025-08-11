@@ -188,7 +188,7 @@ pub enum Command {
         #[arg(short = 'o', long, default_value = "")]
         signature: String,
         /// Network to use (testnet or mainnet)
-        #[arg(long, value_enum, default_value_t = Network::Testnet)]
+        #[arg(short = 'n', long, value_enum, default_value_t = Network::Testnet)]
         network: Network,
     },
     /// Participate in a FROST signing session.
