@@ -26,7 +26,9 @@ use super::args::Command;
 use super::config::Config as ConfigFile;
 use crate::mina_network::Network;
 
-pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
+/// This is the PallasPoseidon/BluePallas specific run command for the coordinator which will save the output
+/// of the signing session into a Mina-specific transaction. The generic logic has been moved into `run()`
+pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
     // Match on command type early to ensure we are running the coordinator command, panic otherwise
     let Command::Coordinator {
         signature: signature_path,
@@ -36,7 +38,7 @@ pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let (bytes, message, vk) = run_for_ciphersuite::<PallasPoseidon>(args).await?;
+    let (bytes, message, vk) = run::<PallasPoseidon>(args).await?;
 
     // Save signature to the specified path or stdout
     save_signature(signature_path, bytes, &message, vk)
@@ -45,7 +47,7 @@ pub async fn run(args: &Command) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub(crate) async fn run_for_ciphersuite<C: Ciphersuite + 'static>(
+pub(crate) async fn run<C: Ciphersuite>(
     args: &Command,
 ) -> Result<(Vec<u8>, Vec<u8>, VerifyingKey<C>), Box<dyn Error>> {
     // Note, we duplicate pattern matching code here and in run(), but given that there is no way to pass a Command::Coordinator type
