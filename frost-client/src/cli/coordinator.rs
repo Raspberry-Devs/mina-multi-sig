@@ -1,6 +1,6 @@
 use crate::{
     cipher::PublicKey,
-    coordinator::{sign, Config as CoordinatorConfig},
+    coordinator::{coordinate_signing, Config as CoordinatorConfig},
 };
 use eyre::Context;
 use eyre::OptionExt;
@@ -59,7 +59,7 @@ pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
     let coordinator_config = setup_coordinator_config::<C>(public_key_package, signers, params)?;
 
     // Execute signing
-    let signature_bytes = sign(&coordinator_config, &mut input, &mut output).await?;
+    let signature_bytes = coordinate_signing(&coordinator_config, &mut input, &mut output).await?;
 
     save_signature(&signature_path, &signature_bytes)?;
     Ok(())
@@ -185,7 +185,6 @@ fn setup_coordinator_config<C: Ciphersuite>(
     let messages = read_messages(params.message_paths, params.output, params.input)?;
 
     let coordinator_config = CoordinatorConfig {
-        socket: false,
         signers,
         num_signers,
         public_key_package,

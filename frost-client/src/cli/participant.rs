@@ -99,7 +99,6 @@ fn setup_participant_config<C: Ciphersuite>(
     let coordinator_pubkey_getter = create_coordinator_pubkey_getter(group_participants);
 
     let participant_config = ParticipantConfig::<C> {
-        socket: false,
         key_package,
         ip: server_url_parsed
             .host_str()

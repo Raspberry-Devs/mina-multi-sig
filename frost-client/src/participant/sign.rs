@@ -1,7 +1,6 @@
 use super::config::Config;
 
 use super::comms::http::HTTPComms;
-use super::comms::socket::SocketComms;
 
 use super::comms::Comms;
 
@@ -19,11 +18,7 @@ pub async fn sign<C: Ciphersuite + 'static>(
     input: &mut impl BufRead,
     logger: &mut impl Write,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut comms: Box<dyn Comms<C>> = if config.socket {
-        Box::new(SocketComms::new(&config))
-    } else {
-        Box::new(HTTPComms::new(&config)?)
-    };
+    let mut comms: Box<dyn Comms<C>> = Box::new(HTTPComms::new(&config)?);
 
     // Round 1
 
