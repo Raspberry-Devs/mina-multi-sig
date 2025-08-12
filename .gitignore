@@ -8,6 +8,3 @@ target/
 
 # Vscode files
 .vscode/
-
-# Message.json files for signing
-**/*.json

@@ -1,0 +1,14 @@
+
+{
+  "to": "B62qrzao6tj1TsWcUwvYRbzCkiaqQ5wNJo3zfH37T8b5w9EmEt1jXoV",
+  "from": "B62qrzao6tj1TsWcUwvYRbzCkiaqQ5wNJo3zfH37T8b5w9EmEt1jXoV",
+  "fee": "10000000",
+  "nonce": "1",
+  "memo": "Hello Mina x FROST NETWORK",
+  "valid_until": "4294967295",
+  "tag": [
+    false,
+    false,
+    true
+  ]
+}
