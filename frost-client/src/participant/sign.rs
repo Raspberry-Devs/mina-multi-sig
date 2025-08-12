@@ -17,6 +17,7 @@ pub async fn sign(
     config: Config<PallasPoseidon>,
     input: &mut impl BufRead,
     logger: &mut impl Write,
+    yes: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut comms: Box<dyn Comms<PallasPoseidon>> = Box::new(HTTPComms::new(&config)?);
 
@@ -36,7 +37,7 @@ pub async fn sign(
         .await?;
 
     comms
-        .confirm_message(input, logger, &round_2_config)
+        .confirm_message(input, logger, &round_2_config, yes)
         .await?;
 
     // Set the internal NetworkID based on the configuration
