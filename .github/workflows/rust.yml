@@ -9,6 +9,11 @@ env:
 jobs:
   check-all:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/raspberry-devs/mina-multi-sig/frost-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Build

@@ -43,4 +43,8 @@ thiserror = { workspace = true }
 zeroize = { workspace = true, features = ["serde", "zeroize_derive"] }
 message-io = { workspace = true }
 uuid = { workspace = true, features = ["v4", "fast-rng", "serde"] }
-rand_core  = { workspace = true }
+rand_core = { workspace = true }
+lazy_static.workspace = true
+
+[dev-dependencies]
+regex.workspace = true
