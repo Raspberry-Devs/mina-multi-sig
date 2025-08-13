@@ -28,7 +28,8 @@ fn main() -> Result<(), Error> {
         1000000000,
         1,
     )
-    .set_memo_str("Hello Mina x FROST from the Raspberry Devs!");
+    .set_memo_str("Hello Mina x FROST from the Raspberry Devs!")
+    .unwrap();
 
     println!(
         "Unsigned Transaction: {}",

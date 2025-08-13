@@ -27,7 +27,7 @@ use super::config::Config as ConfigFile;
 use crate::mina_network::Network;
 
 /// This is the PallasPoseidon/BluePallas specific run command for the coordinator which will save the output
-/// of the signing session into a Mina-specific transaction. The generic logic has been moved into `run()`
+/// of the signing session into a Mina-specific transaction.
 pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
     // Match on command type early to ensure we are running the coordinator command, panic otherwise
     let Command::Coordinator {
@@ -38,7 +38,7 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let (bytes, message, vk) = run::<PallasPoseidon>(args).await?;
+    let (bytes, message, vk) = run(args).await?;
 
     // Save signature to the specified path or stdout
     save_signature(signature_path, bytes, &message, vk)
@@ -47,9 +47,9 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub(crate) async fn run<C: Ciphersuite>(
+pub(crate) async fn run(
     args: &Command,
-) -> Result<(Vec<u8>, Vec<u8>, VerifyingKey<C>), Box<dyn Error>> {
+) -> Result<(Vec<u8>, Vec<u8>, VerifyingKey<PallasPoseidon>), Box<dyn Error>> {
     // Note, we duplicate pattern matching code here and in run(), but given that there is no way to pass a Command::Coordinator type
     // to this function, we must instead repeat the check again
     // The alternative is to create a struct which contains the same parameters, not worth it for only one use
@@ -71,10 +71,10 @@ pub(crate) async fn run<C: Ciphersuite>(
 
     // Load and validate configuration
     let (user_config, group_config, public_key_package) =
-        load_coordinator_config::<C>(config_path, &group_id)?;
+        load_coordinator_config::<PallasPoseidon>(config_path, &group_id)?;
 
     // Parse signers from command line arguments
-    let signers = parse_signers::<C>(&signers, &group_config)?;
+    let signers = parse_signers::<PallasPoseidon>(&signers, &group_config)?;
 
     // Setup coordinator configuration
     let params = CoordinatorSetupParams {
@@ -88,7 +88,7 @@ pub(crate) async fn run<C: Ciphersuite>(
     };
 
     let coordinator_config =
-        setup_coordinator_config::<C>(public_key_package.clone(), signers, params)?;
+        setup_coordinator_config::<PallasPoseidon>(public_key_package.clone(), signers, params)?;
 
     // Execute signing
     let signature_bytes = coordinate_signing(&coordinator_config, &mut input, &mut output).await?;

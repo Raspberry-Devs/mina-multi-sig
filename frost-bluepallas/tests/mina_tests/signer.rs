@@ -27,7 +27,8 @@ fn signer_test_raw() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     assert_eq!(tx.valid_until, 271828);
     assert_eq!(
@@ -98,7 +99,8 @@ fn sign_mina_tx() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     // Generate FROST signature
     let msg = tx.translate_msg();
@@ -150,7 +152,8 @@ fn sign_mina_tx_mainnet() {
         10,            // Different nonce
     )
     .set_valid_until(300000)
-    .set_memo_str("Mainnet Test!");
+    .set_memo_str("Mainnet Test!")
+    .unwrap();
 
     // Generate FROST signature
     let msg = tx.translate_msg();
@@ -201,7 +204,8 @@ fn transaction_json_deser_with_mina_sign() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     // Serialize the transaction to JSON
     let tx_json = serde_json::to_string(&tx).expect("Failed to serialize transaction to JSON");
@@ -235,4 +239,120 @@ fn transaction_json_deser_with_mina_sign() {
     assert!(is_valid, "Mina signature verification failed on TESTNET");
     assert!(is_valid2, "Mina signature verification failed on TESTNET");
     assert!(is_valid3, "Mina signature verification failed on TESTNET");
+}
+
+#[test]
+fn sign_mina_delegation_tx() {
+    let mut rng = rand_core::OsRng;
+
+    // Use trusted dealer to setup public and packages
+    let max_signers = 5;
+    let min_signers = 3;
+    let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
+        max_signers,
+        min_signers,
+        frost_bluepallas::keys::IdentifierList::Default,
+        &mut rng,
+    )
+    .expect("Failed to generate key shares");
+
+    // Create a delegation transaction
+    let tx = Transaction::new_delegation(
+        translate_pk(pubkey_package.verifying_key())
+            .expect("failed to translate verifying key to Mina public key"),
+        PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
+            .expect("invalid address"),
+        2000000000,
+        16,
+    )
+    .set_valid_until(271828)
+    .set_memo_str("Hello Mina!")
+    .unwrap();
+
+    // Generate FROST signature
+    let msg = tx.translate_msg();
+    let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+        .expect("Failed to sign message with FROST");
+
+    // Verify the signature
+    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+        .expect("Failed to translate FROST signature to Mina signature");
+    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+        .expect("Failed to translate FROST verifying key to Mina public key");
+
+    // Verify the signature using Mina Signer
+    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid_msg = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx);
+
+    assert!(is_valid_msg, "Mina signature verification (message) failed");
+    assert!(
+        is_valid_tx,
+        "Mina delegation transaction verification failed"
+    );
+}
+
+#[test]
+fn delegation_json_deser_with_mina_sign() {
+    let mut rng = rand_core::OsRng;
+
+    // Use trusted dealer to setup public and packages
+    let max_signers = 5;
+    let min_signers = 3;
+    let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
+        max_signers,
+        min_signers,
+        frost_bluepallas::keys::IdentifierList::Default,
+        &mut rng,
+    )
+    .expect("Failed to generate key shares");
+
+    // Create a delegation transaction
+    let tx = Transaction::new_delegation(
+        translate_pk(pubkey_package.verifying_key())
+            .expect("failed to translate verifying key to Mina public key"),
+        PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
+            .expect("invalid address"),
+        2000000000,
+        16,
+    )
+    .set_valid_until(271828)
+    .set_memo_str("Hello Mina!")
+    .unwrap();
+
+    // Serialize the transaction to JSON (amount should be omitted for delegation)
+    let tx_json = serde_json::to_string(&tx).expect("Failed to serialize delegation tx to JSON");
+
+    // Deserialize the transaction from JSON
+    let deserialized_tx: Transaction =
+        serde_json::from_str(&tx_json).expect("Failed to deserialize delegation tx from JSON");
+
+    // Now sign the deserialized transaction
+    let msg = deserialized_tx.translate_msg();
+    let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+        .expect("Failed to sign message with FROST");
+
+    // Convert signature to Mina format
+    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+        .expect("Failed to translate FROST signature to Mina signature");
+    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+        .expect("Failed to translate FROST verifying key to Mina public key");
+
+    // Verify the signature using Mina Signer with TESTNET
+    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid_tx = ctx.verify(&mina_sig, &mina_vk, &deserialized_tx);
+
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let is_valid_msg = ctx2.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+
+    assert!(
+        is_valid_tx,
+        "Mina delegation transaction verification failed on TESTNET"
+    );
+    assert!(
+        is_valid_msg,
+        "Mina signature verification (message) failed on TESTNET"
+    );
 }

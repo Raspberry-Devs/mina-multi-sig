@@ -125,7 +125,8 @@ fn roi_mina_tx() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     let msg = PallasMessage::new(tx.translate_msg());
     assert_eq!(
@@ -138,7 +139,7 @@ fn roi_mina_tx() {
 #[test]
 fn frost_even_commitment() {
     // Iterate 32 times to ensure we have at least one even commitment
-    for i in 0..32 {
+    for i in 0..256 {
         let rng = rand_chacha::ChaChaRng::seed_from_u64(i);
         let fr_msg = b"Test message for FROST even commitment".to_vec();
         let (fr_sig, _fr_pk) =
@@ -156,4 +157,51 @@ fn frost_even_commitment() {
             "Signature commitment y-coordinate must be even"
         );
     }
+}
+
+#[test]
+fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
+    let json = r#"{
+        "to": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+        "from": "B62qrzao6tj1TsWcUwvYRbzCkiaqQ5wNJo3zfH37T8b5w9EmEt1jXoV",
+        "fee": "10000000",
+        "nonce": "0",
+        "memo": "Hello Mina x FROST NETWORK",
+        "valid_until": "4294967295",
+        "tag": [
+            false,
+            false,
+            true
+        ]
+    }"#;
+    // We want to now deserialize into a transaction
+    let tx: Transaction = serde_json::from_str(json).unwrap();
+    let msg = tx.translate_msg();
+
+    for _ in 0..64 {
+        let rng = rand_core::OsRng;
+
+        let (fr_sig, fr_pk) =
+            generate_signature_random(&msg, rng).expect("Failed to generate signature");
+
+        let mina_sig = translate_sig(&fr_sig)?;
+        let mina_pk = translate_pk(&fr_pk)?;
+
+        // Ensure the signature commitment y-coordinate is even
+        assert!(
+            fr_sig
+                .R()
+                .into_affine()
+                .y()
+                .expect("Failed to extract y-coord from sig")
+                .into_bigint()
+                .is_even(),
+            "Signature commitment y-coordinate must be even"
+        );
+
+        let mut ctx = mina_signer::create_legacy::<Transaction>(NetworkId::TESTNET);
+        assert!(ctx.verify(&mina_sig, &mina_pk, &tx));
+    }
+
+    Ok(())
 }

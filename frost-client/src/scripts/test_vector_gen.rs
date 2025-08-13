@@ -57,7 +57,7 @@ fn main() {
 
     // 5. Aggregate
     let group_signature =
-        frost_core::aggregate(&signing_package, &signature_shares, &pubkey_package).unwrap();
+        frost_bluepallas::aggregate(&signing_package, &signature_shares, &pubkey_package).unwrap();
 
     // 6. Print all values for mod.rs
     println!("// New values generated for bluepallas. Copy and paste this entire block into the get_helpers() function.");

@@ -34,6 +34,9 @@ pub enum BluePallasError {
 
     /// Saving Signature failed
     SaveSignatureError(String),
+
+    /// Invalid Memo provided
+    InvalidMemo(String),
 }
 
 impl fmt::Display for BluePallasError {
@@ -56,6 +59,7 @@ impl fmt::Display for BluePallasError {
             BluePallasError::SaveSignatureError(msg) => {
                 write!(f, "Failed to save signature: {}", msg)
             }
+            BluePallasError::InvalidMemo(msg) => write!(f, "Invalid memo: {}", msg),
         }
     }
 }
@@ -77,5 +81,10 @@ impl BluePallasError {
     /// Create an invalid commitment error with a custom message
     pub fn invalid_commitment(message: impl Into<String>) -> Self {
         BluePallasError::InvalidCommitment(message.into())
+    }
+
+    /// Create an invalid memo error with a custom message
+    pub fn invalid_memo(message: impl Into<String>) -> Self {
+        BluePallasError::InvalidMemo(message.into())
     }
 }
