@@ -3,24 +3,23 @@
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 GENERATED_DIR="$SCRIPT_DIR/generated"
+HELPERS_DIR="$SCRIPT_DIR/../helpers"
 
-# Clean up generated directory if it exists
-if [ -d "$GENERATED_DIR" ]; then
-    echo "Cleaning up existing generated directory..."
-    rm -rf "$GENERATED_DIR"
-fi
+cd "$SCRIPT_DIR/../.."
 
-# Create directory for generated files
-mkdir -p "$GENERATED_DIR"
+# Source the file generation helper
+source "$HELPERS_DIR/file_generation.sh"
+
+# Setup
+setup_generated_dir "$GENERATED_DIR"
 
 # Initialize configs for three users
-echo "Initializing configs for users..."
 cargo run --bin frost-client -- init -c "$GENERATED_DIR/alice.toml"
 cargo run --bin frost-client -- init -c "$GENERATED_DIR/bob.toml"
 cargo run --bin frost-client -- init -c "$GENERATED_DIR/eve.toml"
 
+echo "Generating FROST key shares..."
 # Generate FROST key shares using trusted dealer
-echo "Generating FROST key shares using trusted dealer..."
 cargo run --bin frost-client -- trusted-dealer \
     -d "Alice, Bob and Eve's group" \
     --names Alice,Bob,Eve \

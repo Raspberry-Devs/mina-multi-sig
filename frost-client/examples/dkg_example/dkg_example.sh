@@ -3,19 +3,23 @@
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 GENERATED_DIR="$SCRIPT_DIR/generated"
+HELPERS_DIR="$SCRIPT_DIR/../helpers"
+
+cd "$SCRIPT_DIR"
 
 # Default server URL
 SERVER_URL="localhost:2744"
-SERVER_PID=""
+
+# Source the server initialization helper
+source "$HELPERS_DIR/init_frostd.sh"
+
+# Source the file generation helper
+source "$HELPERS_DIR/file_generation.sh"
 
 # Function to cleanup on exit
 cleanup() {
     echo "Cleaning up..."
-    if [ ! -z "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
-        echo "Stopping frostd server (PID: $SERVER_PID)..."
-        kill "$SERVER_PID"
-        wait "$SERVER_PID" 2>/dev/null
-    fi
+    stop_frostd "$FROSTD_SERVER_PID"
     exit
 }
 
@@ -23,138 +27,51 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "========================================="
-echo "Starting FROST DKG Example"
+echo "FROST DKG Example"
 echo "========================================="
 
-# Clean up generated directory if it exists
-if [ -d "$GENERATED_DIR" ]; then
-    echo "Cleaning up existing generated directory..."
-    rm -rf "$GENERATED_DIR"
-fi
+# Setup
+setup_generated_dir "$GENERATED_DIR"
 
-# Create directory for generated files
-mkdir -p "$GENERATED_DIR"
-
-# Setting up the tls certificates
-cd $GENERATED_DIR
-mkcert localhost 127.0.0.1 ::1 2>/dev/null || {
-    echo "ERROR: mkcert failed. Please install mkcert first:"
-    echo "  # On Ubuntu/Debian:"
-    echo "  sudo apt install mkcert"
-    echo "  # On macOS:"
-    echo "  brew install mkcert"
-    echo "  Also ensure you have run 'mkcert -install' to set up the local CA."
+# Start server
+init_frostd "$GENERATED_DIR" "$SERVER_URL" || {
+    echo "ERROR: Failed to initialize server"
     exit 1
 }
-cd ..
 
-pwd
-
-echo ""
-echo "========================================="
-echo "Starting frostd server"
-echo "========================================="
-
-# Check if frostd is installed
-if ! command -v frostd &> /dev/null; then
-    echo "ERROR: frostd is not installed or not in PATH!"
-    echo ""
-    echo "Please install frostd first. You can build it from the FROST server repository:"
-    echo "  cargo install --git https://github.com/ZcashFoundation/frost-zcash-demo.git --locked frostd"
-    exit 1
-fi
-
-# Start frostd server in the background
-echo "Starting frostd server on $SERVER_URL..."
-echo "Using TLS cert: $GENERATED_DIR/localhost+2.pem"
-echo "Using TLS key: $GENERATED_DIR/localhost+2-key.pem"
-frostd --tls-cert "$GENERATED_DIR/localhost+2.pem" --tls-key "$GENERATED_DIR/localhost+2-key.pem" &
-SERVER_PID=$!
-echo "Server PID: $SERVER_PID"
-
-# Wait a moment for the server to start
-sleep 2
-echo "frostd server started with PID: $SERVER_PID"
-
-echo ""
-echo "========================================="
-echo "Initializing participant configurations"
-echo "========================================="
-
-# Initialize configs for three users
-echo "Initializing configs for users..."
+echo "Initializing participants..."
 cargo run --bin frost-client -- init -c "$GENERATED_DIR/alice.toml"
 cargo run --bin frost-client -- init -c "$GENERATED_DIR/bob.toml"
 cargo run --bin frost-client -- init -c "$GENERATED_DIR/eve.toml"
 
-echo ""
-echo "========================================="
-echo "Generating contact strings"
-echo "========================================="
-
-# Generate contact strings for each participant
-echo "Generating contact strings..."
-
-echo "Generating Alice's contact..."
+echo "Generating contacts..."
 ALICE_CONTACT=$(cargo run --bin frost-client -- export --name 'Alice' -c "$GENERATED_DIR/alice.toml" 2>&1 | grep "^minafrost" || true)
-echo "Alice's contact: '$ALICE_CONTACT'"
-
-echo "Generating Bob's contact..."
 BOB_CONTACT=$(cargo run --bin frost-client -- export --name 'Bob' -c "$GENERATED_DIR/bob.toml" 2>&1 | grep "^minafrost" || true)
-echo "Bob's contact: '$BOB_CONTACT'"
-
-echo "Generating Eve's contact..."
 EVE_CONTACT=$(cargo run --bin frost-client -- export --name 'Eve' -c "$GENERATED_DIR/eve.toml" 2>&1 | grep "^minafrost" || true)
-echo "Eve's contact: '$EVE_CONTACT'"
 
-echo ""
-echo "========================================="
-echo "Importing contacts for each participant"
-echo "========================================="
-
-# Import contacts for each participant
-echo "Importing contacts..."
-
-# Validate contact strings are not empty
 if [ -z "$ALICE_CONTACT" ] || [ -z "$BOB_CONTACT" ] || [ -z "$EVE_CONTACT" ]; then
-    echo "Error: One or more contact strings are empty!"
-    echo "Alice: '$ALICE_CONTACT'"
-    echo "Bob: '$BOB_CONTACT'"
-    echo "Eve: '$EVE_CONTACT'"
+    echo "ERROR: Failed to generate contact strings"
     exit 1
 fi
 
-echo "Importing contacts for Alice..."
+echo "Importing contacts..."
 cargo run --bin frost-client -- import -c "$GENERATED_DIR/alice.toml" "$BOB_CONTACT"
 cargo run --bin frost-client -- import -c "$GENERATED_DIR/alice.toml" "$EVE_CONTACT"
-
-echo "Importing contacts for Bob..."
 cargo run --bin frost-client -- import -c "$GENERATED_DIR/bob.toml" "$ALICE_CONTACT"
 cargo run --bin frost-client -- import -c "$GENERATED_DIR/bob.toml" "$EVE_CONTACT"
-
-echo "Importing contacts for Eve..."
 cargo run --bin frost-client -- import -c "$GENERATED_DIR/eve.toml" "$ALICE_CONTACT"
 cargo run --bin frost-client -- import -c "$GENERATED_DIR/eve.toml" "$BOB_CONTACT"
 
 echo ""
-echo "========================================="
-echo "Starting DKG process"
-echo "========================================="
-
-# Run DKG process
 echo "Starting DKG process..."
 
-# Extract public keys from contacts
-echo "Extracting public keys from contacts..."
-CONTACTS_OUTPUT=$(cargo run --bin frost-client -- contacts -c "$GENERATED_DIR/alice.toml" 2>&1)
-
-# Define group name
+# Extract public keys from contacts  
+CONTACTS_OUTPUT=$(cargo run --bin frost-client -- contacts -c "$GENERATED_DIR/alice.toml" 2>&1 | grep -A2 "Name:")
 GROUP_NAME="Alice, Bob and Eve"
 BOB_PUBLIC_KEY=$(echo "$CONTACTS_OUTPUT" | grep -A1 "Name: Bob" | grep "Public Key:" | cut -d' ' -f3)
 EVE_PUBLIC_KEY=$(echo "$CONTACTS_OUTPUT" | grep -A1 "Name: Eve" | grep "Public Key:" | cut -d' ' -f3)
 
-# Alice initiates the DKG
-echo "Alice initiating DKG..."
+# Run DKG processes
 cargo run --bin frost-client -- dkg \
     -d "$GROUP_NAME" \
     -s "$SERVER_URL" \
@@ -166,9 +83,6 @@ ALICE_DKG_PID=$!
 # Wait a moment for Alice to start
 sleep 3
 
-# Bob joins the DKG
-echo ""
-echo "Bob joining DKG..."
 cargo run --bin frost-client -- dkg \
     -d "$GROUP_NAME" \
     -s "$SERVER_URL" \
@@ -179,9 +93,6 @@ BOB_DKG_PID=$!
 # Wait a moment
 sleep 3
 
-# Eve joins the DKG
-echo ""
-echo "Eve joining DKG..."
 cargo run --bin frost-client -- dkg \
     -d "$GROUP_NAME" \
     -s "$SERVER_URL" \
@@ -189,9 +100,7 @@ cargo run --bin frost-client -- dkg \
     -c "$GENERATED_DIR/eve.toml" &
 EVE_DKG_PID=$!
 
-# Wait for all DKG processes to complete
-echo ""
-echo "Waiting for DKG processes to complete..."
+# Wait for completion
 wait $ALICE_DKG_PID
 ALICE_EXIT=$?
 wait $BOB_DKG_PID
@@ -199,27 +108,15 @@ BOB_EXIT=$?
 wait $EVE_DKG_PID
 EVE_EXIT=$?
 
-echo ""
-echo "========================================="
-echo "DKG Results"
-echo "========================================="
-
-# Check if DKG completed successfully
+# Check results
 if [ $ALICE_EXIT -eq 0 ] && [ $BOB_EXIT -eq 0 ] && [ $EVE_EXIT -eq 0 ]; then
-    echo "DKG completed successfully!"
-    echo ""
-    echo "Checking generated groups..."
-    echo "Alice's groups:"
-    cargo run --bin frost-client -- groups -c "$GENERATED_DIR/alice.toml"
-    echo ""
-    echo "Bob's groups:"
-    cargo run --bin frost-client -- groups -c "$GENERATED_DIR/bob.toml"
-    echo ""
-    echo "Eve's groups:"
-    cargo run --bin frost-client -- groups -c "$GENERATED_DIR/eve.toml"
-    echo ""
-    echo "DKG process complete. Check the generated directory for the config files."
+    echo "✅ DKG completed successfully!"
+    
+    # Show one group info as confirmation
+    GROUP_INFO=$(cargo run --bin frost-client -- groups -c "$GENERATED_DIR/alice.toml" | head -2)
+    echo "$GROUP_INFO"
+    echo "📁 Config files saved to: $GENERATED_DIR/"
 else
-    echo "DKG process failed. Exit codes: Alice=$ALICE_EXIT, Bob=$BOB_EXIT, Eve=$EVE_EXIT"
+    echo "❌ DKG failed (exit codes: A=$ALICE_EXIT, B=$BOB_EXIT, E=$EVE_EXIT)"
     exit 1
 fi
