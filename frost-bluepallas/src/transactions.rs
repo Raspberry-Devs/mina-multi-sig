@@ -901,4 +901,49 @@ mod tests {
         let deserialized: Transaction = serde_json::from_str(&json).unwrap();
         assert_ne!(tx.memo, deserialized.memo);
     }
+
+    #[test]
+    fn test_deserialize_invalid_memo_too_long() {
+        // Construct a memo longer than the allowed 32 bytes
+        let long_memo = "A".repeat(33);
+
+        let json = format!(
+            r#"{{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "amount": "1000000",
+            "nonce": "42",
+            "memo": "{long_memo}",
+            "valid_until": "12345",
+            "tag": [false, false, false]
+        }}"#
+        );
+
+        let result: Result<Transaction, _> = serde_json::from_str(&json);
+        assert!(
+            result.is_err(),
+            "Deserialization should fail for too-long memo"
+        );
+    }
+
+    #[test]
+    fn test_set_memo_str_rejects_too_long() {
+        let from = create_test_pubkey([21; 32]);
+        let to = create_test_pubkey([22; 32]);
+        let base = Transaction::new_payment(from, to, 1_000_000, 1_000, 1);
+
+        let long_memo = "B".repeat(33);
+        let res = base.set_memo_str(&long_memo);
+        assert!(
+            res.is_err(),
+            "set_memo_str should return an error for too-long memo"
+        );
+        if let Err(e) = res {
+            match e {
+                BluePallasError::InvalidMemo(_) => {}
+                other => panic!("Unexpected error variant: {:?}", other),
+            }
+        }
+    }
 }
