@@ -108,6 +108,7 @@ impl<'de> Deserialize<'de> for Transaction {
                 let amount = ser_amount.parse().map_err(serde::de::Error::custom)?;
                 Transaction::new_payment(from, to, amount, fee, nonce)
                     .set_memo_str(&data.memo)
+                    .map_err(serde::de::Error::custom)?
                     .set_valid_until(valid_until)
             }
             DELEGATION_TX_TAG => {
@@ -118,6 +119,7 @@ impl<'de> Deserialize<'de> for Transaction {
                 }
                 Transaction::new_delegation(from, to, fee, nonce)
                     .set_memo_str(&data.memo)
+                    .map_err(serde::de::Error::custom)?
                     .set_valid_until(valid_until)
             }
             _ => return Err(serde::de::Error::custom("Invalid transaction tag")),
@@ -180,7 +182,7 @@ impl Translatable for Transaction {
         // TODO: Add pr to o1-labs/proof-systems so that we can directly retrieve the fields and bits
 
         // Extract number of fields
-        let fields_len = u32::from_le_bytes(bytes[0..HEADER_BYTES].try_into().unwrap()) as usize;
+        let fields_len = u32::from_le_bytes(bytes[0..HEADER_BYTES].try_into()?) as usize;
 
         // Convert to fields
         let fields = roi
@@ -443,15 +445,18 @@ impl Transaction {
         self
     }
 
-    pub fn set_memo_str(mut self, memo: &str) -> Self {
-        self.memo[0] = 0x01;
-        self.memo[1] = core::cmp::min(memo.len(), MEMO_BYTES - 2) as u8;
-        let memo = format!("{memo:\0<32}"); // Pad user-supplied memo with zeros
-        self.memo[2..]
-            .copy_from_slice(&memo.as_bytes()[..core::cmp::min(memo.len(), MEMO_BYTES - 2)]);
-        // Anything beyond MEMO_BYTES is truncated
+    pub fn set_memo_str(mut self, memo: &str) -> Result<Self, BluePallasError> {
+        // Prevent overflow
+        if memo.len() > MEMO_BYTES - MEMO_HEADER_BYTES || memo.len() > u8::MAX as usize {
+            return Err(BluePallasError::invalid_memo("Memo exceeds maximum length"));
+        }
 
-        self
+        self.memo[0] = 0x01;
+        self.memo[1] = memo.len() as u8;
+        let memo = format!("{memo:\0<32}"); // Pad user-supplied memo with zeros
+        self.memo[2..].copy_from_slice(memo.as_bytes());
+
+        Ok(self)
     }
 }
 
@@ -474,6 +479,7 @@ mod tests {
         let to = create_test_pubkey([2; 32]);
         let original = Transaction::new_payment(from, to, 1000000, 10000, 42)
             .set_memo_str("test memo")
+            .unwrap()
             .set_valid_until(12345);
 
         let json = serde_json::to_string(&original).unwrap();
@@ -517,6 +523,7 @@ mod tests {
         let to = create_test_pubkey([6; 32]);
         let original = Transaction::new_payment(from, to, 2500000, 15000, 123)
             .set_memo_str("roundtrip test")
+            .unwrap()
             .set_valid_until(98765);
 
         // Convert to bytes and back
@@ -556,6 +563,7 @@ mod tests {
         let to = create_test_pubkey([8; 32]);
         let original = Transaction::new_delegation(from, to, 8000, 456)
             .set_memo_str("delegation test")
+            .unwrap()
             .set_valid_until(11111);
 
         // Convert to bytes and back

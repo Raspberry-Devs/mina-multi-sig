@@ -27,7 +27,8 @@ fn signer_test_raw() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     assert_eq!(tx.valid_until, 271828);
     assert_eq!(
@@ -98,7 +99,8 @@ fn sign_mina_tx() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     // Generate FROST signature
     let msg = tx.translate_msg();
@@ -150,7 +152,8 @@ fn sign_mina_tx_mainnet() {
         10,            // Different nonce
     )
     .set_valid_until(300000)
-    .set_memo_str("Mainnet Test!");
+    .set_memo_str("Mainnet Test!")
+    .unwrap();
 
     // Generate FROST signature
     let msg = tx.translate_msg();
@@ -201,7 +204,8 @@ fn transaction_json_deser_with_mina_sign() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     // Serialize the transaction to JSON
     let tx_json = serde_json::to_string(&tx).expect("Failed to serialize transaction to JSON");
@@ -262,7 +266,8 @@ fn sign_mina_delegation_tx() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     // Generate FROST signature
     let msg = tx.translate_msg();
@@ -314,7 +319,8 @@ fn delegation_json_deser_with_mina_sign() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     // Serialize the transaction to JSON (amount should be omitted for delegation)
     let tx_json = serde_json::to_string(&tx).expect("Failed to serialize delegation tx to JSON");

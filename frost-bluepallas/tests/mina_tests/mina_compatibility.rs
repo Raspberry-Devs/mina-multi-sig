@@ -125,7 +125,8 @@ fn roi_mina_tx() {
         16,
     )
     .set_valid_until(271828)
-    .set_memo_str("Hello Mina!");
+    .set_memo_str("Hello Mina!")
+    .unwrap();
 
     let msg = PallasMessage::new(tx.translate_msg());
     assert_eq!(
