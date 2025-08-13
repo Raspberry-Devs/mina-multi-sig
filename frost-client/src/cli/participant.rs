@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use eyre::Context;
 use eyre::OptionExt;
+use frost_bluepallas::PallasPoseidon;
 use reqwest::Url;
 
 use frost_core::keys::KeyPackage;
@@ -15,7 +16,7 @@ use crate::participant::sign;
 use crate::participant::Config as ParticipantConfig;
 
 /// CLI entry point for participant signing
-pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
+pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
     let Command::Participant {
         config: config_path,
         server_url,
@@ -31,10 +32,10 @@ pub async fn run<C: Ciphersuite>(args: &Command) -> Result<(), Box<dyn Error>> {
 
     // Load and validate configuration
     let (user_config, group_config, key_package) =
-        load_participant_config::<C>(config_path, &group)?;
+        load_participant_config::<PallasPoseidon>(config_path, &group)?;
 
     // Setup participant configuration
-    let participant_config = setup_participant_config::<C>(
+    let participant_config = setup_participant_config::<PallasPoseidon>(
         &user_config,
         &group_config,
         key_package,
