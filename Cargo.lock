@@ -1125,6 +1125,7 @@ dependencies = [
 name = "frost-client"
 version = "0.1.0"
 dependencies = [
+ "ark-ff",
  "async-trait",
  "bech32",
  "clap",
@@ -1138,6 +1139,7 @@ dependencies = [
  "itertools 0.14.0",
  "lazy_static",
  "message-io",
+ "mina-signer",
  "postcard",
  "rand 0.8.5",
  "rand_core 0.6.4",

@@ -8,3 +8,5 @@ target/
 
 # Vscode files
 .vscode/
+
+frost-client/tests/assets/
