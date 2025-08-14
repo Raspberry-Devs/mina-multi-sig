@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Helper functions for managing generated directories in FROST examples
+# Strict error handling - exit on any error, undefined variable, or pipe failure
+set -euo pipefail
 
 # Function to clean and recreate a generated directory
 # Usage: setup_generated_dir "/path/to/generated"

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Strict error handling - exit on any error, undefined variable, or pipe failure
+set -euo pipefail
+
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 GENERATED_DIR="$SCRIPT_DIR/generated"
@@ -10,11 +13,11 @@ cd "$SCRIPT_DIR"
 # Default server URL
 SERVER_URL="localhost:2744"
 
-# Source the server initialization helper
+# Source helpers
 source "$HELPERS_DIR/init_frostd.sh"
-
-# Source the file generation helper
 source "$HELPERS_DIR/file_generation.sh"
+# Remove release binary if you want the script to use cargo run
+source "$HELPERS_DIR/use_frost_client.sh"
 
 # Function to cleanup on exit
 cleanup() {
@@ -40,14 +43,14 @@ init_frostd "$GENERATED_DIR" "$SERVER_URL" || {
 }
 
 echo "Initializing participants..."
-cargo run --bin frost-client -- init -c "$GENERATED_DIR/alice.toml"
-cargo run --bin frost-client -- init -c "$GENERATED_DIR/bob.toml"
-cargo run --bin frost-client -- init -c "$GENERATED_DIR/eve.toml"
+use_frost_client init -c "$GENERATED_DIR/alice.toml"
+use_frost_client init -c "$GENERATED_DIR/bob.toml"
+use_frost_client init -c "$GENERATED_DIR/eve.toml"
 
 echo "Generating contacts..."
-ALICE_CONTACT=$(cargo run --bin frost-client -- export --name 'Alice' -c "$GENERATED_DIR/alice.toml" 2>&1 | grep "^minafrost" || true)
-BOB_CONTACT=$(cargo run --bin frost-client -- export --name 'Bob' -c "$GENERATED_DIR/bob.toml" 2>&1 | grep "^minafrost" || true)
-EVE_CONTACT=$(cargo run --bin frost-client -- export --name 'Eve' -c "$GENERATED_DIR/eve.toml" 2>&1 | grep "^minafrost" || true)
+ALICE_CONTACT=$(use_frost_client export --name 'Alice' -c "$GENERATED_DIR/alice.toml" 2>&1 | grep "^minafrost" || true)
+BOB_CONTACT=$(use_frost_client export --name 'Bob' -c "$GENERATED_DIR/bob.toml" 2>&1 | grep "^minafrost" || true)
+EVE_CONTACT=$(use_frost_client export --name 'Eve' -c "$GENERATED_DIR/eve.toml" 2>&1 | grep "^minafrost" || true)
 
 if [ -z "$ALICE_CONTACT" ] || [ -z "$BOB_CONTACT" ] || [ -z "$EVE_CONTACT" ]; then
     echo "ERROR: Failed to generate contact strings"
@@ -55,24 +58,25 @@ if [ -z "$ALICE_CONTACT" ] || [ -z "$BOB_CONTACT" ] || [ -z "$EVE_CONTACT" ]; th
 fi
 
 echo "Importing contacts..."
-cargo run --bin frost-client -- import -c "$GENERATED_DIR/alice.toml" "$BOB_CONTACT"
-cargo run --bin frost-client -- import -c "$GENERATED_DIR/alice.toml" "$EVE_CONTACT"
-cargo run --bin frost-client -- import -c "$GENERATED_DIR/bob.toml" "$ALICE_CONTACT"
-cargo run --bin frost-client -- import -c "$GENERATED_DIR/bob.toml" "$EVE_CONTACT"
-cargo run --bin frost-client -- import -c "$GENERATED_DIR/eve.toml" "$ALICE_CONTACT"
-cargo run --bin frost-client -- import -c "$GENERATED_DIR/eve.toml" "$BOB_CONTACT"
+use_frost_client import -c "$GENERATED_DIR/alice.toml" "$BOB_CONTACT"
+use_frost_client import -c "$GENERATED_DIR/alice.toml" "$EVE_CONTACT"
+use_frost_client import -c "$GENERATED_DIR/bob.toml" "$ALICE_CONTACT"
+use_frost_client import -c "$GENERATED_DIR/bob.toml" "$EVE_CONTACT"
+use_frost_client import -c "$GENERATED_DIR/eve.toml" "$ALICE_CONTACT"
+use_frost_client import -c "$GENERATED_DIR/eve.toml" "$BOB_CONTACT"
 
 echo ""
 echo "Starting DKG process..."
 
-# Extract public keys from contacts  
-CONTACTS_OUTPUT=$(cargo run --bin frost-client -- contacts -c "$GENERATED_DIR/alice.toml" 2>&1 | grep -A2 "Name:")
+# Extract public keys from contacts
+CONTACTS_OUTPUT=$(use_frost_client contacts -c "$GENERATED_DIR/alice.toml" 2>&1 | grep -A2 "Name:")
 GROUP_NAME="Alice, Bob and Eve"
 BOB_PUBLIC_KEY=$(echo "$CONTACTS_OUTPUT" | grep -A1 "Name: Bob" | grep "Public Key:" | cut -d' ' -f3)
 EVE_PUBLIC_KEY=$(echo "$CONTACTS_OUTPUT" | grep -A1 "Name: Eve" | grep "Public Key:" | cut -d' ' -f3)
 
-# Run DKG processes
-cargo run --bin frost-client -- dkg \
+# Run DKG processes with proper timing
+echo "Starting Alice (coordinator) DKG process..."
+use_frost_client dkg \
     -d "$GROUP_NAME" \
     -s "$SERVER_URL" \
     -S "$BOB_PUBLIC_KEY,$EVE_PUBLIC_KEY" \
@@ -80,25 +84,31 @@ cargo run --bin frost-client -- dkg \
     -c "$GENERATED_DIR/alice.toml" &
 ALICE_DKG_PID=$!
 
-# Wait a moment for Alice to start
-sleep 3
+# Give Alice time to create the DKG session
+echo "Waiting for Alice to create DKG session..."
+sleep 5
 
-cargo run --bin frost-client -- dkg \
+echo "Starting Bob DKG process..."
+use_frost_client dkg \
     -d "$GROUP_NAME" \
     -s "$SERVER_URL" \
     -t 2 \
     -c "$GENERATED_DIR/bob.toml" &
 BOB_DKG_PID=$!
 
-# Wait a moment
-sleep 3
+# Brief delay before starting Eve
+sleep 2
 
-cargo run --bin frost-client -- dkg \
+echo "Starting Eve DKG process..."
+use_frost_client dkg \
     -d "$GROUP_NAME" \
     -s "$SERVER_URL" \
     -t 2 \
     -c "$GENERATED_DIR/eve.toml" &
 EVE_DKG_PID=$!
+
+echo "Waiting for DKG processes to complete..."
+echo "This may take up to 2-3 minutes..."
 
 # Wait for completion
 wait $ALICE_DKG_PID
@@ -111,12 +121,31 @@ EVE_EXIT=$?
 # Check results
 if [ $ALICE_EXIT -eq 0 ] && [ $BOB_EXIT -eq 0 ] && [ $EVE_EXIT -eq 0 ]; then
     echo "✅ DKG completed successfully!"
-    
+
+    # Validate that DKG actually worked by checking for group keys
+    echo "Validating DKG results..."
+    for config in "$GENERATED_DIR/alice.toml" "$GENERATED_DIR/bob.toml" "$GENERATED_DIR/eve.toml"; do
+        if ! grep -q "key_package" "$config" 2>/dev/null; then
+            echo "❌ DKG validation failed: $config missing key_package" >&2
+            exit 1
+        fi
+        if ! grep -q "public_key_package" "$config" 2>/dev/null; then
+            echo "❌ DKG validation failed: $config missing public_key_package" >&2
+            exit 1
+        fi
+    done
+
     # Show one group info as confirmation
-    GROUP_INFO=$(cargo run --bin frost-client -- groups -c "$GENERATED_DIR/alice.toml" | head -2)
+    GROUP_INFO=$(use_frost_client groups -c "$GENERATED_DIR/alice.toml" | head -2)
     echo "$GROUP_INFO"
     echo "📁 Config files saved to: $GENERATED_DIR/"
 else
     echo "❌ DKG failed (exit codes: A=$ALICE_EXIT, B=$BOB_EXIT, E=$EVE_EXIT)"
+
+    # Print some debug info to help diagnose the issue
+    echo "Debug info:"
+    echo "Alice config exists: $(test -f "$GENERATED_DIR/alice.toml" && echo "yes" || echo "no")"
+    echo "Bob config exists: $(test -f "$GENERATED_DIR/bob.toml" && echo "yes" || echo "no")"
+    echo "Eve config exists: $(test -f "$GENERATED_DIR/eve.toml" && echo "yes" || echo "no")"
     exit 1
 fi

@@ -1,0 +1,82 @@
+name: Client Commands
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "frost-client/**"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-frost-examples:
+    runs-on: ubuntu-latest
+    container:
+      # @TODO: Once PR 76 is merged change the image to frost-ci:latest
+      # (it will only be created after merge to main)
+      image: ghcr.io/raspberry-devs/mina-multi-sig/frost-ci:pr-76
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Add Cargo caching for speed boost
+      - name: Cache Cargo build artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            /root/.cargo/registry/index/
+            /root/.cargo/registry/cache/
+            /root/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-container-${{ hashFiles('frost-client/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-container-
+
+      # Pre-build once instead of building for each example
+      - name: Build frost-client (release mode)
+        run: |
+          cd frost-client
+          cargo build --release --bin frost-client
+
+      # Run all examples that test if the basic usecases of the client don't break
+      - name: Run Trusted Dealer Example
+        run: |
+          cd frost-client/examples/trusted_dealer_example
+          timeout 300 ./trusted_dealer_example.sh
+
+      - name: Run DKG Example
+        run: |
+          cd frost-client/examples/dkg_example
+          timeout 300 ./dkg_example.sh
+
+      - name: Run Signing Example
+        run: |
+          cd frost-client/examples/signing_example
+          timeout 300 ./signing_example.sh
+
+      - name: Verify generated artifacts
+        run: |
+          test -f frost-client/examples/trusted_dealer_example/generated/alice.toml
+          test -f frost-client/examples/trusted_dealer_example/generated/bob.toml
+          test -f frost-client/examples/trusted_dealer_example/generated/eve.toml
+          test -f frost-client/examples/dkg_example/generated/alice.toml
+          test -f frost-client/examples/dkg_example/generated/bob.toml
+          test -f frost-client/examples/dkg_example/generated/eve.toml
+          test -f frost-client/examples/signing_example/generated/signature.json
+          test -f frost-client/examples/signing_example/generated/message.json
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frost-example-outputs
+          path: |
+            frost-client/examples/*/generated/
+          retention-days: 7

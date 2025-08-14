@@ -2,6 +2,8 @@
 
 # FROST Server Initialization Helper
 # This script handles starting the frostd server with TLS certificates
+# Strict error handling - exit on any error, undefined variable, or pipe failure
+set -euo pipefail
 
 # Get the directory where the script is located
 HELPER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -10,7 +12,7 @@ HELPER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 init_frostd() {
     local generated_dir="$1"
     local server_url="${2:-localhost:2744}"
-    
+
     if [ -z "$generated_dir" ]; then
         echo "ERROR: Generated directory path is required!"
         echo "Usage: init_frostd <generated_dir> [server_url]"
@@ -18,10 +20,16 @@ init_frostd() {
     fi
 
     echo "Setting up TLS certificates"
-    
+
     # Create generated directory if it doesn't exist
     mkdir -p "$generated_dir"
-    
+
+    # Ensure mkcert CA is installed (needed for Docker containers)
+    if ! mkcert -CAROOT >/dev/null 2>&1 || [ ! -f "$(mkcert -CAROOT)/rootCA.pem" ]; then
+        echo "Installing mkcert CA..."
+        mkcert -install >/dev/null 2>&1 || true
+    fi
+
     # Generate TLS certificates
     cd "$generated_dir"
     mkcert localhost 127.0.0.1 ::1 2>/dev/null || {
@@ -49,13 +57,13 @@ init_frostd() {
 
     # Start frostd server in the background
     echo "Starting frostd server on $server_url..."
-    
+
     frostd --tls-cert "$generated_dir/localhost+2.pem" --tls-key "$generated_dir/localhost+2-key.pem" &
     local server_pid=$!
-    
+
     # Wait for the server to start
     sleep 3
-    
+
     # Verify the server is running
     if kill -0 "$server_pid" 2>/dev/null; then
         echo "frostd server started successfully with PID: $server_pid"
@@ -71,11 +79,11 @@ init_frostd() {
 # Function to stop frostd server
 stop_frostd() {
     local server_pid="$1"
-    
+
     if [ -z "$server_pid" ]; then
         server_pid="$FROSTD_SERVER_PID"
     fi
-    
+
     if [ ! -z "$server_pid" ] && kill -0 "$server_pid" 2>/dev/null; then
         echo "Stopping frostd server (PID: $server_pid)..."
         kill "$server_pid"

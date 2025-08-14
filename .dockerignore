@@ -1,0 +1,33 @@
+# Git files
+
+.git
+.gitignore
+
+# Documentation
+
+README.md
+\*.md
+
+# CI files (except the docker directory)
+
+.github
+!.docker
+
+# Build outputs
+
+target/
+frost-client/target/
+
+# Generated examples
+
+frost-client/examples/\*/generated/
+
+# IDE files
+
+.vscode/
+.idea/
+
+# Temporary files
+
+_.tmp
+_.log
