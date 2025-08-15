@@ -42,16 +42,5 @@ chmod +x dkg_example/dkg_example.sh
 chmod +x signing_example/signing_example.sh
 ```
 
-By default, examples use `cargo run` (always uses your latest code changes).
+Examples use `cargo run` to run the client (always uses your latest code changes).
 
-For faster execution in CI, you can use the release binary:
-
-```bash
-# Build release binary
-cargo build --release --bin frost-client
-
-# Use release binary instead of cargo run
-export USE_RELEASE_BINARY=1
-./example.sh
-unset USE_RELEASE_BINARY
-```
