@@ -19,7 +19,6 @@ use std::{
     fs,
     io::{BufRead, Write},
     path::Path,
-    vec,
 };
 
 use super::args::Command;
@@ -81,7 +80,7 @@ pub(crate) async fn run(
         user_config: &user_config,
         group_config: &group_config,
         server_url,
-        message_paths: &message,
+        message_path: message,
         output: &mut output,
         input: &mut input,
         network,
@@ -94,11 +93,7 @@ pub(crate) async fn run(
     let signature_bytes = coordinate_signing(&coordinator_config, &mut input, &mut output).await?;
 
     // Get first message (only one is expected)
-    let msg_bytes = coordinator_config
-        .messages
-        .first()
-        .ok_or(BluePallasError::NoMessageProvided)?
-        .clone();
+    let msg_bytes = coordinator_config.message.clone();
 
     Ok((
         signature_bytes,
@@ -108,34 +103,22 @@ pub(crate) async fn run(
 }
 
 // Read message from the provided file or stdin
-pub fn read_messages(
-    message_paths: &[String],
+pub fn read_message(
+    message_path: &String,
     output: &mut dyn Write,
     input: &mut dyn BufRead,
-) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
+) -> Result<Vec<u8>, Box<dyn Error>> {
     // If no message paths are provided, read from stdin
-    let messages = if message_paths.is_empty() {
+    let loaded_message = if *message_path == "-" || message_path.is_empty() {
         writeln!(output, "The message to be signed (json string)")?;
-        vec![load_transaction_from_stdin(input)?.translate_msg()]
+        load_transaction_from_stdin(input)?
     } else {
-        // Otherwise, iterate over the provided paths and attempt to read each message
-        message_paths
-            .iter()
-            .map(|filename| {
-                // If the filename is "-" or empty, read from stdin instead
-                let msg = if *filename == "-" || filename.is_empty() {
-                    writeln!(output, "The message to be signed (json string)")?;
-                    load_transaction_from_stdin(input)?
-                } else {
-                    eprintln!("Reading message from {}...", &filename);
-                    load_transaction_from_json(filename)?
-                };
-                Ok(msg)
-            })
-            .map(|res| res.map(|msg| msg.translate_msg()))
-            .collect::<Result<_, Box<dyn Error>>>()?
+        eprintln!("Reading message from {}...", &message_path);
+        load_transaction_from_json(message_path)?
     };
-    Ok(messages)
+    let message = loaded_message.translate_msg();
+
+    Ok(message)
 }
 
 // Avoid clippy warnings about complex return types
@@ -196,7 +179,7 @@ struct CoordinatorSetupParams<'a, C: Ciphersuite> {
     user_config: &'a ConfigFile<C>,
     group_config: &'a crate::cli::config::Group<C>,
     server_url: Option<String>,
-    message_paths: &'a [String],
+    message_path: String,
     output: &'a mut dyn Write,
     input: &'a mut dyn BufRead,
     network: Network,
@@ -227,13 +210,13 @@ fn setup_coordinator_config<C: Ciphersuite>(
         Url::parse(&format!("https://{}", server_url)).wrap_err("error parsing server-url")?;
 
     let num_signers = signers.len() as u16;
-    let messages = read_messages(params.message_paths, params.output, params.input)?;
+    let message = read_message(&params.message_path, params.output, params.input)?;
 
     let coordinator_config = CoordinatorConfig {
         signers,
         num_signers,
         public_key_package,
-        messages,
+        message,
         ip: server_url_parsed
             .host_str()
             .ok_or_eyre("host missing in URL")?

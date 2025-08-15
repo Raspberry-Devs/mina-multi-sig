@@ -45,7 +45,7 @@ impl<C: Ciphersuite> HTTPComms<C> {
             session_id: None,
             config: config.clone(),
             state: CoordinatorSessionState::new(
-                config.messages.len(),
+                1, // Supporting just one message
                 config.num_signers as usize,
                 config.signers.clone(),
             ),

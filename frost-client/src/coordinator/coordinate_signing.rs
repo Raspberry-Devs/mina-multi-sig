@@ -48,8 +48,7 @@ pub async fn coordinate_signing(
     };
 
     // Round 2 - Create signing package and get signature shares
-    // TODO: Currently, we ignore all messages other than the first one. Either we restrict to using one message or we need to handle multiple messages.
-    let signing_package = SigningPackage::new(commitments.clone(), &config.messages[0]);
+    let signing_package = SigningPackage::new(commitments.clone(), &config.message);
 
     let signatures_list = comms
         .send_signing_package_and_get_signature_shares(reader, logger, &signing_package)

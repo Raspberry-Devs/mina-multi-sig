@@ -15,8 +15,8 @@ pub struct Config<C: Ciphersuite> {
     /// Public key package to use.
     pub public_key_package: PublicKeyPackage<C>,
 
-    /// The messages to sign.
-    pub messages: Vec<Vec<u8>>,
+    /// The message to sign.
+    pub message: Vec<u8>,
 
     /// IP to bind to, if using socket comms.
     /// IP to connect to, if using HTTP mode.
