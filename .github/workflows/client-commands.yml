@@ -7,6 +7,7 @@ on:
     branches: ["main"]
     paths:
       - "frost-client/**"
+      - ".github/workflows/client-commands.yml"
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,7 +18,7 @@ jobs:
     container:
       # @TODO: Once PR 76 is merged change the image to frost-ci:latest
       # (it will only be created after merge to main)
-      image: ghcr.io/raspberry-devs/mina-multi-sig/frost-ci:pr-76
+      image: ghcr.io/raspberry-devs/mina-multi-sig/frost-ci:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
