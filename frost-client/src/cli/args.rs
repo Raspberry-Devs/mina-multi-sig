@@ -177,12 +177,11 @@ pub enum Command {
         /// The comma-separated hex-encoded public keys of the signers to use.
         #[arg(short = 'S', long, value_delimiter = ',')]
         signers: Vec<String>,
-        /// The messages to sign. Each instance can be a file with the raw message,
+        /// The message to sign. It can be a file with the raw message,
         /// "" or "-". If "" or "-" is specified, then it will be read from standard
-        /// input as a hex string. If none are passed, a single one will be read
-        /// from standard input as a hex string.
+        /// input as a hex string.
         #[arg(short = 'm', long)]
-        message: Vec<String>,
+        message: String,
         /// Where to write the generated raw bytes signature. If "-", the
         /// human-readable hex-string is printed to stdout.
         #[arg(short = 'o', long, default_value = "")]
