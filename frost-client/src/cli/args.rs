@@ -209,5 +209,8 @@ pub enum Command {
         /// case there is a single active session.
         #[arg(short = 'S', long)]
         session: Option<String>,
+        /// Automatically answer yes to signing any package.
+        #[arg(short = 'y', long, default_value_t = false)]
+        yes: bool,
     },
 }

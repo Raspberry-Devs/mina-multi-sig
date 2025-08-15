@@ -22,6 +22,7 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
         server_url,
         group,
         session,
+        yes,
     } = (*args).clone()
     else {
         panic!("invalid Command");
@@ -44,7 +45,7 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
     )?;
 
     // Execute signing
-    sign(participant_config, &mut input, &mut output).await?;
+    sign(participant_config, &mut input, &mut output, yes).await?;
 
     Ok(())
 }

@@ -60,7 +60,11 @@ pub trait Comms<C: Ciphersuite> {
         input: &mut dyn BufRead,
         output: &mut dyn Write,
         signing_package: &SendSigningPackageArgs<C>,
+        yes: bool,
     ) -> Result<(), Box<dyn Error>> {
+        if yes {
+            return Ok(());
+        }
         let network = Network::try_from(signing_package.network_id)?;
 
         let transaction_bytes = signing_package
