@@ -16,11 +16,11 @@ README.md
 # Build outputs
 
 target/
-frost-client/target/
+mina-frost-client/target/
 
 # Generated examples
 
-frost-client/examples/\*/generated/
+mina-frost-client/examples/\*/generated/
 
 # IDE files
 

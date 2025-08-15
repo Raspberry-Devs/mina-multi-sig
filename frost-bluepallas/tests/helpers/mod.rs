@@ -7,15 +7,15 @@ pub mod samples;
 use frost_bluepallas::{
     hasher::PallasMessage,
     translate::{translate_pk, translate_sig},
-    PallasPoseidon,
+    BluePallas,
 };
 use mina_signer::{NetworkId, Signer};
 
 // #[cfg(test)]
 pub fn verify_signature(
     msg: &[u8],
-    group_signature: frost_core::Signature<PallasPoseidon>,
-    group_pubkey: frost_core::VerifyingKey<PallasPoseidon>,
+    group_signature: frost_core::Signature<BluePallas>,
+    group_pubkey: frost_core::VerifyingKey<BluePallas>,
 ) {
     // TODO remove the result type from the translate api. It's always okay
     let sig = translate_sig(&group_signature).unwrap();

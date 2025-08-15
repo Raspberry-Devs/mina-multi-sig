@@ -1,3 +1,3 @@
 # Ignore generated files from all examples
 **/generated/
-**/*.toml 
+**/*.toml

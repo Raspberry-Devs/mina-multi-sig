@@ -160,7 +160,7 @@ fn sign_mina_tx_mainnet() {
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
-    let _chall = frost_bluepallas::PallasPoseidon::challenge(sig.R(), &vk, &msg)
+    let _chall = frost_bluepallas::BluePallas::challenge(sig.R(), &vk, &msg)
         .expect("Expect challenge to calculate");
 
     // Convert signature to Mina format

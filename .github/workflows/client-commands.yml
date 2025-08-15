@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: ["main"]
     paths:
-      - "frost-client/**"
+      - "mina-frost-client/**"
       - ".github/workflows/client-commands.yml"
 
 env:
@@ -36,42 +36,42 @@ jobs:
             /root/.cargo/registry/cache/
             /root/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-container-${{ hashFiles('frost-client/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-container-${{ hashFiles('mina-frost-client/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-container-
 
       # Pre-build once instead of building for each example
-      - name: Build frost-client (release mode)
+      - name: Build mina-frost-client (release mode)
         run: |
-          cd frost-client
-          cargo build --release --bin frost-client
+          cd mina-frost-client
+          cargo build --release --bin mina-frost-client
 
       # Run all examples that test if the basic usecases of the client don't break
       - name: Run Trusted Dealer Example
         run: |
-          cd frost-client/examples/trusted_dealer_example
+          cd mina-frost-client/examples/trusted_dealer_example
           timeout 300 ./trusted_dealer_example.sh
 
       - name: Run DKG Example
         run: |
-          cd frost-client/examples/dkg_example
+          cd mina-frost-client/examples/dkg_example
           timeout 300 ./dkg_example.sh
 
       - name: Run Signing Example
         run: |
-          cd frost-client/examples/signing_example
+          cd mina-frost-client/examples/signing_example
           timeout 300 ./signing_example.sh
 
       - name: Verify generated artifacts
         run: |
-          test -f frost-client/examples/trusted_dealer_example/generated/alice.toml
-          test -f frost-client/examples/trusted_dealer_example/generated/bob.toml
-          test -f frost-client/examples/trusted_dealer_example/generated/eve.toml
-          test -f frost-client/examples/dkg_example/generated/alice.toml
-          test -f frost-client/examples/dkg_example/generated/bob.toml
-          test -f frost-client/examples/dkg_example/generated/eve.toml
-          test -f frost-client/examples/signing_example/generated/signature.json
-          test -f frost-client/examples/signing_example/generated/message.json
+          test -f mina-frost-client/examples/trusted_dealer_example/generated/alice.toml
+          test -f mina-frost-client/examples/trusted_dealer_example/generated/bob.toml
+          test -f mina-frost-client/examples/trusted_dealer_example/generated/eve.toml
+          test -f mina-frost-client/examples/dkg_example/generated/alice.toml
+          test -f mina-frost-client/examples/dkg_example/generated/bob.toml
+          test -f mina-frost-client/examples/dkg_example/generated/eve.toml
+          test -f mina-frost-client/examples/signing_example/generated/signature.json
+          test -f mina-frost-client/examples/signing_example/generated/message.json
 
       - name: Upload artifacts on failure
         if: failure()
@@ -79,5 +79,5 @@ jobs:
         with:
           name: frost-example-outputs
           path: |
-            frost-client/examples/*/generated/
+            mina-frost-client/examples/*/generated/
           retention-days: 7

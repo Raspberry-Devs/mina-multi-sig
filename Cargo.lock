@@ -1122,46 +1122,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "frost-client"
-version = "0.1.0"
-dependencies = [
- "ark-ff",
- "async-trait",
- "bech32",
- "clap",
- "dirs",
- "eyre",
- "frost-bluepallas",
- "frost-core",
- "frost-ed25519",
- "frost-rerandomized",
- "hex",
- "itertools 0.14.0",
- "lazy_static",
- "message-io",
- "mina-signer",
- "postcard",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "reddsa",
- "regex",
- "reqwest",
- "rpassword",
- "serde",
- "serde_json",
- "serdect 0.3.0",
- "snow",
- "stable-eyre",
- "tempfile",
- "thiserror 2.0.14",
- "tokio",
- "toml",
- "uuid",
- "xeddsa",
- "zeroize",
-]
-
-[[package]]
 name = "frost-core"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1891,6 +1851,46 @@ dependencies = [
  "ark-ec",
  "ark-ff",
  "num-bigint",
+]
+
+[[package]]
+name = "mina-frost-client"
+version = "0.1.0"
+dependencies = [
+ "ark-ff",
+ "async-trait",
+ "bech32",
+ "clap",
+ "dirs",
+ "eyre",
+ "frost-bluepallas",
+ "frost-core",
+ "frost-ed25519",
+ "frost-rerandomized",
+ "hex",
+ "itertools 0.14.0",
+ "lazy_static",
+ "message-io",
+ "mina-signer",
+ "postcard",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "reddsa",
+ "regex",
+ "reqwest",
+ "rpassword",
+ "serde",
+ "serde_json",
+ "serdect 0.3.0",
+ "snow",
+ "stable-eyre",
+ "tempfile",
+ "thiserror 2.0.14",
+ "tokio",
+ "toml",
+ "uuid",
+ "xeddsa",
+ "zeroize",
 ]
 
 [[package]]

@@ -43,4 +43,3 @@ chmod +x signing_example/signing_example.sh
 ```
 
 Examples use `cargo run` to run the client (always uses your latest code changes).
-

@@ -72,7 +72,7 @@ fn main() -> Result<(), Error> {
 
     println!("Transaction Signature: {}", out);
 
-    let chall = frost_bluepallas::PallasPoseidon::challenge(sig.R(), &vk, &msg)?;
+    let chall = frost_bluepallas::BluePallas::challenge(sig.R(), &vk, &msg)?;
     println!("Challenge: {:?}", chall);
 
     let mut ctx = mina_signer::create_legacy(mina_signer::NetworkId::TESTNET);

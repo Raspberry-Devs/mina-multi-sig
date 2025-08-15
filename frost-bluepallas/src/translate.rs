@@ -1,4 +1,4 @@
-use crate::{errors::BluePallasResult, PallasPoseidon, SigningKey};
+use crate::{errors::BluePallasResult, BluePallas, SigningKey};
 use ark_ec::CurveGroup;
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::Hashable;
@@ -7,20 +7,20 @@ use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, NetworkId};
 
 // Note
 // CurvePoint = Affine<PallasParameters>                                        mina side
-// PallasProjective = Projective<PallasParameters> (= Element<PallasPoseidon>)  frost side
+// PallasProjective = Projective<PallasParameters> (= Element<BluePallas>)  frost side
 // The ScalarField type on the mina and frost side are the same!
 
 /// Convert FROST public key to Mina public key
 /// The `VerifyingKey` is the public key in FROST, which is a point on the curve.
-pub fn translate_pk(fr_pk: &VerifyingKey<PallasPoseidon>) -> BluePallasResult<PubKey> {
+pub fn translate_pk(fr_pk: &VerifyingKey<BluePallas>) -> BluePallasResult<PubKey> {
     Ok(PubKey::from_point_unsafe(fr_pk.to_element().into_affine()))
 }
 
 /// Convert FROST signature to Mina signature
 /// The `R` field is the commitment to the nonce, and `z` is the response to the challenge.
-pub fn translate_sig(fr_sig: &FrSig<PallasPoseidon>) -> BluePallasResult<MinaSig> {
+pub fn translate_sig(fr_sig: &FrSig<BluePallas>) -> BluePallasResult<MinaSig> {
     let rx = fr_sig.R().into_affine().x;
-    let z: Scalar<PallasPoseidon> = *fr_sig.z();
+    let z: Scalar<BluePallas> = *fr_sig.z();
 
     Ok(MinaSig { rx, s: z })
 }
@@ -65,7 +65,7 @@ mod tests {
 
         // Fails if scalar is zero
         let fr_sk = SigningKey::from_scalar(scalar)?;
-        let fr_pk: VerifyingKey<PallasPoseidon> = fr_sk.into();
+        let fr_pk: VerifyingKey<BluePallas> = fr_sk.into();
 
         assert_eq!(translate_pk(&fr_pk)?, mina_pk);
         Ok(())

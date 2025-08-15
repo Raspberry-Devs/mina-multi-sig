@@ -1,5 +1,5 @@
 [workspace]
-members = ["frost-bluepallas", "frost-client"]
+members = ["frost-bluepallas", "mina-frost-client"]
 resolver = "2"
 
 [workspace.dependencies]

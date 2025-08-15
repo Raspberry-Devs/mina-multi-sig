@@ -141,7 +141,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                     // Auto-discover session ID from server
                     let r = self.client.list_sessions().await?;
                     if r.session_ids.len() > 1 {
-                        return Err(eyre!("user has more than one FROST session active; use `frost-client sessions` to list them and specify the session ID with `-S`").into());
+                        return Err(eyre!("user has more than one FROST session active; use `mina-frost-client sessions` to list them and specify the session ID with `-S`").into());
                     } else if r.session_ids.is_empty() {
                         return Err(eyre!("User has no current sessions active").into());
                     }

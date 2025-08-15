@@ -37,7 +37,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         "Signature commitment y-coordinate must be even"
     );
 
-    let res = frost_bluepallas::PallasPoseidon::verify_signature(&fr_msg, &fr_sig, &fr_pk);
+    let res = frost_bluepallas::BluePallas::verify_signature(&fr_msg, &fr_sig, &fr_pk);
     assert!(res.is_ok(), "FROST correctly verifies signature");
 
     let mina_pk = translate_pk(&fr_pk)?;
@@ -56,7 +56,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mina_chall = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone())?;
-    let chall = frost_bluepallas::PallasPoseidon::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
+    let chall = frost_bluepallas::BluePallas::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
 
     // As of now this should be trivially true because the implementations are the same
     assert_eq!(
