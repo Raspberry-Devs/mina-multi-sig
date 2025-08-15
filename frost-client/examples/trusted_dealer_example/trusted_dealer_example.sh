@@ -1,27 +1,30 @@
 #!/bin/bash
 
+# Strict error handling - exit on any error, undefined variable, or pipe failure
+set -euo pipefail
+
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 GENERATED_DIR="$SCRIPT_DIR/generated"
+HELPERS_DIR="$SCRIPT_DIR/../helpers"
 
-# Clean up generated directory if it exists
-if [ -d "$GENERATED_DIR" ]; then
-    echo "Cleaning up existing generated directory..."
-    rm -rf "$GENERATED_DIR"
-fi
+cd "$SCRIPT_DIR"
 
-# Create directory for generated files
-mkdir -p "$GENERATED_DIR"
+# Source helpers
+source "$HELPERS_DIR/file_generation.sh"
+source "$HELPERS_DIR/use_frost_client.sh"
+
+# Setup
+setup_generated_dir "$GENERATED_DIR"
 
 # Initialize configs for three users
-echo "Initializing configs for users..."
-cargo run --bin frost-client -- init -c "$GENERATED_DIR/alice.toml"
-cargo run --bin frost-client -- init -c "$GENERATED_DIR/bob.toml"
-cargo run --bin frost-client -- init -c "$GENERATED_DIR/eve.toml"
+use_frost_client init -c "$GENERATED_DIR/alice.toml"
+use_frost_client init -c "$GENERATED_DIR/bob.toml"
+use_frost_client init -c "$GENERATED_DIR/eve.toml"
 
+echo "Generating FROST key shares..."
 # Generate FROST key shares using trusted dealer
-echo "Generating FROST key shares using trusted dealer..."
-cargo run --bin frost-client -- trusted-dealer \
+use_frost_client trusted-dealer \
     -d "Alice, Bob and Eve's group" \
     --names Alice,Bob,Eve \
     -c "$GENERATED_DIR/alice.toml" \
@@ -29,4 +32,19 @@ cargo run --bin frost-client -- trusted-dealer \
     -c "$GENERATED_DIR/eve.toml" \
     -t 2
 
-echo "Key generation complete. Check the generated directory for the config files."
+# Validate that key generation was successful
+echo "Validating generated configuration files..."
+if [[ ! -f "$GENERATED_DIR/alice.toml" ]] || [[ ! -f "$GENERATED_DIR/bob.toml" ]] || [[ ! -f "$GENERATED_DIR/eve.toml" ]]; then
+    echo "ERROR: Key generation failed - configuration files not found" >&2
+    exit 1
+fi
+
+# Verify the config files contain key data (not just empty files)
+for config in "$GENERATED_DIR/alice.toml" "$GENERATED_DIR/bob.toml" "$GENERATED_DIR/eve.toml"; do
+    if ! grep -q "key_package" "$config" 2>/dev/null; then
+        echo "ERROR: Configuration file $config appears to be invalid (no key_package found)" >&2
+        exit 1
+    fi
+done
+
+echo "✅ Key generation complete. Check the generated directory for the config files."
