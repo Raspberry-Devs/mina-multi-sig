@@ -5,7 +5,7 @@ use super::comms::http::HTTPComms;
 use super::comms::Comms;
 
 use crate::mina_network::Network;
-use frost_bluepallas::PallasPoseidon;
+use frost_bluepallas::BluePallas;
 use rand::thread_rng;
 use std::io::{BufRead, Write};
 use zeroize::Zeroizing;
@@ -14,12 +14,12 @@ use zeroize::Zeroizing;
 /// This function handles the signing process for a participant.
 /// The signing process needs to be started by a coordinator first.
 pub async fn sign(
-    config: Config<PallasPoseidon>,
+    config: Config<BluePallas>,
     input: &mut impl BufRead,
     logger: &mut impl Write,
     yes: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut comms: Box<dyn Comms<PallasPoseidon>> = Box::new(HTTPComms::new(&config)?);
+    let mut comms: Box<dyn Comms<BluePallas>> = Box::new(HTTPComms::new(&config)?);
 
     // Round 1
 

@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::PallasPoseidon;
+use frost_bluepallas::BluePallas;
 use reqwest::Url;
 
 use frost_core::keys::KeyPackage;
@@ -33,10 +33,10 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
 
     // Load and validate configuration
     let (user_config, group_config, key_package) =
-        load_participant_config::<PallasPoseidon>(config_path, &group)?;
+        load_participant_config::<BluePallas>(config_path, &group)?;
 
     // Setup participant configuration
-    let participant_config = setup_participant_config::<PallasPoseidon>(
+    let participant_config = setup_participant_config::<BluePallas>(
         &user_config,
         &group_config,
         key_package,

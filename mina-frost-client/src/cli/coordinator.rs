@@ -9,7 +9,7 @@ use frost_bluepallas::{
     signature::{PubKeySer, Sig, TransactionSignature},
     transactions::Transaction,
     translate::Translatable,
-    PallasPoseidon,
+    BluePallas,
 };
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};
 use reqwest::Url;
@@ -25,7 +25,7 @@ use super::args::Command;
 use super::config::Config as ConfigFile;
 use crate::mina_network::Network;
 
-/// This is the PallasPoseidon/BluePallas specific run command for the coordinator which will save the output
+/// This is the BluePallas/BluePallas specific run command for the coordinator which will save the output
 /// of the signing session into a Mina-specific transaction.
 pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
     // Match on command type early to ensure we are running the coordinator command, panic otherwise
@@ -48,7 +48,7 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
 
 pub(crate) async fn run(
     args: &Command,
-) -> Result<(Vec<u8>, Vec<u8>, VerifyingKey<PallasPoseidon>), Box<dyn Error>> {
+) -> Result<(Vec<u8>, Vec<u8>, VerifyingKey<BluePallas>), Box<dyn Error>> {
     // Note, we duplicate pattern matching code here and in run(), but given that there is no way to pass a Command::Coordinator type
     // to this function, we must instead repeat the check again
     // The alternative is to create a struct which contains the same parameters, not worth it for only one use
@@ -70,10 +70,10 @@ pub(crate) async fn run(
 
     // Load and validate configuration
     let (user_config, group_config, public_key_package) =
-        load_coordinator_config::<PallasPoseidon>(config_path, &group_id)?;
+        load_coordinator_config::<BluePallas>(config_path, &group_id)?;
 
     // Parse signers from command line arguments
-    let signers = parse_signers::<PallasPoseidon>(&signers, &group_config)?;
+    let signers = parse_signers::<BluePallas>(&signers, &group_config)?;
 
     // Setup coordinator configuration
     let params = CoordinatorSetupParams {
@@ -87,7 +87,7 @@ pub(crate) async fn run(
     };
 
     let coordinator_config =
-        setup_coordinator_config::<PallasPoseidon>(public_key_package.clone(), signers, params)?;
+        setup_coordinator_config::<BluePallas>(public_key_package.clone(), signers, params)?;
 
     // Execute signing
     let signature_bytes = coordinate_signing(&coordinator_config, &mut input, &mut output).await?;
@@ -254,10 +254,10 @@ pub fn save_signature(
     signature_path: &str,
     signature_bytes: Vec<u8>,
     message: &[u8],
-    vk: VerifyingKey<PallasPoseidon>,
+    vk: VerifyingKey<BluePallas>,
 ) -> Result<(), Box<dyn Error>> {
     // Read signature from bytes
-    let signature: Sig = Signature::<PallasPoseidon>::deserialize(&signature_bytes)?.try_into()?;
+    let signature: Sig = Signature::<BluePallas>::deserialize(&signature_bytes)?.try_into()?;
 
     let tx = Transaction::from_bytes(message)?;
 

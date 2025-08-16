@@ -5,7 +5,7 @@ use frost_core::{
 
 use crate::{
     round1::{SigningCommitments, SigningNonces},
-    PallasGroup, PallasPoseidon, SigningPackage,
+    BluePallas, PallasGroup, SigningPackage,
 };
 
 /// This trait is used to negate the Y coordinate of the group commitment element with FROST
@@ -20,8 +20,8 @@ impl NegateY for SigningNonces {
         let negated_hiding = -self.hiding().to_scalar();
         let negated_binding = -self.binding().to_scalar();
         SigningNonces::from_nonces(
-            Nonce::<PallasPoseidon>::from_scalar(negated_hiding),
-            Nonce::<PallasPoseidon>::from_scalar(negated_binding),
+            Nonce::<BluePallas>::from_scalar(negated_hiding),
+            Nonce::<BluePallas>::from_scalar(negated_binding),
         )
     }
 }
@@ -70,7 +70,7 @@ impl NegateY for SigningCommitments {
     }
 }
 
-type NoncePallas = NonceCommitment<PallasPoseidon>;
+type NoncePallas = NonceCommitment<BluePallas>;
 
 /// Take all commitments with a signing package and negate their Y coordinates
 impl NegateY for SigningPackage {
@@ -96,8 +96,8 @@ mod tests {
     use rand_core::OsRng;
     use std::collections::BTreeMap;
 
-    /// Helpers to extract the underlying `PallasGroup` from a `NonceCommitment<PallasPoseidon>`.
-    fn commit_to_group(c: &NonceCommitment<PallasPoseidon>) -> ProjectivePallas {
+    /// Helpers to extract the underlying `PallasGroup` from a `NonceCommitment<BluePallas>`.
+    fn commit_to_group(c: &NonceCommitment<BluePallas>) -> ProjectivePallas {
         let ser = c.serialize().unwrap();
         let ser: [u8; 96] = ser
             .as_slice()
@@ -113,8 +113,8 @@ mod tests {
         let r1 = <PallasScalarField as frost_core::Field>::Scalar::rand(&mut rng);
         let r2 = <PallasScalarField as frost_core::Field>::Scalar::rand(&mut rng);
         let nonces = SigningNonces::from_nonces(
-            Nonce::<PallasPoseidon>::from_scalar(r1),
-            Nonce::<PallasPoseidon>::from_scalar(r2),
+            Nonce::<BluePallas>::from_scalar(r1),
+            Nonce::<BluePallas>::from_scalar(r2),
         );
 
         let neg = nonces.negate_y();
@@ -141,7 +141,7 @@ mod tests {
         // pick the group generator so we know Y ≠ 0
         let g = PallasGroup::generator();
         let g_ser = PallasGroup::serialize(&g).unwrap();
-        let comm = NonceCommitment::<PallasPoseidon>::deserialize(&g_ser).unwrap();
+        let comm = NonceCommitment::<BluePallas>::deserialize(&g_ser).unwrap();
 
         let commitments = SigningCommitments::new(comm, comm);
         let neg = commitments.negate_y();
@@ -162,7 +162,7 @@ mod tests {
         // set up one participant (id = 1) with the generator commitment
         let g = PallasGroup::generator();
         let g_ser = PallasGroup::serialize(&g).unwrap();
-        let comm = NonceCommitment::<PallasPoseidon>::deserialize(&g_ser).unwrap();
+        let comm = NonceCommitment::<BluePallas>::deserialize(&g_ser).unwrap();
         let single = SigningCommitments::new(comm, comm);
 
         let mut map = BTreeMap::new();

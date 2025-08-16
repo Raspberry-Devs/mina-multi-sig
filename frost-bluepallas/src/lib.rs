@@ -31,7 +31,7 @@ use mina_curves::pasta::{PallasParameters, ProjectivePallas};
 use num_traits::identities::Zero;
 use rand_core::{CryptoRng, RngCore};
 
-pub type Error = frost_core::Error<PallasPoseidon>;
+pub type Error = frost_core::Error<BluePallas>;
 
 use crate::{
     hasher::{hash_to_array, hash_to_scalar, message_hash, PallasMessage},
@@ -144,14 +144,14 @@ impl Group for PallasGroup {
 pub const CONTEXT_STRING: &str = "bluepallas";
 const HASH_SIZE: usize = 32; // Posiedon hash output size
 
-/// The PallasPoseidon ciphersuite, which uses the Pallas curve and Poseidon hash function.
+/// The BluePallas ciphersuite, which uses the Pallas curve and Poseidon hash function.
 ///
 /// Note that this ciphersuite is used for FROST signatures in the Mina protocol and has a lot of Mina-specific logic
-/// This library SHOULD not be treated as a general-purpose PallasPoseidon ciphersuite, but rather as a Mina-specific implementation.
+/// This library SHOULD not be treated as a general-purpose BluePallas ciphersuite, but rather as a Mina-specific implementation.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct PallasPoseidon {}
+pub struct BluePallas {}
 
-impl Ciphersuite for PallasPoseidon {
+impl Ciphersuite for BluePallas {
     const ID: &'static str = CONTEXT_STRING;
 
     type Group = PallasGroup;
@@ -202,9 +202,9 @@ impl Ciphersuite for PallasPoseidon {
 }
 
 // Simply type alias for the FROST ciphersuite using Pallas with Poseidon
-pub type P = PallasPoseidon;
+pub type P = BluePallas;
 
-// A PallasPoseidon identifier
+// A BluePallas identifier
 pub type Identifier = frost::Identifier<P>;
 
 /// FROST(Pallas, Posiedon) Round 1 functionality and types.
@@ -252,7 +252,7 @@ pub type SigningPackage = frost::SigningPackage<P>;
 pub(crate) fn pre_commitment_sign<'a>(
     signing_package: &'a SigningPackage,
     signing_nonces: &'a SigningNonces,
-    binding_factor_list: &'a BindingFactorList<PallasPoseidon>,
+    binding_factor_list: &'a BindingFactorList<BluePallas>,
 ) -> Result<(Cow<'a, SigningPackage>, Cow<'a, SigningNonces>), Error> {
     use ark_ff::{BigInteger, PrimeField};
     // Compute the group commitment from signing commitments produced in round one.
@@ -279,7 +279,7 @@ pub(crate) fn pre_commitment_sign<'a>(
 /// Naturally, this is called by the coordinator in the [`aggregate`] function
 pub(crate) fn pre_commitment_aggregate<'a>(
     signing_package: &'a SigningPackage,
-    binding_factor_list: &'a BindingFactorList<PallasPoseidon>,
+    binding_factor_list: &'a BindingFactorList<BluePallas>,
 ) -> Result<Cow<'a, SigningPackage>, Error> {
     use ark_ff::{BigInteger, PrimeField};
     // Compute the group commitment from signing commitments produced in round one.
@@ -331,13 +331,13 @@ pub mod round2 {
         }
 
         let (signing_package, signer_nonces, key_package) =
-            PallasPoseidon::pre_sign(signing_package, signer_nonces, key_package)?;
+            BluePallas::pre_sign(signing_package, signer_nonces, key_package)?;
 
         // Encodes the signing commitment list produced in round one as part of generating [`BindingFactor`], the
         // binding factor.
-        let binding_factor_list: BindingFactorList<PallasPoseidon> =
+        let binding_factor_list: BindingFactorList<BluePallas> =
             compute_binding_factor_list(&signing_package, key_package.verifying_key(), &[])?;
-        let binding_factor: frost::BindingFactor<PallasPoseidon> = binding_factor_list
+        let binding_factor: frost::BindingFactor<BluePallas> = binding_factor_list
             .get(key_package.identifier())
             .ok_or(Error::UnknownIdentifier)?
             .clone();
@@ -355,14 +355,14 @@ pub mod round2 {
             frost::derive_interpolating_value(key_package.identifier(), &signing_package)?;
 
         // Compute the per-message challenge.
-        let challenge = <PallasPoseidon>::challenge(
+        let challenge = <BluePallas>::challenge(
             &group_commitment_element,
             key_package.verifying_key(),
             signing_package.message(),
         )?;
 
         // Compute the Schnorr signature share.
-        let signature_share = <PallasPoseidon>::compute_signature_share(
+        let signature_share = <BluePallas>::compute_signature_share(
             &group_commitment,
             &signer_nonces,
             binding_factor,
@@ -413,11 +413,11 @@ pub fn aggregate(
     }
 
     let (signing_package, signature_shares, pubkeys) =
-        PallasPoseidon::pre_aggregate(signing_package, signature_shares, pubkeys)?;
+        BluePallas::pre_aggregate(signing_package, signature_shares, pubkeys)?;
 
     // Encodes the signing commitment list produced in round one as part of generating [`BindingFactor`], the
     // binding factor.
-    let binding_factor_list: BindingFactorList<PallasPoseidon> =
+    let binding_factor_list: BindingFactorList<BluePallas> =
         compute_binding_factor_list(&signing_package, pubkeys.verifying_key(), &[])?;
 
     let signing_package = pre_commitment_aggregate(&signing_package, &binding_factor_list)?;

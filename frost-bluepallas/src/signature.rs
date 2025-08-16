@@ -8,7 +8,7 @@ use serde::{
 };
 
 use crate::{
-    errors::BluePallasError, transactions::Transaction, translate::translate_pk, PallasPoseidon,
+    errors::BluePallasError, transactions::Transaction, translate::translate_pk, BluePallas,
     VerifyingKey,
 };
 
@@ -17,7 +17,7 @@ pub struct Sig {
     pub scalar: BigInt<4>,
 }
 
-impl TryInto<Sig> for Signature<PallasPoseidon> {
+impl TryInto<Sig> for Signature<BluePallas> {
     type Error = BluePallasError;
 
     fn try_into(self) -> Result<Sig, Self::Error> {

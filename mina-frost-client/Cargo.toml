@@ -1,15 +1,15 @@
 [package]
-name = "frost-client"
+name = "mina-frost-client"
 version = "0.1.0"
 edition = "2021"
-default-run = "frost-client"
+default-run = "mina-frost-client"
 
 [[bin]]
 name = "test-vector"
 path = "src/scripts/test_vector_gen.rs"
 
 [[bin]]
-name = "frost-client"
+name = "mina-frost-client"
 path = "src/main.rs"
 
 [dependencies]

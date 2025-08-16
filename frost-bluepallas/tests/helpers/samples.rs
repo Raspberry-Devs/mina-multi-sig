@@ -14,7 +14,7 @@ use frost_bluepallas::{
 };
 use frost_core::{round1::Nonce, Ciphersuite, Element, Group, Scalar};
 
-type C = frost_bluepallas::PallasPoseidon;
+type C = frost_bluepallas::BluePallas;
 
 fn element1() -> Element<C> {
     <C as Ciphersuite>::Group::generator()

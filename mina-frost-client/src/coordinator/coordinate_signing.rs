@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::io::{BufRead, Write};
 
-use frost_bluepallas::PallasPoseidon;
+use frost_bluepallas::BluePallas;
 use frost_core::{
     self, keys::PublicKeyPackage, round1::SigningCommitments, Ciphersuite, Identifier,
     SigningPackage,
@@ -22,12 +22,12 @@ pub struct ParticipantsConfig<C: Ciphersuite> {
 // sends the signing package, and aggregates the signatures.
 // It returns the final aggregated signature as a byte vector.
 pub async fn coordinate_signing(
-    config: &Config<PallasPoseidon>,
+    config: &Config<BluePallas>,
     reader: &mut impl BufRead,
     logger: &mut impl Write,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     config.network.configure_hasher()?;
-    let mut comms: Box<dyn Comms<PallasPoseidon>> = Box::new(HTTPComms::new(config)?);
+    let mut comms: Box<dyn Comms<BluePallas>> = Box::new(HTTPComms::new(config)?);
 
     // Round 1 - Get commitments
     let commitments_list = comms

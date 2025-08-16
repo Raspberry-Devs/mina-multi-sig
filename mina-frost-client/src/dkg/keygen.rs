@@ -16,7 +16,7 @@ use super::config::Config;
 ///
 /// This function orchestrates the complete 3-round DKG process:
 /// 1. **Round 1**: Each participant generates and shares commitments to their secret polynomial
-/// 2. **Round 2**: Participants exchange secret shares and verify commitments  
+/// 2. **Round 2**: Participants exchange secret shares and verify commitments
 /// 3. **Round 3**: Final key package generation and verification
 ///
 /// # Arguments

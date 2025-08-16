@@ -1,4 +1,4 @@
-//! frost-client library that provides functionality to use FROST
+//! mina-frost-client library that provides functionality to use FROST
 //! using the `frostd`, the FROST server.
 
 pub mod args;

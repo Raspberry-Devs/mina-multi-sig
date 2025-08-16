@@ -5,8 +5,8 @@
 set -euo pipefail
 
 use_frost_client() {
-    if ! cargo run --bin frost-client -- "$@"; then
-        echo "Error: frost-client command failed with arguments: $*" >&2
+    if ! cargo run --bin mina-frost-client -- "$@"; then
+        echo "Error: mina-frost-client command failed with arguments: $*" >&2
         return 1
     fi
 }
