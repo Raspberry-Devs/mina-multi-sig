@@ -1100,7 +1100,7 @@ dependencies = [
 
 [[package]]
 name = "frost-bluepallas"
-version = "0.0.0"
+version = "0.2.0"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -1855,7 +1855,7 @@ dependencies = [
 
 [[package]]
 name = "mina-frost-client"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ark-ff",
  "async-trait",

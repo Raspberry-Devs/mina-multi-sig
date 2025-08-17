@@ -15,6 +15,27 @@ Besides the usual advantages of shared control over accounts, threshold signatur
 - **`frost-bluepallas/`** – A Rust crate implementing FROST for Mina's Pallas curve using the Poseidon hash function. It allows generation of signatures that are compatible with Mina nodes and includes example programs for key generation and transaction signing.
 - **`mina-frost-client/`** – A demo client and utilities for running distributed key generation and signing sessions. It exposes various sub‑commands for initializing participants, running a trusted dealer or DKG, and coordinating signing rounds.
 
+## Instalation
+### mina-frost-client
+To install `mina-frost-client` run
+```bash
+cargo install --git https://github.com/Raspberry-Devs/mina-multi-sig.git --locked mina-frost-client
+```
+
+### frost-bluepallas
+To use `frost-bluepallas` as a dependency in your Rust project, add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+frost-bluepallas = { git = "https://github.com/Raspberry-Devs/mina-multi-sig.git" }
+```
+
+You can also specify a exact commit on the main repository you would like to use
+```toml
+[dependencies]
+frost-bluepallas = { git = "https://github.com/Raspberry-Devs/mina-multi-sig.git", rev = "commit_hash" }
+```
+
 ## Example Usage
 
 Below is a minimal outline of how the client can be used. See the `examples/` folders in each crate for complete scripts.
@@ -35,7 +56,7 @@ cargo run --bin mina-frost-client -- trusted-dealer \
   -C bluepallas
 ```
 
-## Running the Server
+### Running the Server
 
 Install `frostd` using cargo with
 
@@ -54,6 +75,8 @@ Start the server
 ```bash
 frostd --tls-cert localhost+2.pem --tls-key localhost+2-key.pem
 ```
+
+More information on how to run a server and set it up for production can be found [here](https://frost.zfnd.org/zcash/server.html)
 
 ### Distributed Key Generation (DKG)
 
