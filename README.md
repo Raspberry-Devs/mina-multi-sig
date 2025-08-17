@@ -42,6 +42,8 @@ Below is a minimal outline of how the client can be used. See the `examples/` fo
 
 ### Trusted Dealer Setup
 
+This command is **test-only**.
+
 ```bash
 # Initialize participant configurations
 cargo run --bin mina-frost-client -- init -c alice.toml
