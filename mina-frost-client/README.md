@@ -2,33 +2,34 @@
 
 Forked from https://github.com/ZcashFoundation/frost-zcash-demo/tree/main/mina-frost-client
 
-# Zcash Foundation original documentation
+## Zcash Foundation original documentation
 
 https://frost.zfnd.org/zcash/ywallet-demo.html
 
-## Network selection
+## ⚠️ Security Warning
+
+**This code has not been audited and should be used with extreme caution. Do not use in production environments or with real funds. This is experimental software intended for research and development purposes only.**
+
+## Setting up the `frostd` server
+See `zcash` guide [here](https://frost.zfnd.org/zcash/server.html)
+
+## Examples
+You can find example workflows in a form of scripts [here](./examples/README.md)
+
+
+## Commands & Flags
+
+### Network selection
 
 The `coordinator` subcommand accepts a `--network` flag to choose between
 `testnet` (default) and `mainnet`. The chosen network is sent to participants
 for confirmation before signing.
 
-# Trusted Dealer
+### -S flag
+The `signers` (`-S`) flag used in `dkg`, `participant` and `coordinator` commands, accepts the list of signers separated by `,`, with **NO SPACES**.
 
-## Example
-
-Located in `examples/trusted_dealer_example/`, this example demonstrates how to:
-
-1. Initialize configs for multiple users
-2. Generate FROST key shares using the trusted dealer approach with bluepallas
-
-To run the example:
-
-```bash
-cd examples/trusted_dealer_example
-./trusted_dealer_example.sh
-```
-
-The script will create a `generated` directory containing the config files for each user. Note that this directory is gitignored to prevent committing sensitive key material.
+### trusted-delaer
+The `trusted-dealer` command is **test-only**. To generate keys for actuall usage please use `dkg`.
 
 ## Tests
 
@@ -38,7 +39,7 @@ To run all tests for the trusted dealer module:
 cargo test --package mina-frost-client --lib trusted_dealer -- --nocapture
 ```
 
-# Run all tests in the codebase
+### Run all tests in the codebase
 
 ```
 cargo test --package mina-frost-client --lib -- --nocapture
