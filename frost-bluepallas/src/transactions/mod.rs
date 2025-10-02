@@ -11,7 +11,7 @@ use serde::{
     Deserialize,
 };
 
-pub mod zkapp;
+pub mod transaction_zkapp;
 
 const HEADER_BYTES: usize = 4;
 

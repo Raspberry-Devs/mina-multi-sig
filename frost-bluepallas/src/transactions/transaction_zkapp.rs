@@ -1,12 +1,10 @@
-use serde::{Deserialize, Serialize};
+use mina_signer::CompressedPubKey;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountUpdate {
     pub body: AccountUpdateBody,
     pub authorization: Authorization,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountUpdateBody {
     pub public_key: PublicKey,
     pub token_id: TokenId,
@@ -24,19 +22,17 @@ pub struct AccountUpdateBody {
     pub authorization_kind: AuthorizationKind,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Update {
     pub app_state: Vec<Option<Field>>,
     pub delegate: Option<PublicKey>,
     pub verification_key: Option<VerificationKeyData>,
     pub permissions: Option<Permissions>,
-    pub zkapp_uri: Option<ZkappUriData>,
-    pub token_symbol: Option<TokenSymbolData>,
+    pub zkapp_uri: Option<ZkappUri>,
+    pub token_symbol: Option<TokenSymbol>,
     pub timing: Option<TimingData>,
     pub voting_for: Option<Field>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Permissions {
     pub edit_state: AuthRequired,
     pub access: AuthRequired,
@@ -53,32 +49,28 @@ pub struct Permissions {
     pub set_timing: AuthRequired,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetVerificationKey {
     pub auth: AuthRequired,
     pub txn_version: UInt32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Preconditions {
     pub network: NetworkPreconditions,
     pub account: AccountPreconditions,
     pub valid_while: Option<RangeCondition<UInt32>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountPreconditions {
     pub balance: Option<RangeCondition<UInt64>>,
     pub nonce: Option<RangeCondition<UInt32>>,
-    pub receipt_chain_hash: Option<Field>,
+    pub receipt_chain_hash: Option<ReceiptChainHash>,
     pub delegate: Option<PublicKey>,
     pub state: Vec<Option<Field>>,
-    pub action_state: Option<Field>,
+    pub action_state: Option<ActionState>,
     pub proved_state: Option<Bool>,
     pub is_new: Option<Bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NetworkPreconditions {
     pub snarked_ledger_hash: Option<Field>,
     pub blockchain_length: Option<RangeCondition<UInt32>>,
@@ -89,44 +81,33 @@ pub struct NetworkPreconditions {
     pub next_epoch_data: EpochData,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Events {
     pub data: Vec<Vec<Field>>,
     pub hash: Field,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Actions {
+    pub data: Vec<Vec<Field>>,
+    pub hash: Field,
+}
+
 pub struct Authorization {
     pub proof: Option<String>,
     pub signature: Option<String>,
 }
 
 // Supporting types
-#[derive(Debug, Clone, Serialize, Deserialize)]
+
 pub struct RangeCondition<T> {
     pub lower: T,
     pub upper: T,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerificationKeyData {
     pub data: String,
-    pub hash: Field,
+    pub hash: VerificationKeyHash,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ZkappUriData {
-    pub data: String,
-    pub hash: Field,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TokenSymbolData {
-    pub symbol: String,
-    pub field: Field,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimingData {
     pub initial_minimum_balance: UInt64,
     pub cliff_time: UInt32,
@@ -135,7 +116,6 @@ pub struct TimingData {
     pub vesting_increment: UInt64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EpochData {
     pub ledger: EpochLedger,
     pub seed: Option<Field>,
@@ -144,20 +124,55 @@ pub struct EpochData {
     pub epoch_length: Option<RangeCondition<UInt32>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EpochLedger {
     pub hash: Option<Field>,
     pub total_currency: Option<RangeCondition<UInt64>>,
 }
 
-pub type PublicKey = String;
-pub type TokenId = u64;
-pub type Field = String;
+// Base types from transaction-leaves-bigint.ts
+pub type PublicKey = CompressedPubKey;
+pub type Field = mina_hasher::Fp;
+pub type Bool = bool;
 pub type UInt64 = u64;
 pub type UInt32 = u32;
-pub type Bool = bool;
-pub type AuthRequired = String;
-pub type BalanceChange = String;
-pub type Actions = Events;
-pub type MayUseToken = String;
-pub type AuthorizationKind = String;
+pub type Sign = i8; // -1 or 1
+
+// Derived types
+pub type TokenId = Field;
+pub type StateHash = Field;
+pub type ActionState = Field;
+pub type VerificationKeyHash = Field;
+pub type ReceiptChainHash = Field;
+pub type TransactionVersion = UInt32;
+
+pub struct AuthRequired {
+    pub constant: Bool,
+    pub signature_necessary: Bool,
+    pub signature_sufficient: Bool,
+}
+
+pub struct TokenSymbol {
+    pub symbol: String,
+    pub field: Field,
+}
+
+pub struct ZkappUri {
+    pub data: String,
+    pub hash: Field,
+}
+
+pub struct MayUseToken {
+    pub parents_own_token: Bool,
+    pub inherit_from_parent: Bool,
+}
+
+pub struct BalanceChange {
+    pub magnitude: UInt64,
+    pub sgn: Sign,
+}
+
+pub struct AuthorizationKind {
+    pub is_signed: Bool,
+    pub is_proved: Bool,
+    pub verification_key_hash: VerificationKeyHash,
+}
