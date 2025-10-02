@@ -11,6 +11,8 @@ use serde::{
     Deserialize,
 };
 
+pub mod zkapp;
+
 const HEADER_BYTES: usize = 4;
 
 use crate::{
