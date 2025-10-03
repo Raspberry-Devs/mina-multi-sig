@@ -1,7 +1,7 @@
 use ark_ff::{BigInt, PrimeField};
 use frost_bluepallas::{
     signature::{PubKeySer, Sig, TransactionSignature},
-    transactions::Transaction,
+    transactions::legacy_tx::Transaction,
     translate::Translatable,
     Error,
 };
