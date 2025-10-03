@@ -1,5 +1,7 @@
 use mina_signer::CompressedPubKey;
 
+pub mod zkapp_trait;
+
 #[derive(Clone)]
 pub struct AccountUpdate {
     pub body: AccountUpdateBody,
