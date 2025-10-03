@@ -1,6 +1,31 @@
 use mina_signer::CompressedPubKey;
 
+pub mod sign_zkapp;
 pub mod zkapp_trait;
+
+// The final transaction structure for a ZkApp transaction
+// FeePayer is a field which may be signed by the same key as in the account updates
+// or by a different key
+#[derive(Clone)]
+pub struct ZKAppCommand {
+    pub fee_payer: FeePayer,
+    pub account_updates: Vec<AccountUpdate>,
+    pub memo: String,
+}
+
+#[derive(Clone)]
+pub struct FeePayer {
+    pub body: FeePayerBody,
+    pub authorization: String,
+}
+
+#[derive(Clone)]
+pub struct FeePayerBody {
+    pub public_key: PublicKey,
+    pub fee: UInt64,
+    pub valid_until: Option<UInt32>,
+    pub nonce: UInt32,
+}
 
 #[derive(Clone)]
 pub struct AccountUpdate {
@@ -28,14 +53,14 @@ pub struct AccountUpdateBody {
 
 #[derive(Clone)]
 pub struct Update {
-    pub app_state: Vec<Option<Field>>,
-    pub delegate: Option<PublicKey>,
-    pub verification_key: Option<VerificationKeyData>,
-    pub permissions: Option<Permissions>,
-    pub zkapp_uri: Option<ZkappUri>,
-    pub token_symbol: Option<TokenSymbol>,
-    pub timing: Option<TimingData>,
-    pub voting_for: Option<Field>,
+    pub app_state: Vec<OptionalValue<Field>>,
+    pub delegate: OptionalValue<PublicKey>,
+    pub verification_key: OptionalValue<VerificationKeyData>,
+    pub permissions: OptionalValue<Permissions>,
+    pub zkapp_uri: OptionalValue<ZkappUriData>,
+    pub token_symbol: OptionalValue<TokenSymbolData>,
+    pub timing: OptionalValue<TimingData>,
+    pub voting_for: OptionalValue<Field>,
 }
 
 #[derive(Clone)]
@@ -65,28 +90,28 @@ pub struct SetVerificationKey {
 pub struct Preconditions {
     pub network: NetworkPreconditions,
     pub account: AccountPreconditions,
-    pub valid_while: Option<RangeCondition<UInt32>>,
+    pub valid_while: OptionalValue<RangeCondition<UInt32>>,
 }
 
 #[derive(Clone)]
 pub struct AccountPreconditions {
-    pub balance: Option<RangeCondition<UInt64>>,
-    pub nonce: Option<RangeCondition<UInt32>>,
-    pub receipt_chain_hash: Option<ReceiptChainHash>,
-    pub delegate: Option<PublicKey>,
-    pub state: Vec<Option<Field>>,
-    pub action_state: Option<ActionState>,
-    pub proved_state: Option<Bool>,
-    pub is_new: Option<Bool>,
+    pub balance: OptionalValue<RangeCondition<UInt64>>,
+    pub nonce: OptionalValue<RangeCondition<UInt32>>,
+    pub receipt_chain_hash: OptionalValue<ReceiptChainHash>,
+    pub delegate: OptionalValue<PublicKey>,
+    pub state: Vec<OptionalValue<Field>>,
+    pub action_state: OptionalValue<ActionState>,
+    pub proved_state: OptionalValue<Bool>,
+    pub is_new: OptionalValue<Bool>,
 }
 
 #[derive(Clone)]
 pub struct NetworkPreconditions {
-    pub snarked_ledger_hash: Option<Field>,
-    pub blockchain_length: Option<RangeCondition<UInt32>>,
-    pub min_window_density: Option<RangeCondition<UInt32>>,
-    pub total_currency: Option<RangeCondition<UInt64>>,
-    pub global_slot_since_genesis: Option<RangeCondition<UInt32>>,
+    pub snarked_ledger_hash: OptionalValue<Field>,
+    pub blockchain_length: OptionalValue<RangeCondition<UInt32>>,
+    pub min_window_density: OptionalValue<RangeCondition<UInt32>>,
+    pub total_currency: OptionalValue<RangeCondition<UInt64>>,
+    pub global_slot_since_genesis: OptionalValue<RangeCondition<UInt32>>,
     pub staking_epoch_data: EpochData,
     pub next_epoch_data: EpochData,
 }
@@ -135,16 +160,16 @@ pub struct TimingData {
 #[derive(Clone)]
 pub struct EpochData {
     pub ledger: EpochLedger,
-    pub seed: Option<Field>,
-    pub start_checkpoint: Option<Field>,
-    pub lock_checkpoint: Option<Field>,
-    pub epoch_length: Option<RangeCondition<UInt32>>,
+    pub seed: OptionalValue<Field>,
+    pub start_checkpoint: OptionalValue<Field>,
+    pub lock_checkpoint: OptionalValue<Field>,
+    pub epoch_length: OptionalValue<RangeCondition<UInt32>>,
 }
 
 #[derive(Clone)]
 pub struct EpochLedger {
-    pub hash: Option<Field>,
-    pub total_currency: Option<RangeCondition<UInt64>>,
+    pub hash: OptionalValue<Field>,
+    pub total_currency: OptionalValue<RangeCondition<UInt64>>,
 }
 
 // Base types from transaction-leaves-bigint.ts
@@ -191,4 +216,59 @@ pub struct AuthorizationKind {
     pub is_signed: Bool,
     pub is_proved: Bool,
     pub verification_key_hash: VerificationKeyHash,
+}
+
+#[derive(Clone)]
+pub struct OptionalValue<T> {
+    pub is_some: Bool,
+    pub value: T,
+}
+
+#[derive(Clone)]
+pub struct ZkappUriData {
+    pub data: String,
+    pub hash: Field,
+}
+
+#[derive(Clone)]
+pub struct TokenSymbolData {
+    pub symbol: String,
+    pub field: Field,
+}
+
+// Additional structs for Account type
+#[derive(Clone)]
+pub struct Account {
+    pub public_key: PublicKey,
+    pub token_id: TokenId,
+    pub token_symbol: String,
+    pub balance: UInt64,
+    pub nonce: UInt32,
+    pub receipt_chain_hash: Field,
+    pub delegate: Option<PublicKey>,
+    pub voting_for: Field,
+    pub timing: AccountTiming,
+    pub permissions: Permissions,
+    pub zkapp: Option<ZkappAccount>,
+}
+
+#[derive(Clone)]
+pub struct AccountTiming {
+    pub is_timed: Bool,
+    pub initial_minimum_balance: UInt64,
+    pub cliff_time: UInt32,
+    pub cliff_amount: UInt64,
+    pub vesting_period: UInt32,
+    pub vesting_increment: UInt64,
+}
+
+#[derive(Clone)]
+pub struct ZkappAccount {
+    pub app_state: Vec<Field>,
+    pub verification_key: Option<VerificationKeyData>,
+    pub zkapp_version: UInt32,
+    pub action_state: Vec<Field>,
+    pub last_action_slot: UInt32,
+    pub proved_state: Bool,
+    pub zkapp_uri: String,
 }
