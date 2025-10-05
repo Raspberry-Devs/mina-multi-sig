@@ -1,4 +1,46 @@
-use crate::transactions::zkapp_tx::ZKAppCommand;
+use crate::transactions::zkapp_tx::{AccountUpdate, ZKAppCommand};
+
+/// A single node in the call forest representing an account update and its children
+#[derive(Clone)]
+pub struct CallTree {
+    pub account_update: AccountUpdate,
+    pub children: CallForest,
+}
+
+/// A forest of call trees representing the hierarchical structure of account updates
+pub type CallForest = Vec<CallTree>;
+
+/// Converts a flat list of account updates into a hierarchical call forest structure
+/// based on their call depths. Each level of the tree represents a call depth.
+pub fn account_updates_to_call_forest(
+    updates: &mut Vec<AccountUpdate>,
+    call_depth: u32,
+) -> CallForest {
+    let mut forest: CallForest = Vec::new();
+
+    while !updates.is_empty() {
+        let account_update = &updates[0];
+        if account_update.body.call_depth < call_depth {
+            return forest;
+        }
+
+        let account_update = updates.remove(0);
+        let children = account_updates_to_call_forest(updates, call_depth + 1);
+
+        forest.push(CallTree {
+            account_update,
+            children,
+        });
+    }
+
+    forest
+}
+
+/// Converts a ZkApp command to a call forest by processing its account updates
+pub fn zkapp_command_to_call_forest(tx: &ZKAppCommand) -> CallForest {
+    let mut updates = tx.account_updates.clone();
+    account_updates_to_call_forest(&mut updates, 0)
+}
 
 /// Validates that call depths in a ZkApp command follow the correct pattern.
 /// The first account update must have call depth 0, and subsequent call depths
