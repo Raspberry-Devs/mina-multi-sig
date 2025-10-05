@@ -1,6 +1,7 @@
 use mina_signer::CompressedPubKey;
 
 mod commit;
+mod constants;
 pub mod zkapp_trait;
 
 // The final transaction structure for a ZkApp transaction

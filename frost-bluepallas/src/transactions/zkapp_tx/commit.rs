@@ -1,10 +1,12 @@
-use ark_ff::AdditiveGroup;
+use std::str::FromStr;
+
+use ark_ff::{AdditiveGroup, BigInt, PrimeField};
 use mina_hasher::Fp;
 use mina_signer::NetworkId;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
-    transactions::zkapp_tx::{AccountUpdate, ZKAppCommand},
+    transactions::zkapp_tx::{constants, AccountUpdate, ZKAppCommand},
 };
 
 /// A single node in the call forest representing an account update and its children
@@ -94,4 +96,47 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<Fp> 
 
     let forest = zkapp_command_to_call_forest(tx);
     Ok(Fp::ZERO) // Placeholder for actual commitment computation
+}
+
+fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
+    Ok(Fp::ZERO) // Placeholder for actual hash computation
+}
+
+fn hash_account_update(account_update: &AccountUpdate, network: NetworkId) -> BluePallasResult<Fp> {
+    Ok(Fp::ZERO) // Placeholder for actual account update hash computation
+}
+
+fn assert_account_update_authorization_kind(
+    account_update: &AccountUpdate,
+) -> BluePallasResult<()> {
+    let authorization_kind = &account_update.body.authorization_kind;
+    let is_signed = authorization_kind.is_signed;
+    let is_proved = authorization_kind.is_proved;
+    let verification_key_hash = authorization_kind.verification_key_hash;
+
+    if is_proved && is_signed {
+        return Err(Box::new(BluePallasError::InvalidZkAppCommand(
+            "Invalid authorization kind: Only one of `isProved` and `isSigned` may be true."
+                .to_string(),
+        )));
+    }
+
+    let dummy_bigint = BigInt::from_str(constants::DUMMY_HASH).map_err(|_| {
+        BluePallasError::InvalidZkAppCommand("Failed to parse dummy hash".to_string())
+    })?;
+    let dummy_verification_key_hash = Fp::from_bigint(dummy_bigint).ok_or(
+        BluePallasError::InvalidZkAppCommand("Failed to convert dummy hash to Fp".to_string()),
+    )?;
+
+    if !is_proved && verification_key_hash != dummy_verification_key_hash {
+        return Err(Box::new(BluePallasError::InvalidZkAppCommand(
+            format!(
+                "Invalid authorization kind: If `isProved` is false, verification key hash must be {}, got {}",
+                constants::DUMMY_HASH,
+                verification_key_hash
+            ),
+        )));
+    }
+
+    Ok(())
 }
