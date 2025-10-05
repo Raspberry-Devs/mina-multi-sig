@@ -1,4 +1,11 @@
-use crate::transactions::zkapp_tx::{AccountUpdate, ZKAppCommand};
+use ark_ff::{AdditiveGroup, BigInt};
+use mina_hasher::Fp;
+use mina_signer::NetworkId;
+
+use crate::{
+    errors::{BluePallasError, BluePallasResult},
+    transactions::zkapp_tx::{AccountUpdate, ZKAppCommand},
+};
 
 /// A single node in the call forest representing an account update and its children
 #[derive(Clone)]
@@ -76,4 +83,14 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     }
 
     true
+}
+
+pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<Fp> {
+    if !is_call_depth_valid(tx) {
+        return Err(Box::new(BluePallasError::InvalidZkAppCommand(
+            "Call depths are not valid".to_string(),
+        )));
+    }
+
+    Ok(Fp::ZERO)
 }
