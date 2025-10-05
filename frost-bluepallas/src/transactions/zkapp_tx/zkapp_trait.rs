@@ -1,6 +1,16 @@
-use crate::transactions::zkapp_tx::AccountUpdate;
-use mina_hasher::Hashable;
+use crate::{
+    errors::BluePallasResult,
+    transactions::zkapp_tx::{commit::zk_commit, AccountUpdate, ZKAppCommand},
+};
+use mina_hasher::{Fp, Hashable};
 use mina_signer::NetworkId;
+
+impl ZKAppCommand {
+    pub fn hash(&self, _network_id: NetworkId) -> BluePallasResult<Fp> {
+        let commit = zk_commit(self, _network_id)?;
+        Ok(commit)
+    }
+}
 
 impl Hashable for AccountUpdate {
     type D = NetworkId;

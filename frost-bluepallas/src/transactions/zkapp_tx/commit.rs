@@ -1,4 +1,4 @@
-use ark_ff::{AdditiveGroup, BigInt};
+use ark_ff::AdditiveGroup;
 use mina_hasher::Fp;
 use mina_signer::NetworkId;
 
@@ -10,8 +10,8 @@ use crate::{
 /// A single node in the call forest representing an account update and its children
 #[derive(Clone)]
 pub struct CallTree {
-    pub account_update: AccountUpdate,
-    pub children: CallForest,
+    account_update: AccountUpdate,
+    children: CallForest,
 }
 
 /// A forest of call trees representing the hierarchical structure of account updates
@@ -92,5 +92,6 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<Fp> 
         )));
     }
 
-    Ok(Fp::ZERO)
+    let forest = zkapp_command_to_call_forest(tx);
+    Ok(Fp::ZERO) // Placeholder for actual commitment computation
 }
