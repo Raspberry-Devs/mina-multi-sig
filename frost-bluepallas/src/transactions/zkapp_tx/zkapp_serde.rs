@@ -34,7 +34,7 @@ impl Serialize for Field {
         // Why serialize as string?
         // Field.toJSON() in the o1js library returns a string (not a number)
         // https://docs.minaprotocol.com/zkapps/o1js-reference/classes/Field
-        serializer.serialize_str(&format!("{:?}", self.0))
+        serializer.serialize_str(&self.0.to_string())
     }
 }
 
