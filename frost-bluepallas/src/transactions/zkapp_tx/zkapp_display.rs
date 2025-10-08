@@ -1,5 +1,5 @@
-use core::fmt;
 use super::*;
+use core::fmt;
 
 impl fmt::Display for ZKAppCommand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -8,19 +8,15 @@ impl fmt::Display for ZKAppCommand {
             "{{\n  \"fee_payer\": {},\n  \"account_updates\": [\n",
             self.fee_payer
         )?;
-        
+
         for (i, update) in self.account_updates.iter().enumerate() {
             if i > 0 {
-                write!(f, ",\n")?;
+                writeln!(f, ",")?;
             }
             write!(f, "    {}", update)?;
         }
-        
-        write!(
-            f,
-            "\n  ],\n  \"memo\": \"{}\"\n}}",
-            self.memo
-        )
+
+        write!(f, "\n  ],\n  \"memo\": \"{}\"\n}}", self.memo)
     }
 }
 
@@ -150,16 +146,16 @@ impl fmt::Display for Preconditions {
 
 impl fmt::Display for AccountPreconditions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{\n              \"balance\": {},\n              \"nonce\": {},\n              \"receipt_chain_hash\": {},\n              \"delegate\": {},\n              \"state\": [", 
+        write!(f, "{{\n              \"balance\": {},\n              \"nonce\": {},\n              \"receipt_chain_hash\": {},\n              \"delegate\": {},\n              \"state\": [",
                self.balance, self.nonce, self.receipt_chain_hash, self.delegate)?;
-        
+
         for (i, state) in self.state.iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
             }
             write!(f, "{}", state)?;
         }
-        
+
         write!(
             f,
             "],\n              \"action_state\": {},\n              \"proved_state\": {},\n              \"is_new\": {}\n            }}",
@@ -200,7 +196,11 @@ impl fmt::Display for Events {
             }
             write!(f, "]")?;
         }
-        write!(f, "],\n            \"hash\": \"{}\"\n          }}", self.hash)
+        write!(
+            f,
+            "],\n            \"hash\": \"{}\"\n          }}",
+            self.hash
+        )
     }
 }
 
@@ -220,7 +220,11 @@ impl fmt::Display for Actions {
             }
             write!(f, "]")?;
         }
-        write!(f, "],\n            \"hash\": \"{}\"\n          }}", self.hash)
+        write!(
+            f,
+            "],\n            \"hash\": \"{}\"\n          }}",
+            self.hash
+        )
     }
 }
 
@@ -307,7 +311,7 @@ impl fmt::Display for PublicKey {
 
 impl fmt::Display for Field {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0.to_string())
+        write!(f, "{}", self.0)
     }
 }
 
@@ -436,7 +440,11 @@ impl fmt::Display for ZkappAccount {
             Some(vk) => write!(f, "{}", vk)?,
             None => write!(f, "null")?,
         }
-        write!(f, ",\n    \"zkapp_version\": \"{}\",\n    \"action_state\": [", self.zkapp_version)?;
+        write!(
+            f,
+            ",\n    \"zkapp_version\": \"{}\",\n    \"action_state\": [",
+            self.zkapp_version
+        )?;
         for (i, state) in self.action_state.iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
@@ -454,8 +462,8 @@ impl fmt::Display for ZkappAccount {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mina_signer::PubKey;
     use mina_hasher::Fp;
+    use mina_signer::PubKey;
 
     // Helper function to create a test public key
     fn test_public_key() -> PublicKey {
@@ -578,10 +586,7 @@ mod tests {
     #[test]
     fn test_events_display() {
         let events = Events {
-            data: vec![
-                vec![test_field(), test_field()],
-                vec![test_field()],
-            ],
+            data: vec![vec![test_field(), test_field()], vec![test_field()]],
             hash: test_field(),
         };
         let display_str = format!("{}", events);
@@ -592,9 +597,7 @@ mod tests {
     #[test]
     fn test_actions_display() {
         let actions = Actions {
-            data: vec![
-                vec![test_field()],
-            ],
+            data: vec![vec![test_field()]],
             hash: test_field(),
         };
         let display_str = format!("{}", actions);

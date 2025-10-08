@@ -1,8 +1,8 @@
 use mina_signer::CompressedPubKey;
-use serde::{Serialize, Deserialize};
-pub mod zkapp_trait;
-pub mod zkapp_serde;
+use serde::{Deserialize, Serialize};
 pub mod zkapp_display;
+pub mod zkapp_serde;
+pub mod zkapp_trait;
 
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates
@@ -63,7 +63,7 @@ pub struct Update {
     pub timing: OptionalValue<TimingData>,
     pub voting_for: OptionalValue<Field>,
 }
-    
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Permissions {
     pub edit_state: AuthRequired,

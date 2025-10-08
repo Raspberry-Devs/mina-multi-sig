@@ -1,10 +1,7 @@
-use crate::transactions::zkapp_tx::{PublicKey, Field};
-use mina_signer::CompressedPubKey;
-use serde::{
-    ser::{Serialize},
-    Deserialize,
-};
+use crate::transactions::zkapp_tx::{Field, PublicKey};
 use mina_hasher::Fp;
+use mina_signer::CompressedPubKey;
+use serde::{ser::Serialize, Deserialize};
 
 // --------------- CompressedPubKey serde wrapper ---------------
 impl Serialize for PublicKey {
@@ -12,8 +9,8 @@ impl Serialize for PublicKey {
     where
         S: serde::Serializer,
     {
-       let state = serializer.serialize_str(&self.0.into_address())?;
-       Ok(state)
+        let state = serializer.serialize_str(&self.0.into_address())?;
+        Ok(state)
     }
 }
 
@@ -47,7 +44,9 @@ impl<'de> Deserialize<'de> for Field {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        let fp = s.parse::<Fp>().map_err(|_| serde::de::Error::custom(format!("Failed to parse Fp from string: {}", s)))?;
+        let fp = s.parse::<Fp>().map_err(|_| {
+            serde::de::Error::custom(format!("Failed to parse Fp from string: {}", s))
+        })?;
         Ok(Field(fp))
     }
 }
@@ -60,8 +59,8 @@ mod tests {
 
     fn create_test_public_key() -> PublicKey {
         let test_address = "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg";
-        let compressed_pk = CompressedPubKey::from_address(test_address)
-            .expect("Valid test address");
+        let compressed_pk =
+            CompressedPubKey::from_address(test_address).expect("Valid test address");
         PublicKey(compressed_pk)
     }
 
@@ -89,7 +88,7 @@ mod tests {
     fn test_zkapp_command_serialization() {
         let command = create_minimal_zkapp_command();
         let json = serde_json::to_string(&command).unwrap();
-        
+
         assert!(json.contains("fee_payer"));
         assert!(json.contains("account_updates"));
         assert!(json.contains("memo"));
@@ -98,14 +97,20 @@ mod tests {
     #[test]
     fn test_public_key_serialization() {
         let public_key = create_test_public_key();
-        
+
         // Test serialization
         let json = serde_json::to_string(&public_key).unwrap();
-        assert!(json.starts_with('"') && json.ends_with('"'), "PublicKey should serialize as quoted string");
-        
+        assert!(
+            json.starts_with('"') && json.ends_with('"'),
+            "PublicKey should serialize as quoted string"
+        );
+
         // Verify it contains a valid Mina address format
         let address = json.trim_matches('"');
-        assert!(address.starts_with("B62q"), "Should be a valid Mina address format");
+        assert!(
+            address.starts_with("B62q"),
+            "Should be a valid Mina address format"
+        );
     }
 
     #[test]
@@ -113,23 +118,32 @@ mod tests {
         // Test with a known valid Mina address
         let json_str = r#""B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg""#;
         let result: Result<PublicKey, _> = serde_json::from_str(json_str);
-        
+
         assert!(result.is_ok(), "Should deserialize valid Mina address");
         let public_key = result.unwrap();
-        assert_eq!(public_key.0.into_address(), "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg");
+        assert_eq!(
+            public_key.0.into_address(),
+            "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg"
+        );
     }
 
     #[test]
     fn test_field_serialization() {
         let field = create_test_field();
-        
+
         // Test serialization
         let json = serde_json::to_string(&field).unwrap();
-        assert!(json.starts_with('"') && json.ends_with('"'), "Field should serialize as quoted string");
-        
+        assert!(
+            json.starts_with('"') && json.ends_with('"'),
+            "Field should serialize as quoted string"
+        );
+
         // Should contain numeric content
         let content = json.trim_matches('"');
-        assert!(!content.is_empty(), "Field serialization should not be empty");
+        assert!(
+            !content.is_empty(),
+            "Field serialization should not be empty"
+        );
     }
 
     #[test]
@@ -137,7 +151,7 @@ mod tests {
         // Test with a simple numeric string
         let json_str = r#""12345""#;
         let result: Result<Field, _> = serde_json::from_str(json_str);
-        
+
         assert!(result.is_ok(), "Should deserialize valid numeric string");
         let field = result.unwrap();
         assert_eq!(field.0, mina_hasher::Fp::from(12345u64));
@@ -148,7 +162,7 @@ mod tests {
         // Test with invalid input
         let json_str = r#""not_a_number""#;
         let result: Result<Field, _> = serde_json::from_str(json_str);
-        
+
         assert!(result.is_err(), "Should fail with invalid field format");
     }
 
@@ -157,7 +171,7 @@ mod tests {
         let original = create_test_public_key();
         let json = serde_json::to_string(&original).unwrap();
         let deserialized: PublicKey = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(original.0.into_address(), deserialized.0.into_address());
     }
 
@@ -166,10 +180,13 @@ mod tests {
         let original = create_minimal_zkapp_command();
         let json = serde_json::to_string(&original).unwrap();
         let deserialized: ZKAppCommand = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(original.memo, deserialized.memo);
         assert_eq!(original.fee_payer.body.fee, deserialized.fee_payer.body.fee);
-        assert_eq!(original.account_updates.len(), deserialized.account_updates.len());
+        assert_eq!(
+            original.account_updates.len(),
+            deserialized.account_updates.len()
+        );
     }
 
     #[test]
