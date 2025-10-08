@@ -1,8 +1,8 @@
 use mina_signer::CompressedPubKey;
 use serde::{Serialize, Deserialize};
-
 pub mod zkapp_trait;
 pub mod zkapp_serde;
+pub mod zkapp_display;
 
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates
