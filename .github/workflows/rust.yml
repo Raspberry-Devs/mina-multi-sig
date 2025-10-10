@@ -1,9 +1,9 @@
 name: Rust
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "zkApp-tx-serialization"] # Temporary until we merge the branch
   pull_request:
-    branches: ["main"]
+    branches: ["main", "zkApp-tx-serialization"] # Temporary until we merge the branch
 env:
   CARGO_TERM_COLOR: always
 jobs:
