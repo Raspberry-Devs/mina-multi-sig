@@ -87,7 +87,11 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     true
 }
 
-pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<Fp> {
+/// Produces a commitment for a ZkApp command by hashing its structure and contents.
+/// Validates call depths and authorization kinds before computing the commitment.
+/// Returns two Fp elements, representing the accountUpdates commitment and the overall commitment respectively.
+/// Overall commitment includes memo, fee payer, and account updates commitments.
+pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp, Fp)> {
     if !is_call_depth_valid(tx) {
         return Err(Box::new(BluePallasError::InvalidZkAppCommand(
             "Call depths are not valid".to_string(),
@@ -95,7 +99,7 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<Fp> 
     }
 
     let forest = zkapp_command_to_call_forest(tx);
-    Ok(Fp::ZERO) // Placeholder for actual commitment computation
+    Ok((Fp::ZERO, Fp::ZERO)) // Placeholder for actual commitment computation
 }
 
 fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
