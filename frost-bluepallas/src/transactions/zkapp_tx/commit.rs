@@ -1,12 +1,13 @@
 use std::str::FromStr;
 
 use ark_ff::{AdditiveGroup, BigInt, PrimeField};
-use mina_hasher::Fp;
+use mina_hasher::{Fp, Hasher};
 use mina_signer::NetworkId;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
-    transactions::zkapp_tx::{constants, AccountUpdate, ZKAppCommand},
+    hasher::PallasHashElement,
+    transactions::zkapp_tx::{constants, hashable::HashableField, AccountUpdate, ZKAppCommand},
 };
 
 /// A single node in the call forest representing an account update and its children
@@ -103,7 +104,27 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
 }
 
 fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
-    Ok(Fp::ZERO) // Placeholder for actual hash computation
+    let mut ctx = mina_hasher::create_legacy::<HashableField>(());
+    let mut hasher = ctx.init(());
+    let prefix_field = prefix_to_field(prefix)?;
+
+    hasher = hasher.update(&prefix_field.into());
+    for element in data {
+        let hashable_element: HashableField = (*element).into();
+        hasher = hasher.update(&hashable_element);
+    }
+    Ok(hasher.digest())
+}
+
+fn prefix_to_field(prefix: &str) -> BluePallasResult<Fp> {
+    let prefix_bigint = BigInt::from_str(prefix).map_err(|_| {
+        BluePallasError::InvalidZkAppCommand("Failed to parse prefix string".to_string())
+    })?;
+
+    let field = Fp::from_bigint(prefix_bigint);
+    field.ok_or(Box::new(BluePallasError::InvalidZkAppCommand(
+        "Failed to convert prefix to Fp".to_string(),
+    )))
 }
 
 fn hash_account_update(account_update: &AccountUpdate, network: NetworkId) -> BluePallasResult<Fp> {
