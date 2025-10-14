@@ -3,10 +3,10 @@ use std::str::FromStr;
 use ark_ff::{AdditiveGroup, BigInt, PrimeField};
 use mina_hasher::{Fp, Hasher};
 use mina_signer::NetworkId;
+use num_bigint::BigUint;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
-    hasher::PallasHashElement,
     transactions::zkapp_tx::{constants, hashable::HashableField, AccountUpdate, ZKAppCommand},
 };
 
@@ -117,8 +117,12 @@ fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
 }
 
 fn prefix_to_field(prefix: &str) -> BluePallasResult<Fp> {
-    let prefix_bigint = BigInt::from_str(prefix).map_err(|_| {
-        BluePallasError::InvalidZkAppCommand("Failed to parse prefix string".to_string())
+    // Convert prefix to ascii bytes
+    let prefix_bytes = prefix.as_bytes();
+    let big_uint = BigUint::from_bytes_le(prefix_bytes);
+
+    let prefix_bigint = BigInt::from_str(&big_uint.to_string()).map_err(|_| {
+        BluePallasError::InvalidZkAppCommand("Failed to parse prefix bigint".to_string())
     })?;
 
     let field = Fp::from_bigint(prefix_bigint);
@@ -128,7 +132,9 @@ fn prefix_to_field(prefix: &str) -> BluePallasResult<Fp> {
 }
 
 fn hash_account_update(account_update: &AccountUpdate, network: NetworkId) -> BluePallasResult<Fp> {
-    Ok(Fp::ZERO) // Placeholder for actual account update hash computation
+    // Check that account update is valid
+    assert_account_update_authorization_kind(account_update)?;
+    Ok(Fp::ZERO) // Placeholder for actual account update hashing
 }
 
 fn assert_account_update_authorization_kind(
@@ -164,4 +170,38 @@ fn assert_account_update_authorization_kind(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_prefix_to_field() {
+        let prefix = "MinaAcctUpdateNode**";
+        let field = prefix_to_field(prefix).unwrap();
+        assert_eq!(
+            field.to_string(),
+            "240723076190006710499563866323038773312427551053"
+        );
+    }
+
+    #[test]
+    fn test_hash_with_prefix() {
+        let prefix = "MinaAcctUpdateNode**";
+        let strs = [
+            "23487734643675003113914430489774334948844391842009122040704261138931555665056",
+            "0",
+        ];
+        let elems = strs
+            .iter()
+            .map(|f| Fp::from_str(f).unwrap())
+            .collect::<Vec<Fp>>();
+
+        let hash = hash_with_prefix(prefix, &elems).unwrap();
+        assert_eq!(
+            hash.to_string(),
+            "20456728518925904340727370305821489989002971473792411299271630913563245218671"
+        );
+    }
 }
