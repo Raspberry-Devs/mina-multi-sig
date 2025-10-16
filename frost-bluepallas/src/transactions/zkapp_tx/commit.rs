@@ -70,7 +70,7 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
         .map(|a| a.body.call_depth)
         .collect();
 
-    let current = match call_depths.first() {
+    let mut current = match call_depths.first() {
         Some(&depth) => {
             call_depths.remove(0);
             depth
@@ -82,7 +82,6 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
         return false;
     }
 
-    let mut current = current;
     for call_depth in call_depths {
         if call_depth < current {
             return false;

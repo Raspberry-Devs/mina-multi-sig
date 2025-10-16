@@ -27,6 +27,7 @@ pub fn param_to_field(param: &str) -> Result<Fp, BluePallasError> {
     param_to_field_impl(param, DEFAULT)
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
