@@ -1,28 +1,7 @@
 use ark_ff::Field;
-use mina_hasher::{Fp, Hashable, ROInput};
+use mina_hasher::Fp;
 
 use crate::errors::BluePallasError;
-
-#[derive(Clone)]
-pub struct HashableField(Fp);
-
-impl Hashable for HashableField {
-    type D = ();
-
-    fn to_roinput(&self) -> ROInput {
-        ROInput::new().append_field(self.0)
-    }
-
-    fn domain_string(_id: Self::D) -> Option<String> {
-        None
-    }
-}
-
-impl From<Fp> for HashableField {
-    fn from(field: Fp) -> Self {
-        HashableField(field)
-    }
-}
 
 fn param_to_field_impl(param: &str, default: &[u8; 32]) -> Result<Fp, BluePallasError> {
     let param_bytes = param.as_bytes();
