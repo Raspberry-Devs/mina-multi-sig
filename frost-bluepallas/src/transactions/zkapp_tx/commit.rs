@@ -12,7 +12,10 @@ use num_bigint::BigUint;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
-    transactions::zkapp_tx::{constants, hash::param_to_field, AccountUpdate, ZKAppCommand},
+    transactions::{
+        self,
+        zkapp_tx::{constants, hash::param_to_field, AccountUpdate, ZKAppCommand},
+    },
 };
 
 /// A single node in the call forest representing an account update and its children
@@ -143,9 +146,10 @@ fn assert_account_update_authorization_kind(
     let dummy_bigint = BigInt::from_str(constants::DUMMY_HASH).map_err(|_| {
         BluePallasError::InvalidZkAppCommand("Failed to parse dummy hash".to_string())
     })?;
-    let dummy_verification_key_hash = Fp::from_bigint(dummy_bigint).ok_or(
-        BluePallasError::InvalidZkAppCommand("Failed to convert dummy hash to Fp".to_string()),
-    )?;
+    let dummy_verification_key_hash =
+        transactions::zkapp_tx::Field(Fp::from_bigint(dummy_bigint).ok_or(
+            BluePallasError::InvalidZkAppCommand("Failed to convert dummy hash to Fp".to_string()),
+        )?);
 
     if !is_proved && verification_key_hash != dummy_verification_key_hash {
         return Err(Box::new(BluePallasError::InvalidZkAppCommand(
