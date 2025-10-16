@@ -1,13 +1,18 @@
 use std::str::FromStr;
 
 use ark_ff::{AdditiveGroup, BigInt, PrimeField};
-use mina_hasher::{Fp, Hasher};
+use mina_hasher::Fp;
+use mina_poseidon::{
+    constants::PlonkSpongeConstantsKimchi,
+    pasta::fp_kimchi,
+    poseidon::{ArithmeticSponge, Sponge},
+};
 use mina_signer::NetworkId;
 use num_bigint::BigUint;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
-    transactions::zkapp_tx::{constants, hashable::HashableField, AccountUpdate, ZKAppCommand},
+    transactions::zkapp_tx::{constants, hash::param_to_field, AccountUpdate, ZKAppCommand},
 };
 
 /// A single node in the call forest representing an account update and its children
@@ -104,31 +109,14 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
 }
 
 fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
-    let mut ctx = mina_hasher::create_legacy::<HashableField>(());
-    let mut hasher = ctx.init(());
-    let prefix_field = prefix_to_field(prefix)?;
+    let mut sponge =
+        ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
+    sponge.absorb(&[param_to_field(prefix)?]);
 
-    hasher = hasher.update(&prefix_field.into());
-    for element in data {
-        let hashable_element: HashableField = (*element).into();
-        hasher = hasher.update(&hashable_element);
-    }
-    Ok(hasher.digest())
-}
+    sponge.squeeze();
 
-fn prefix_to_field(prefix: &str) -> BluePallasResult<Fp> {
-    // Convert prefix to ascii bytes
-    let prefix_bytes = prefix.as_bytes();
-    let big_uint = BigUint::from_bytes_le(prefix_bytes);
-
-    let prefix_bigint = BigInt::from_str(&big_uint.to_string()).map_err(|_| {
-        BluePallasError::InvalidZkAppCommand("Failed to parse prefix bigint".to_string())
-    })?;
-
-    let field = Fp::from_bigint(prefix_bigint);
-    field.ok_or(Box::new(BluePallasError::InvalidZkAppCommand(
-        "Failed to convert prefix to Fp".to_string(),
-    )))
+    sponge.absorb(data);
+    Ok(sponge.squeeze())
 }
 
 fn hash_account_update(account_update: &AccountUpdate, network: NetworkId) -> BluePallasResult<Fp> {
@@ -177,18 +165,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_prefix_to_field() {
-        let prefix = "MinaAcctUpdateNode**";
-        let field = prefix_to_field(prefix).unwrap();
-        assert_eq!(
-            field.to_string(),
-            "240723076190006710499563866323038773312427551053"
-        );
-    }
-
-    #[test]
     fn test_hash_with_prefix() {
-        let prefix = "MinaAcctUpdateNode**";
+        let prefix = "MinaAcctUpdateNode";
         let strs = [
             "23487734643675003113914430489774334948844391842009122040704261138931555665056",
             "0",

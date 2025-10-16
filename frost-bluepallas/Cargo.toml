@@ -13,10 +13,14 @@ frost-rerandomized.workspace = true
 mina-curves.workspace = true
 mina-hasher.workspace = true
 mina-signer.workspace = true
+mina-poseidon.workspace = true
+
 num-bigint = "0.4.6"
 num-traits.workspace = true
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 serde = { workspace = true, features = ["derive"] }
+
+
 
 [dev-dependencies]
 frost-core = { version = "2.1.0", features = ["test-impl", "internals"] }
