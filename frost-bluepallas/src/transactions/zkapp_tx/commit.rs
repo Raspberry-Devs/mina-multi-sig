@@ -3,7 +3,7 @@
 use std::{collections::VecDeque, str::FromStr};
 
 use ark_ff::{AdditiveGroup, BigInt, PrimeField};
-use mina_hasher::Fp;
+use mina_hasher::{Fp, Hashable};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
     pasta::fp_kimchi,
@@ -15,7 +15,11 @@ use crate::{
     errors::{BluePallasError, BluePallasResult},
     transactions::{
         self,
-        zkapp_tx::{constants, hash::param_to_field, AccountUpdate, ZKAppCommand},
+        zkapp_tx::{
+            constants::{self, ZkAppBodyPrefix},
+            hash::param_to_field,
+            AccountUpdate, ZKAppCommand,
+        },
     },
 };
 
@@ -129,7 +133,11 @@ fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
 fn hash_account_update(account_update: &AccountUpdate, network: NetworkId) -> BluePallasResult<Fp> {
     // Check that account update is valid
     assert_account_update_authorization_kind(account_update)?;
-    Ok(Fp::ZERO) // Placeholder for actual account update hashing
+
+    // TODO: Check whether this is consistent with packToFields() in o1js
+    let inputs = account_update.to_roinput().to_fields();
+    let network_zk = ZkAppBodyPrefix::from(network);
+    hash_with_prefix(network_zk.into(), &inputs)
 }
 
 fn assert_account_update_authorization_kind(
