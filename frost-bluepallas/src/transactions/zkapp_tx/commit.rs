@@ -2,8 +2,8 @@
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use std::{collections::VecDeque, str::FromStr};
 
-use ark_ff::{AdditiveGroup, BigInt, PrimeField};
-use mina_hasher::{Fp, Hashable};
+use ark_ff::{BigInt, PrimeField};
+use mina_hasher::{Fp, Hashable, ROInput};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
     pasta::fp_kimchi,
@@ -18,7 +18,7 @@ use crate::{
         zkapp_tx::{
             constants::{self, ZkAppBodyPrefix},
             hash::param_to_field,
-            AccountUpdate, ZKAppCommand,
+            AccountUpdate, FeePayer, ZKAppCommand,
         },
     },
 };
@@ -65,7 +65,7 @@ pub fn account_updates_to_call_forest(
 /// A parent-child relationship is established where an AccountUpdate with call depth n
 /// can have children with call depth n+1.
 pub fn zkapp_command_to_call_forest(tx: &ZKAppCommand) -> CallForest {
-    let mut updates = tx.account_updates.clone();
+    let updates = tx.account_updates.clone();
     account_updates_to_call_forest(&mut updates.into(), 0)
 }
 
@@ -120,9 +120,21 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
     // Compute the account-updates commitment using the call forest hashing routine.
     let account_updates_commitment = call_forest_hash(&forest, &network)?;
 
-    // TODO: incorporate memo, fee payer, etc. into the overall commitment per protocol.
-    // For now return the account-updates commitment for both values (placeholder for overall).
-    Ok((account_updates_commitment, account_updates_commitment))
+    let memo_roi = ROInput::new().append_bytes(tx.memo.as_bytes()).to_fields();
+    let memo_hash = hash_with_prefix(constants::ZK_APP_MEMO, &memo_roi)?;
+
+    let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone())?;
+
+    let full_commit = hash_with_prefix(
+        constants::PREFIX_ACCOUNT_UPDATE_CONS,
+        &[memo_hash, fee_payer_hash, account_updates_commitment],
+    )?;
+
+    Ok((account_updates_commitment, full_commit))
+}
+
+fn fee_payer_hash(fee: FeePayer) -> BluePallasResult<Fp> {
+    todo!();
 }
 
 fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
