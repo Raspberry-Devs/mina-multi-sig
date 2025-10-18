@@ -1,3 +1,4 @@
+//! ZKApp Hashable trait implementations
 use crate::transactions::zkapp_tx::AccountUpdate;
 use mina_hasher::Hashable;
 use mina_signer::NetworkId;

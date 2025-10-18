@@ -1,3 +1,4 @@
+//! Low-level poseidon hash utilities for ZkApp transactions
 use ark_ff::Field;
 use mina_hasher::Fp;
 

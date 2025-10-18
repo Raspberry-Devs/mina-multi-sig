@@ -1,4 +1,6 @@
-use std::str::FromStr;
+/// ZkApp transaction commitment computation
+/// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
+use std::{collections::VecDeque, str::FromStr};
 
 use ark_ff::{AdditiveGroup, BigInt, PrimeField};
 use mina_hasher::Fp;
@@ -8,7 +10,6 @@ use mina_poseidon::{
     poseidon::{ArithmeticSponge, Sponge},
 };
 use mina_signer::NetworkId;
-use num_bigint::BigUint;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
@@ -31,7 +32,7 @@ pub type CallForest = Vec<CallTree>;
 /// Converts a flat list of account updates into a hierarchical call forest structure
 /// based on their call depths. Each level of the tree represents a call depth.
 pub fn account_updates_to_call_forest(
-    updates: &mut Vec<AccountUpdate>,
+    updates: &mut VecDeque<AccountUpdate>,
     call_depth: u32,
 ) -> CallForest {
     let mut forest: CallForest = Vec::new();
@@ -42,7 +43,8 @@ pub fn account_updates_to_call_forest(
             return forest;
         }
 
-        let account_update = updates.remove(0);
+        // Unwrap is safe here because we checked that updates is not empty
+        let account_update = updates.pop_front().unwrap();
         let children = account_updates_to_call_forest(updates, call_depth + 1);
 
         forest.push(CallTree {
@@ -55,9 +57,12 @@ pub fn account_updates_to_call_forest(
 }
 
 /// Converts a ZkApp command to a call forest by processing its account updates
+/// AccountUpdates are organized into a hierarchical tree-based structure based on their call depths.
+/// A parent-child relationship is established where an AccountUpdate with call depth n
+/// can have children with call depth n+1.
 pub fn zkapp_command_to_call_forest(tx: &ZKAppCommand) -> CallForest {
     let mut updates = tx.account_updates.clone();
-    account_updates_to_call_forest(&mut updates, 0)
+    account_updates_to_call_forest(&mut updates.into(), 0)
 }
 
 /// Validates that call depths in a ZkApp command follow the correct pattern.
