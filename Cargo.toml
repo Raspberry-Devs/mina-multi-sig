@@ -8,6 +8,8 @@ frost-rerandomized = "2.1.0"
 mina-hasher = { git = "https://github.com/o1-labs/proof-systems", rev = "90798a4" }
 mina-curves = { git = "https://github.com/o1-labs/proof-systems", rev = "90798a4" }
 mina-signer = { git = "https://github.com/o1-labs/proof-systems", rev = "90798a4" }
+mina-poseidon = { git = "https://github.com/o1-labs/proof-systems", rev = "90798a4" }
+
 ark-ec = "0.5.0"
 ark-ff = "0.5.0"
 ark-serialize = "0.5.0"

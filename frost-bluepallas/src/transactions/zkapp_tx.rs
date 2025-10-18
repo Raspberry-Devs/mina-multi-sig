@@ -1,5 +1,9 @@
 use mina_signer::CompressedPubKey;
 use serde::{Deserialize, Serialize};
+
+mod commit;
+mod constants;
+mod hash;
 pub mod zkapp_display;
 pub mod zkapp_serde;
 pub mod zkapp_trait;
@@ -189,7 +193,7 @@ impl From<PublicKey> for CompressedPubKey {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct Field(pub mina_hasher::Fp);
 
 impl From<mina_hasher::Fp> for Field {
