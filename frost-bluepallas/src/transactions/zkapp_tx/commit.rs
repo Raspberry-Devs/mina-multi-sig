@@ -116,7 +116,13 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
     }
 
     let forest = zkapp_command_to_call_forest(tx);
-    Ok((Fp::ZERO, Fp::ZERO)) // Placeholder for actual commitment computation
+
+    // Compute the account-updates commitment using the call forest hashing routine.
+    let account_updates_commitment = call_forest_hash(&forest, &network)?;
+
+    // TODO: incorporate memo, fee payer, etc. into the overall commitment per protocol.
+    // For now return the account-updates commitment for both values (placeholder for overall).
+    Ok((account_updates_commitment, account_updates_commitment))
 }
 
 fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
@@ -130,13 +136,16 @@ fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
     Ok(sponge.squeeze())
 }
 
-fn hash_account_update(account_update: &AccountUpdate, network: NetworkId) -> BluePallasResult<Fp> {
+fn hash_account_update(
+    account_update: &AccountUpdate,
+    network: &NetworkId,
+) -> BluePallasResult<Fp> {
     // Check that account update is valid
     assert_account_update_authorization_kind(account_update)?;
 
     // TODO: Check whether this is consistent with packToFields() in o1js
     let inputs = account_update.to_roinput().to_fields();
-    let network_zk = ZkAppBodyPrefix::from(network);
+    let network_zk = ZkAppBodyPrefix::from(network.clone());
     hash_with_prefix(network_zk.into(), &inputs)
 }
 
@@ -174,6 +183,30 @@ fn assert_account_update_authorization_kind(
     }
 
     Ok(())
+}
+
+/// Computes the hash of a call forest representing account updates.
+/// Traverses the forest in reverse order, for each CallTree:
+///  - recursively compute calls = hash(children)
+///  - tree_hash = hash_account_update(account_update)
+///  - node_hash = hash_with_prefix("MinaAcctUpdateNode", [tree_hash, calls])
+///  - stack_hash = hash_with_prefix("MinaAcctUpdateCons", [node_hash, stack_hash])
+fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResult<Fp> {
+    let mut stack_hash = constants::EMPTY_STACK_HASH;
+
+    // iterate in reverse (last -> first)
+    for call_tree in forest.iter().rev() {
+        let calls = call_forest_hash(&call_tree.children, network)?;
+        let tree_hash = hash_account_update(&call_tree.account_update, network)?;
+        let node_hash =
+            hash_with_prefix(constants::PREFIX_ACCOUNT_UPDATE_NODE, &[tree_hash, calls])?;
+        stack_hash = hash_with_prefix(
+            constants::PREFIX_ACCOUNT_UPDATE_CONS,
+            &[node_hash, stack_hash],
+        )?;
+    }
+
+    Ok(stack_hash)
 }
 
 #[cfg(test)]

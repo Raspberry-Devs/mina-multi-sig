@@ -1,3 +1,5 @@
+use ark_ff::AdditiveGroup;
+use mina_hasher::Fp;
 use mina_signer::NetworkId;
 
 // Constant value for a dummy verification key, if an account update is not proved and instead signed
@@ -5,9 +7,13 @@ use mina_signer::NetworkId;
 pub const DUMMY_HASH: &str =
     "3392518251768960475377392625298437850623664973002200885669375116181514017494";
 
-// Used as prefix for hashing account update body
+pub const EMPTY_STACK_HASH: Fp = Fp::ZERO;
+
+// Used as prefix for hashing
 pub const ZK_APP_BODY_MAINNET: &str = "MainnetZkappBody****";
 pub const ZK_APP_BODY_TESTNET: &str = "TestnetZkappBody****";
+pub const PREFIX_ACCOUNT_UPDATE_NODE: &str = "MinaAcctUpdateNode";
+pub const PREFIX_ACCOUNT_UPDATE_CONS: &str = "MinaAcctUpdateCons";
 
 // Enum to represent the prefix used for hashing zkapp body based on network
 pub enum ZkAppBodyPrefix {
