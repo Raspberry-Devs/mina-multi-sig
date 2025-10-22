@@ -1,6 +1,6 @@
 /// ZkApp transaction commitment computation
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
-use std::{collections::VecDeque, os::unix::net, str::FromStr};
+use std::{collections::VecDeque, str::FromStr};
 
 use mina_hasher::{Fp, Hashable, ROInput};
 use mina_poseidon::{
@@ -144,6 +144,7 @@ fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
     let public_key = body.public_key;
     let fee_magnitude = body.fee;
     let nonce = body.nonce;
+    let vaild_until = body.valid_until.unwrap_or(u32::MAX);
 
     let account_update = AccountUpdate::default();
     let mut body = account_update.body;
@@ -156,6 +157,15 @@ fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
     body.increment_nonce = true;
 
     body.preconditions.network.global_slot_since_genesis = {
+        OptionalValue {
+            is_some: true,
+            value: RangeCondition {
+                lower: 0,
+                upper: vaild_until,
+            },
+        }
+    };
+    body.preconditions.account.nonce = {
         OptionalValue {
             is_some: true,
             value: RangeCondition {
