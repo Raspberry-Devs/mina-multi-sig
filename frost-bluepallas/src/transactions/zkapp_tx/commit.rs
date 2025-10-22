@@ -1,6 +1,6 @@
 /// ZkApp transaction commitment computation
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
-use std::{collections::VecDeque, str::FromStr};
+use std::{collections::VecDeque, os::unix::net, str::FromStr};
 
 use mina_hasher::{Fp, Hashable, ROInput};
 use mina_poseidon::{
@@ -120,7 +120,7 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
     let memo_roi = ROInput::new().append_bytes(tx.memo.as_bytes()).to_fields();
     let memo_hash = hash_with_prefix(constants::ZK_APP_MEMO, &memo_roi)?;
 
-    let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone())?;
+    let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone(), &network)?;
 
     let full_commit = hash_with_prefix(
         constants::PREFIX_ACCOUNT_UPDATE_CONS,
@@ -130,8 +130,9 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
     Ok((account_updates_commitment, full_commit))
 }
 
-fn fee_payer_hash(fee: FeePayer) -> BluePallasResult<Fp> {
-    todo!();
+fn fee_payer_hash(fee: FeePayer, network: &NetworkId) -> BluePallasResult<Fp> {
+    let fee_account_update = account_update_from_fee_payer(fee);
+    hash_account_update(&fee_account_update, network)
 }
 
 fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
