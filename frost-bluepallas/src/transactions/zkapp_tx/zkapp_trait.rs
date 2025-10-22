@@ -770,3 +770,39 @@ impl Hashable for ZkappUriData {
         None
     }
 }
+
+#[cfg(test)]
+mod test {
+    use mina_hasher::{Fp, Hashable, ROInput};
+    use mina_signer::CompressedPubKey;
+    use std::str::FromStr;
+
+    fn build_roi(field_strings: Vec<&str>, bools: Vec<bool>) -> ROInput {
+        let mut roi = ROInput::new();
+        for fs in field_strings {
+            let f = Fp::from_str(fs).expect("Invalid field string");
+            roi = roi.append_field(f);
+        }
+        for b in bools {
+            roi = roi.append_bool(b);
+        }
+        roi
+    }
+
+    #[test]
+    fn test_pub_key() {
+        // CompressedPubKey format: [x_coordinate:32][parity:1] = 33 bytes = 66 hex characters
+        let pub_key_hex = "0f48c65bd25f85f3e4ea4efebeb75b797bd743603be04b4ead845698b76bd33101";
+        let pk_bytes = hex::decode(pub_key_hex).expect("Invalid hex in public key");
+
+        let pk = CompressedPubKey::from_bytes(&pk_bytes).expect("Invalid public key bytes");
+        let roi = super::PublicKey(pk).to_roinput();
+
+        let expected_roi = build_roi(
+            vec!["22536877747820698688010660184495467853785925552441222123266613953322243475471"],
+            vec![true],
+        );
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
+}
