@@ -2,7 +2,6 @@
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use std::{collections::VecDeque, str::FromStr};
 
-use ark_ff::{BigInt, PrimeField};
 use mina_hasher::{Fp, Hashable, ROInput};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
@@ -13,13 +12,11 @@ use mina_signer::NetworkId;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
-    transactions::{
-        self,
-        zkapp_tx::{
-            constants::{self, ZkAppBodyPrefix},
-            hash::param_to_field,
-            AccountUpdate, FeePayer, ZKAppCommand,
-        },
+    transactions::zkapp_tx::{
+        constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
+        hash::param_to_field,
+        AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer, OptionalValue,
+        RangeCondition, ZKAppCommand,
     },
 };
 
@@ -137,6 +134,52 @@ fn fee_payer_hash(fee: FeePayer) -> BluePallasResult<Fp> {
     todo!();
 }
 
+fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
+    // Unpack fee payer pieces
+    let FeePayer {
+        body,
+        authorization,
+    } = fee;
+    let public_key = body.public_key;
+    let fee_magnitude = body.fee;
+    let nonce = body.nonce;
+
+    let account_update = AccountUpdate::default();
+    let mut body = account_update.body;
+
+    body.public_key = public_key;
+    body.balance_change = BalanceChange {
+        magnitude: fee_magnitude,
+        sgn: -1,
+    };
+    body.increment_nonce = true;
+
+    body.preconditions.network.global_slot_since_genesis = {
+        OptionalValue {
+            is_some: true,
+            value: RangeCondition {
+                lower: nonce,
+                upper: nonce,
+            },
+        }
+    };
+    body.use_full_commitment = true;
+    body.implicit_account_creation_fee = true;
+    body.authorization_kind = AuthorizationKind {
+        is_proved: false,
+        is_signed: true,
+        verification_key_hash: *DUMMY_HASH,
+    };
+
+    AccountUpdate {
+        body,
+        authorization: Authorization {
+            proof: None,
+            signature: Some(authorization),
+        },
+    }
+}
+
 fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
     let mut sponge =
         ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
@@ -176,19 +219,11 @@ fn assert_account_update_authorization_kind(
         )));
     }
 
-    let dummy_bigint = BigInt::from_str(constants::DUMMY_HASH).map_err(|_| {
-        BluePallasError::InvalidZkAppCommand("Failed to parse dummy hash".to_string())
-    })?;
-    let dummy_verification_key_hash =
-        transactions::zkapp_tx::Field(Fp::from_bigint(dummy_bigint).ok_or(
-            BluePallasError::InvalidZkAppCommand("Failed to convert dummy hash to Fp".to_string()),
-        )?);
-
-    if !is_proved && verification_key_hash != dummy_verification_key_hash {
+    if !is_proved && verification_key_hash != *DUMMY_HASH {
         return Err(Box::new(BluePallasError::InvalidZkAppCommand(
             format!(
                 "Invalid authorization kind: If `isProved` is false, verification key hash must be {}, got {}",
-                constants::DUMMY_HASH,
+                *DUMMY_HASH,
                 verification_key_hash
             ),
         )));

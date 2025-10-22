@@ -11,20 +11,20 @@ pub mod zkapp_trait;
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates
 // or by a different key
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct ZKAppCommand {
     pub fee_payer: FeePayer,
     pub account_updates: Vec<AccountUpdate>,
     pub memo: String,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct FeePayer {
     pub body: FeePayerBody,
     pub authorization: String,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct FeePayerBody {
     pub public_key: PublicKey,
     pub fee: UInt64,
@@ -32,13 +32,13 @@ pub struct FeePayerBody {
     pub nonce: UInt32,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AccountUpdate {
     pub body: AccountUpdateBody,
     pub authorization: Authorization,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AccountUpdateBody {
     pub public_key: PublicKey,
     pub token_id: TokenId,
@@ -56,7 +56,7 @@ pub struct AccountUpdateBody {
     pub authorization_kind: AuthorizationKind,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct Update {
     pub app_state: Vec<OptionalValue<Field>>,
     pub delegate: OptionalValue<PublicKey>,
@@ -68,7 +68,7 @@ pub struct Update {
     pub voting_for: OptionalValue<Field>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct Permissions {
     pub edit_state: AuthRequired,
     pub access: AuthRequired,
@@ -85,20 +85,20 @@ pub struct Permissions {
     pub set_timing: AuthRequired,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct SetVerificationKey {
     pub auth: AuthRequired,
     pub txn_version: UInt32,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct Preconditions {
     pub network: NetworkPreconditions,
     pub account: AccountPreconditions,
     pub valid_while: OptionalValue<RangeCondition<UInt32>>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AccountPreconditions {
     pub balance: OptionalValue<RangeCondition<UInt64>>,
     pub nonce: OptionalValue<RangeCondition<UInt32>>,
@@ -110,7 +110,7 @@ pub struct AccountPreconditions {
     pub is_new: OptionalValue<Bool>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct NetworkPreconditions {
     pub snarked_ledger_hash: OptionalValue<Field>,
     pub blockchain_length: OptionalValue<RangeCondition<UInt32>>,
@@ -121,19 +121,19 @@ pub struct NetworkPreconditions {
     pub next_epoch_data: EpochData,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct Events {
     pub data: Vec<Vec<Field>>,
     pub hash: Field,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct Actions {
     pub data: Vec<Vec<Field>>,
     pub hash: Field,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct Authorization {
     pub proof: Option<String>,
     pub signature: Option<String>,
@@ -141,19 +141,19 @@ pub struct Authorization {
 
 // Supporting types
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct RangeCondition<T> {
     pub lower: T,
     pub upper: T,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct VerificationKeyData {
     pub data: String,
     pub hash: VerificationKeyHash,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct TimingData {
     pub initial_minimum_balance: UInt64,
     pub cliff_time: UInt32,
@@ -162,7 +162,7 @@ pub struct TimingData {
     pub vesting_increment: UInt64,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct EpochData {
     pub ledger: EpochLedger,
     pub seed: OptionalValue<Field>,
@@ -171,7 +171,7 @@ pub struct EpochData {
     pub epoch_length: OptionalValue<RangeCondition<UInt32>>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct EpochLedger {
     pub hash: OptionalValue<Field>,
     pub total_currency: OptionalValue<RangeCondition<UInt64>>,
@@ -180,6 +180,12 @@ pub struct EpochLedger {
 // Wrappers for base types that need additional traits implemented
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PublicKey(pub CompressedPubKey);
+
+impl Default for PublicKey {
+    fn default() -> Self {
+        Self(CompressedPubKey::empty())
+    }
+}
 
 impl From<CompressedPubKey> for PublicKey {
     fn from(key: CompressedPubKey) -> Self {
@@ -193,7 +199,7 @@ impl From<PublicKey> for CompressedPubKey {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy, Default)]
 pub struct Field(pub mina_hasher::Fp);
 
 impl From<mina_hasher::Fp> for Field {
@@ -222,7 +228,7 @@ pub type VerificationKeyHash = Field;
 pub type ReceiptChainHash = Field;
 pub type TransactionVersion = UInt32;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AuthRequired {
     pub constant: Bool,
     pub signature_necessary: Bool,
@@ -233,45 +239,45 @@ pub type TokenSymbol = String;
 
 pub type ZkappUri = String;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct MayUseToken {
     pub parents_own_token: Bool,
     pub inherit_from_parent: Bool,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct BalanceChange {
     pub magnitude: UInt64,
     pub sgn: Sign,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AuthorizationKind {
     pub is_signed: Bool,
     pub is_proved: Bool,
     pub verification_key_hash: VerificationKeyHash,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct OptionalValue<T> {
     pub is_some: Bool,
     pub value: T,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct ZkappUriData {
     pub data: String,
     pub hash: Field,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct TokenSymbolData {
     pub symbol: String,
     pub field: Field,
 }
 
 // Additional structs for Account type
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct Account {
     pub public_key: PublicKey,
     pub token_id: TokenId,
@@ -286,7 +292,7 @@ pub struct Account {
     pub zkapp: Option<ZkappAccount>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AccountTiming {
     pub is_timed: Bool,
     pub initial_minimum_balance: UInt64,
@@ -296,7 +302,7 @@ pub struct AccountTiming {
     pub vesting_increment: UInt64,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct ZkappAccount {
     pub app_state: Vec<Field>,
     pub verification_key: Option<VerificationKeyData>,
