@@ -805,4 +805,17 @@ mod test {
 
         assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
     }
+
+    #[test]
+    fn test_auth_required() {
+        let auth = super::AuthRequired {
+            constant: false,
+            signature_necessary: false,
+            signature_sufficient: true,
+        };
+        let roi = auth.to_roinput();
+        let expected_roi = build_roi(vec![], vec![false, false, true]);
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
 }
