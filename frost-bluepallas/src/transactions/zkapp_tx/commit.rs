@@ -271,6 +271,7 @@ fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn test_hash_with_prefix() {
