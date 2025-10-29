@@ -1,14 +1,8 @@
-use mina_hasher::Hashable;
-use serde::{Deserialize, Serialize};
-
 use crate::{
     errors::BluePallasError,
     transactions::{legacy_tx, zkapp_tx::ZKAppCommandWithNetwork},
+    translate::Translatable,
 };
-
-pub trait Transaction: Serialize + for<'de> Deserialize<'de> + Clone + Hashable {}
-impl Transaction for ZKAppCommandWithNetwork {}
-impl Transaction for legacy_tx::Transaction {}
 
 #[derive(Clone)]
 pub enum TransactionEnvelope {
@@ -41,22 +35,11 @@ impl TransactionEnvelope {
     }
 }
 
-impl Hashable for TransactionEnvelope {
-    type D = mina_signer::NetworkId;
-
-    fn to_roinput(&self) -> mina_hasher::ROInput {
+impl Translatable for TransactionEnvelope {
+    fn translate_msg(&self) -> Vec<u8> {
         match self {
-            TransactionEnvelope::ZkApp(tx) => tx.to_roinput(),
-            TransactionEnvelope::Legacy(tx) => tx.to_roinput(),
+            TransactionEnvelope::ZkApp(tx) => tx.translate_msg(),
+            TransactionEnvelope::Legacy(tx) => tx.translate_msg(),
         }
-    }
-
-    fn domain_string(domain_param: Self::D) -> Option<String> {
-        match domain_param {
-            mina_signer::NetworkId::MAINNET => "MinaSignatureMainnet",
-            mina_signer::NetworkId::TESTNET => "CodaSignature",
-        }
-        .to_string()
-        .into()
     }
 }

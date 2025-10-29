@@ -170,7 +170,9 @@ impl Translatable for Transaction {
     fn translate_msg(&self) -> Vec<u8> {
         self.to_roinput().serialize()
     }
+}
 
+impl Transaction {
     fn from_bytes(bytes: &[u8]) -> BluePallasResult<Self>
     where
         Self: Sized,

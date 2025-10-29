@@ -1,7 +1,10 @@
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::NetworkId;
 
-use crate::transactions::zkapp_tx::{commit::zk_commit, ZKAppCommandWithNetwork};
+use crate::{
+    transactions::zkapp_tx::{commit::zk_commit, ZKAppCommandWithNetwork},
+    translate::Translatable,
+};
 
 /// This file produces the final ROInput for ZkApp transactions to be hashed and signed over
 impl Hashable for ZKAppCommandWithNetwork {
@@ -21,5 +24,11 @@ impl Hashable for ZKAppCommandWithNetwork {
         }
         .to_string()
         .into()
+    }
+}
+
+impl Translatable for ZKAppCommandWithNetwork {
+    fn translate_msg(&self) -> Vec<u8> {
+        self.to_roinput().serialize()
     }
 }

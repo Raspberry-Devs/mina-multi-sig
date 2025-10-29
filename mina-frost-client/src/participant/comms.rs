@@ -2,7 +2,7 @@ pub mod http;
 
 use async_trait::async_trait;
 use eyre::eyre;
-use frost_bluepallas::{transactions::legacy_tx::Transaction, translate::Translatable};
+use frost_bluepallas::transactions::legacy_tx::Transaction;
 
 use crate::api::SendSigningPackageArgs;
 use crate::mina_network::Network;
