@@ -5,9 +5,25 @@ mod commit;
 mod constants;
 mod hash;
 pub mod zkapp_display;
-pub mod zkapp_hashable;
 pub mod zkapp_packable;
 pub mod zkapp_serde;
+pub mod zkapp_trait;
+
+/// A ZKAppCommandWrapper that includes the network ID for hashing/signing purposes
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ZKAppCommandWithNetwork {
+    pub command: ZKAppCommand,
+    #[serde(skip)]
+    network: NetworkIDWrapper,
+}
+
+#[derive(Clone)]
+struct NetworkIDWrapper(pub mina_signer::NetworkId);
+impl std::default::Default for NetworkIDWrapper {
+    fn default() -> Self {
+        NetworkIDWrapper(mina_signer::NetworkId::TESTNET)
+    }
+}
 
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates
@@ -17,12 +33,6 @@ pub struct ZKAppCommand {
     pub fee_payer: FeePayer,
     pub account_updates: Vec<AccountUpdate>,
     pub memo: String,
-}
-
-#[derive(Clone)]
-pub struct ZKAppCommandWithNetwork<'a> {
-    pub command: ZKAppCommand,
-    pub network: &'a mina_signer::NetworkId,
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]

@@ -4,12 +4,12 @@ use mina_signer::NetworkId;
 use crate::transactions::zkapp_tx::{commit::zk_commit, ZKAppCommandWithNetwork};
 
 /// This file produces the final ROInput for ZkApp transactions to be hashed and signed over
-impl<'a> Hashable for ZKAppCommandWithNetwork<'a> {
+impl Hashable for ZKAppCommandWithNetwork {
     type D = NetworkId;
 
     fn to_roinput(&self) -> ROInput {
         // Get ZKCommit
-        let zk_commit = zk_commit(&self.command, self.network).unwrap();
+        let zk_commit = zk_commit(&self.command, &self.network.0).unwrap();
 
         ROInput::new().append_field(zk_commit)
     }
