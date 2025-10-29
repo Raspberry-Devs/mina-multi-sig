@@ -1,9 +1,9 @@
 /// ZkApp transaction commitment computation
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
-use std::{collections::VecDeque};
+use std::collections::VecDeque;
 
-use mina_hasher::{Fp, ROInput};
 use super::zkapp_packable::Packable;
+use mina_hasher::{Fp, ROInput};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
     pasta::fp_kimchi,
