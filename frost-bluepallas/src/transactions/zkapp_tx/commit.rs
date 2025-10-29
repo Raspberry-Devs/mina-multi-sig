@@ -2,8 +2,7 @@
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use std::{collections::VecDeque, str::FromStr};
 
-use ark_ff::{AdditiveGroup, BigInt, PrimeField};
-use mina_hasher::Fp;
+use mina_hasher::{Fp, Hashable, ROInput};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
     pasta::fp_kimchi,
@@ -13,9 +12,11 @@ use mina_signer::NetworkId;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
-    transactions::{
-        self,
-        zkapp_tx::{constants, hash::param_to_field, AccountUpdate, ZKAppCommand},
+    transactions::zkapp_tx::{
+        constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
+        hash::param_to_field,
+        AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer, OptionalValue,
+        RangeCondition, ZKAppCommand,
     },
 };
 
@@ -61,7 +62,7 @@ pub fn account_updates_to_call_forest(
 /// A parent-child relationship is established where an AccountUpdate with call depth n
 /// can have children with call depth n+1.
 pub fn zkapp_command_to_call_forest(tx: &ZKAppCommand) -> CallForest {
-    let mut updates = tx.account_updates.clone();
+    let updates = tx.account_updates.clone();
     account_updates_to_call_forest(&mut updates.into(), 0)
 }
 
@@ -112,7 +113,82 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
     }
 
     let forest = zkapp_command_to_call_forest(tx);
-    Ok((Fp::ZERO, Fp::ZERO)) // Placeholder for actual commitment computation
+
+    // Compute the account-updates commitment using the call forest hashing routine.
+    let account_updates_commitment = call_forest_hash(&forest, &network)?;
+
+    let memo_roi = ROInput::new().append_bytes(tx.memo.as_bytes()).to_fields();
+    let memo_hash = hash_with_prefix(constants::ZK_APP_MEMO, &memo_roi)?;
+
+    let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone(), &network)?;
+
+    let full_commit = hash_with_prefix(
+        constants::PREFIX_ACCOUNT_UPDATE_CONS,
+        &[memo_hash, fee_payer_hash, account_updates_commitment],
+    )?;
+
+    Ok((account_updates_commitment, full_commit))
+}
+
+fn fee_payer_hash(fee: FeePayer, network: &NetworkId) -> BluePallasResult<Fp> {
+    let fee_account_update = account_update_from_fee_payer(fee);
+    hash_account_update(&fee_account_update, network)
+}
+
+fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
+    // Unpack fee payer pieces
+    let FeePayer {
+        body,
+        authorization,
+    } = fee;
+    let public_key = body.public_key;
+    let fee_magnitude = body.fee;
+    let nonce = body.nonce;
+    let vaild_until = body.valid_until.unwrap_or(u32::MAX);
+
+    let account_update = AccountUpdate::default();
+    let mut body = account_update.body;
+
+    body.public_key = public_key;
+    body.balance_change = BalanceChange {
+        magnitude: fee_magnitude,
+        sgn: -1,
+    };
+    body.increment_nonce = true;
+
+    body.preconditions.network.global_slot_since_genesis = {
+        OptionalValue {
+            is_some: true,
+            value: RangeCondition {
+                lower: 0,
+                upper: vaild_until,
+            },
+        }
+    };
+    body.preconditions.account.nonce = {
+        OptionalValue {
+            is_some: true,
+            value: RangeCondition {
+                lower: nonce,
+                upper: nonce,
+            },
+        }
+    };
+    body.use_full_commitment = true;
+    body.implicit_account_creation_fee = true;
+    body.authorization_kind = AuthorizationKind {
+        is_proved: false,
+        is_signed: true,
+        verification_key_hash: *DUMMY_HASH,
+    };
+
+    AccountUpdate {
+        body,
+        authorization: Authorization {
+            proof: None,
+            signature: Some(authorization),
+        },
+    }
 }
 
 fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
@@ -126,10 +202,17 @@ fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
     Ok(sponge.squeeze())
 }
 
-fn hash_account_update(account_update: &AccountUpdate, network: NetworkId) -> BluePallasResult<Fp> {
+fn hash_account_update(
+    account_update: &AccountUpdate,
+    network: &NetworkId,
+) -> BluePallasResult<Fp> {
     // Check that account update is valid
     assert_account_update_authorization_kind(account_update)?;
-    Ok(Fp::ZERO) // Placeholder for actual account update hashing
+
+    // TODO: Check whether this is consistent with packToFields() in o1js
+    let inputs = account_update.to_roinput().to_fields();
+    let network_zk = ZkAppBodyPrefix::from(network.clone());
+    hash_with_prefix(network_zk.into(), &inputs)
 }
 
 fn assert_account_update_authorization_kind(
@@ -147,25 +230,41 @@ fn assert_account_update_authorization_kind(
         )));
     }
 
-    let dummy_bigint = BigInt::from_str(constants::DUMMY_HASH).map_err(|_| {
-        BluePallasError::InvalidZkAppCommand("Failed to parse dummy hash".to_string())
-    })?;
-    let dummy_verification_key_hash =
-        transactions::zkapp_tx::Field(Fp::from_bigint(dummy_bigint).ok_or(
-            BluePallasError::InvalidZkAppCommand("Failed to convert dummy hash to Fp".to_string()),
-        )?);
-
-    if !is_proved && verification_key_hash != dummy_verification_key_hash {
+    if !is_proved && verification_key_hash != *DUMMY_HASH {
         return Err(Box::new(BluePallasError::InvalidZkAppCommand(
             format!(
                 "Invalid authorization kind: If `isProved` is false, verification key hash must be {}, got {}",
-                constants::DUMMY_HASH,
+                *DUMMY_HASH,
                 verification_key_hash
             ),
         )));
     }
 
     Ok(())
+}
+
+/// Computes the hash of a call forest representing account updates.
+/// Traverses the forest in reverse order, for each CallTree:
+///  - recursively compute calls = hash(children)
+///  - tree_hash = hash_account_update(account_update)
+///  - node_hash = hash_with_prefix("MinaAcctUpdateNode", [tree_hash, calls])
+///  - stack_hash = hash_with_prefix("MinaAcctUpdateCons", [node_hash, stack_hash])
+fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResult<Fp> {
+    let mut stack_hash = constants::EMPTY_STACK_HASH;
+
+    // iterate in reverse (last -> first)
+    for call_tree in forest.iter().rev() {
+        let calls = call_forest_hash(&call_tree.children, network)?;
+        let tree_hash = hash_account_update(&call_tree.account_update, network)?;
+        let node_hash =
+            hash_with_prefix(constants::PREFIX_ACCOUNT_UPDATE_NODE, &[tree_hash, calls])?;
+        stack_hash = hash_with_prefix(
+            constants::PREFIX_ACCOUNT_UPDATE_CONS,
+            &[node_hash, stack_hash],
+        )?;
+    }
+
+    Ok(stack_hash)
 }
 
 #[cfg(test)]
