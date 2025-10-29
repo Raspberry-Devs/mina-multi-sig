@@ -106,7 +106,7 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
 /// Validates call depths and authorization kinds before computing the commitment.
 /// Returns two Fp elements, representing the accountUpdates commitment and the overall commitment respectively.
 /// Overall commitment includes memo, fee payer, and account updates commitments.
-pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp, Fp)> {
+pub fn zk_commit(tx: &ZKAppCommand, network: &NetworkId) -> BluePallasResult<Fp> {
     if !is_call_depth_valid(tx) {
         return Err(Box::new(BluePallasError::InvalidZkAppCommand(
             "Call depths are not valid".to_string(),
@@ -116,19 +116,19 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
     let forest = zkapp_command_to_call_forest(tx);
 
     // Compute the account-updates commitment using the call forest hashing routine.
-    let account_updates_commitment = call_forest_hash(&forest, &network)?;
+    let account_updates_commitment = call_forest_hash(&forest, network)?;
 
     let memo_roi = ROInput::new().append_bytes(tx.memo.as_bytes()).to_fields();
     let memo_hash = hash_with_prefix(constants::ZK_APP_MEMO, &memo_roi)?;
 
-    let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone(), &network)?;
+    let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone(), network)?;
 
     let full_commit = hash_with_prefix(
         constants::PREFIX_ACCOUNT_UPDATE_CONS,
         &[memo_hash, fee_payer_hash, account_updates_commitment],
     )?;
 
-    Ok((account_updates_commitment, full_commit))
+    Ok(full_commit)
 }
 
 fn fee_payer_hash(fee: FeePayer, network: &NetworkId) -> BluePallasResult<Fp> {

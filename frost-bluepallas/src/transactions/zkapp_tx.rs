@@ -5,6 +5,7 @@ mod commit;
 mod constants;
 mod hash;
 pub mod zkapp_display;
+pub mod zkapp_hashable;
 pub mod zkapp_packable;
 pub mod zkapp_serde;
 
@@ -16,6 +17,12 @@ pub struct ZKAppCommand {
     pub fee_payer: FeePayer,
     pub account_updates: Vec<AccountUpdate>,
     pub memo: String,
+}
+
+#[derive(Clone)]
+pub struct ZKAppCommandWithNetwork<'a> {
+    pub command: ZKAppCommand,
+    pub network: &'a mina_signer::NetworkId,
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]
