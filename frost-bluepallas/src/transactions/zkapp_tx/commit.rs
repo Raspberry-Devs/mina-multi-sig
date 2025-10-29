@@ -1,8 +1,9 @@
 /// ZkApp transaction commitment computation
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
-use std::{collections::VecDeque, str::FromStr};
+use std::collections::VecDeque;
 
-use mina_hasher::{Fp, Hashable, ROInput};
+use super::zkapp_packable::Packable;
+use mina_hasher::{Fp, ROInput};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
     pasta::fp_kimchi,
@@ -210,7 +211,7 @@ fn hash_account_update(
     assert_account_update_authorization_kind(account_update)?;
 
     // TODO: Check whether this is consistent with packToFields() in o1js
-    let inputs = account_update.to_roinput().to_fields();
+    let inputs = account_update.clone().pack().to_fields();
     let network_zk = ZkAppBodyPrefix::from(network.clone());
     hash_with_prefix(network_zk.into(), &inputs)
 }
@@ -270,6 +271,7 @@ fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn test_hash_with_prefix() {
