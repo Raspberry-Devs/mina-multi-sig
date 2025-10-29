@@ -4,17 +4,17 @@ use crate::transactions::zkapp_tx::*;
 use mina_hasher::ROInput;
 
 trait Packable {
-    fn to_roinput(&self) -> ROInput;
+    fn pack(&self) -> ROInput;
 }
 
 impl Packable for Field {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new().append_field(self.0)
     }
 }
 
 impl Packable for PublicKey {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         // PublicKey wraps CompressedPubKey which exposes x and is_odd via conversion
         let pk: mina_signer::CompressedPubKey = self.clone().into();
         ROInput::new().append_field(pk.x).append_bool(pk.is_odd)
@@ -22,7 +22,7 @@ impl Packable for PublicKey {
 }
 
 impl Packable for ZkappAccount {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
 
         // zkapp_uri as optional string -> include as bytes if non-empty
@@ -56,7 +56,7 @@ impl Packable for ZkappAccount {
 }
 
 impl Packable for Account {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
 
         // zkapp hash field
@@ -130,19 +130,19 @@ impl Packable for Account {
 }
 
 impl Packable for Events {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new().append_field(self.hash.0)
     }
 }
 
 impl Packable for Actions {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new().append_field(self.hash.0)
     }
 }
 
 impl Packable for TimingData {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new()
             .append_u64(self.initial_minimum_balance)
             .append_u32(self.cliff_time)
@@ -153,7 +153,7 @@ impl Packable for TimingData {
 }
 
 impl Packable for AuthRequired {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new()
             .append_bool(self.constant)
             .append_bool(self.signature_necessary)
@@ -162,28 +162,28 @@ impl Packable for AuthRequired {
 }
 
 impl Packable for SetVerificationKey {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new()
-            .append_bytes(&self.auth.to_roinput().to_bytes())
+            .append_bytes(&self.auth.pack().to_bytes())
             .append_u32(self.txn_version)
     }
 }
 
 impl Packable for VerificationKeyData {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new().append_field(self.hash.0)
     }
 }
 
 impl Packable for BalanceChange {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let sgn = self.sgn == 1;
         ROInput::new().append_u64(self.magnitude).append_bool(sgn)
     }
 }
 
 impl Packable for Authorization {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
         if let Some(p) = &self.proof {
             roi = roi.append_bool(true).append_bytes(p.as_bytes());
@@ -201,7 +201,7 @@ impl Packable for Authorization {
 }
 
 impl Packable for MayUseToken {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         // two bits
         ROInput::new()
             .append_bool(self.parents_own_token)
@@ -210,7 +210,7 @@ impl Packable for MayUseToken {
 }
 
 impl Packable for AuthorizationKind {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new()
             .append_bool(self.is_signed)
             .append_bool(self.is_proved)
@@ -219,7 +219,7 @@ impl Packable for AuthorizationKind {
 }
 
 impl Packable for AccountTiming {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new()
             .append_bool(self.is_timed)
             .append_u64(self.initial_minimum_balance)
@@ -231,7 +231,7 @@ impl Packable for AccountTiming {
 }
 
 impl Packable for EpochLedger {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
         if self.hash.is_some {
             roi = roi.append_field(self.hash.value.0);
@@ -251,11 +251,11 @@ impl Packable for EpochLedger {
 }
 
 impl Packable for EpochData {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
 
         // ledger
-        roi = roi.append_bytes(&self.ledger.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.ledger.pack().to_bytes());
 
         // seed / checkpoints optional values: encode field or zero
         if self.seed.is_some {
@@ -288,7 +288,7 @@ impl Packable for EpochData {
 }
 
 impl Packable for NetworkPreconditions {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
 
         if self.snarked_ledger_hash.is_some {
@@ -331,15 +331,15 @@ impl Packable for NetworkPreconditions {
         }
 
         roi = roi
-            .append_bytes(&self.staking_epoch_data.to_roinput().to_bytes())
-            .append_bytes(&self.next_epoch_data.to_roinput().to_bytes());
+            .append_bytes(&self.staking_epoch_data.pack().to_bytes())
+            .append_bytes(&self.next_epoch_data.pack().to_bytes());
 
         roi
     }
 }
 
 impl Packable for AccountPreconditions {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
 
         // balance range
@@ -410,29 +410,29 @@ impl Packable for AccountPreconditions {
 }
 
 impl Packable for Permissions {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new()
-            .append_bytes(&self.edit_state.to_roinput().to_bytes())
-            .append_bytes(&self.access.to_roinput().to_bytes())
-            .append_bytes(&self.send.to_roinput().to_bytes())
-            .append_bytes(&self.receive.to_roinput().to_bytes())
-            .append_bytes(&self.set_delegate.to_roinput().to_bytes())
-            .append_bytes(&self.set_permissions.to_roinput().to_bytes())
-            .append_bytes(&self.set_verification_key.to_roinput().to_bytes())
-            .append_bytes(&self.set_zkapp_uri.to_roinput().to_bytes())
-            .append_bytes(&self.edit_action_state.to_roinput().to_bytes())
-            .append_bytes(&self.set_token_symbol.to_roinput().to_bytes())
-            .append_bytes(&self.increment_nonce.to_roinput().to_bytes())
-            .append_bytes(&self.set_voting_for.to_roinput().to_bytes())
-            .append_bytes(&self.set_timing.to_roinput().to_bytes())
+            .append_bytes(&self.edit_state.pack().to_bytes())
+            .append_bytes(&self.access.pack().to_bytes())
+            .append_bytes(&self.send.pack().to_bytes())
+            .append_bytes(&self.receive.pack().to_bytes())
+            .append_bytes(&self.set_delegate.pack().to_bytes())
+            .append_bytes(&self.set_permissions.pack().to_bytes())
+            .append_bytes(&self.set_verification_key.pack().to_bytes())
+            .append_bytes(&self.set_zkapp_uri.pack().to_bytes())
+            .append_bytes(&self.edit_action_state.pack().to_bytes())
+            .append_bytes(&self.set_token_symbol.pack().to_bytes())
+            .append_bytes(&self.increment_nonce.pack().to_bytes())
+            .append_bytes(&self.set_voting_for.pack().to_bytes())
+            .append_bytes(&self.set_timing.pack().to_bytes())
     }
 }
 
 impl Packable for Preconditions {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new()
-            .append_bytes(&self.network.to_roinput().to_bytes())
-            .append_bytes(&self.account.to_roinput().to_bytes())
+            .append_bytes(&self.network.pack().to_bytes())
+            .append_bytes(&self.account.pack().to_bytes())
             // valid_while: OptionalValue<RangeCondition<UInt32>> -> encode lower/upper or zeros
             .append_u32(if self.valid_while.is_some {
                 self.valid_while.value.lower
@@ -448,7 +448,7 @@ impl Packable for Preconditions {
 }
 
 impl Packable for Update {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
 
         for state in &self.app_state {
@@ -479,7 +479,7 @@ impl Packable for Update {
 
         // permissions
         if self.permissions.is_some {
-            roi = roi.append_bytes(&self.permissions.value.to_roinput().to_bytes());
+            roi = roi.append_bytes(&self.permissions.value.pack().to_bytes());
         } else {
             // default permissions -> zeros
             roi = roi.append_bool(false).append_bool(false).append_bool(false);
@@ -501,7 +501,7 @@ impl Packable for Update {
 
         // timing
         if self.timing.is_some {
-            roi = roi.append_bytes(&self.timing.value.to_roinput().to_bytes());
+            roi = roi.append_bytes(&self.timing.value.pack().to_bytes());
         } else {
             roi = roi
                 .append_u64(0)
@@ -523,37 +523,37 @@ impl Packable for Update {
 }
 
 impl Packable for AccountUpdateBody {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
-        roi = roi.append_bytes(&self.public_key.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.public_key.pack().to_bytes());
         roi = roi.append_field(self.token_id.0);
-        roi = roi.append_bytes(&self.update.to_roinput().to_bytes());
-        roi = roi.append_bytes(&self.balance_change.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.update.pack().to_bytes());
+        roi = roi.append_bytes(&self.balance_change.pack().to_bytes());
         roi = roi.append_bool(self.increment_nonce);
-        roi = roi.append_bytes(&self.events.to_roinput().to_bytes());
-        roi = roi.append_bytes(&self.actions.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.events.pack().to_bytes());
+        roi = roi.append_bytes(&self.actions.pack().to_bytes());
         roi = roi.append_field(self.call_data.0);
         roi = roi.append_u32(self.call_depth);
-        roi = roi.append_bytes(&self.preconditions.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.preconditions.pack().to_bytes());
         roi = roi.append_bool(self.use_full_commitment);
         roi = roi.append_bool(self.implicit_account_creation_fee);
-        roi = roi.append_bytes(&self.may_use_token.to_roinput().to_bytes());
-        roi = roi.append_bytes(&self.authorization_kind.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.may_use_token.pack().to_bytes());
+        roi = roi.append_bytes(&self.authorization_kind.pack().to_bytes());
         roi
     }
 }
 
 impl Packable for AccountUpdate {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         // AccountUpdate only uses the body for inputs
-        self.body.to_roinput()
+        self.body.pack()
     }
 }
 
 impl Packable for FeePayerBody {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
-        roi = roi.append_bytes(&self.public_key.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.public_key.pack().to_bytes());
         roi = roi.append_u64(self.fee);
         match self.valid_until {
             Some(v) => roi = roi.append_u32(v),
@@ -565,19 +565,19 @@ impl Packable for FeePayerBody {
 }
 
 impl Packable for FeePayer {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
-        roi = roi.append_bytes(&self.body.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.body.pack().to_bytes());
         roi.append_bytes(self.authorization.as_bytes())
     }
 }
 
 impl Packable for ZKAppCommand {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
-        roi = roi.append_bytes(&self.fee_payer.to_roinput().to_bytes());
+        roi = roi.append_bytes(&self.fee_payer.pack().to_bytes());
         for au in &self.account_updates {
-            roi = roi.append_bytes(&au.to_roinput().to_bytes());
+            roi = roi.append_bytes(&au.pack().to_bytes());
         }
         roi = roi.append_bytes(self.memo.as_bytes());
         roi
@@ -585,7 +585,7 @@ impl Packable for ZKAppCommand {
 }
 
 impl Packable for TokenSymbolData {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         assert!(self.symbol.len() <= 6);
         ROInput::new()
             .append_bytes(self.symbol.as_bytes())
@@ -594,7 +594,7 @@ impl Packable for TokenSymbolData {
 }
 
 impl Packable for ZkappUriData {
-    fn to_roinput(&self) -> ROInput {
+    fn pack(&self) -> ROInput {
         ROInput::new()
             .append_bytes(self.data.as_bytes())
             .append_field(self.hash.0)
@@ -649,7 +649,7 @@ mod test {
         let pk_bytes = hex::decode(pub_key_hex).expect("Invalid hex in public key");
 
         let pk = CompressedPubKey::from_bytes(&pk_bytes).expect("Invalid public key bytes");
-        let roi = super::PublicKey(pk).to_roinput();
+        let roi = super::PublicKey(pk).pack();
 
         let expected_roi = build_roi(vec![
             ROValue::Field(
@@ -669,7 +669,7 @@ mod test {
             signature_necessary: false,
             signature_sufficient: true,
         };
-        let roi = auth.to_roinput();
+        let roi = auth.pack();
         let expected_roi = build_roi(vec![
             ROValue::Bool(false),
             ROValue::Bool(false),
@@ -686,7 +686,7 @@ mod test {
             magnitude: 1000000000,
             sgn: 1,
         };
-        let roi = balance_change.to_roinput();
+        let roi = balance_change.pack();
 
         let expected_roi = build_roi(vec![ROValue::U64(1000000000), ROValue::Bool(true)]);
 
@@ -701,7 +701,7 @@ mod test {
             magnitude: 500000000,
             sgn: -1,
         };
-        let roi = balance_change.to_roinput();
+        let roi = balance_change.pack();
 
         let expected_roi = build_roi(vec![ROValue::U64(500000000), ROValue::Bool(false)]);
 
@@ -715,7 +715,7 @@ mod test {
             parents_own_token: false,
             inherit_from_parent: true,
         };
-        let roi = may_use_token.to_roinput();
+        let roi = may_use_token.pack();
         let expected_roi = build_roi(vec![ROValue::Bool(false), ROValue::Bool(true)]);
 
         assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
@@ -736,7 +736,7 @@ mod test {
             ],
             hash: super::Field(Fp::from(999)),
         };
-        let roi = events.to_roinput();
+        let roi = events.pack();
         let expected_roi = build_roi(vec![ROValue::Field("999".to_string())]);
 
         assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
@@ -750,7 +750,7 @@ mod test {
             data: vec![vec![super::Field(Fp::from(42)), super::Field(Fp::from(43))]],
             hash: super::Field(Fp::from(888)),
         };
-        let roi = actions.to_roinput();
+        let roi = actions.pack();
         let expected_roi = build_roi(vec![ROValue::Field("888".to_string())]);
 
         assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
@@ -764,7 +764,7 @@ mod test {
             symbol: "MINA".to_string(),
             field: super::Field(Fp::from(1095649613u64)),
         };
-        let roi = token_symbol.to_roinput();
+        let roi = token_symbol.pack();
 
         // According to spec: packed field only, NOT bytes + field
         let expected_roi = build_roi(vec![
@@ -783,7 +783,7 @@ mod test {
             data: "https://minaprotocol.com".to_string(),
             hash: super::Field(Fp::from(12345)),
         };
-        let roi = zkapp_uri.to_roinput();
+        let roi = zkapp_uri.pack();
 
         // According to spec: hash field only, NOT data bytes + hash
         let expected_roi = build_roi(vec![
