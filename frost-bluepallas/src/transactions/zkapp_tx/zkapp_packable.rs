@@ -3,7 +3,7 @@ use crate::transactions::zkapp_tx::AccountUpdate;
 use crate::transactions::zkapp_tx::*;
 use mina_hasher::ROInput;
 
-trait Packable {
+pub trait Packable {
     fn pack(&self) -> ROInput;
 }
 
