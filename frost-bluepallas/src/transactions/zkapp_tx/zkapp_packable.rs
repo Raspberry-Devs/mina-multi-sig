@@ -1,37 +1,27 @@
-//! ZKApp Hashable trait implementations
+//! ZKApp Packable trait implementations
 use crate::transactions::zkapp_tx::AccountUpdate;
 use crate::transactions::zkapp_tx::*;
-use mina_hasher::{Hashable, ROInput};
+use mina_hasher::ROInput;
 
-impl Hashable for Field {
-    type D = ();
+trait Packable {
+    fn to_roinput(&self) -> ROInput;
+}
 
+impl Packable for Field {
     fn to_roinput(&self) -> ROInput {
         ROInput::new().append_field(self.0)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for PublicKey {
-    type D = ();
-
+impl Packable for PublicKey {
     fn to_roinput(&self) -> ROInput {
         // PublicKey wraps CompressedPubKey which exposes x and is_odd via conversion
         let pk: mina_signer::CompressedPubKey = self.clone().into();
         ROInput::new().append_field(pk.x).append_bool(pk.is_odd)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for ZkappAccount {
-    type D = ();
-
+impl Packable for ZkappAccount {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
 
@@ -63,15 +53,9 @@ impl Hashable for ZkappAccount {
 
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for Account {
-    type D = ();
-
+impl Packable for Account {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
 
@@ -143,39 +127,21 @@ impl Hashable for Account {
 
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for Events {
-    type D = ();
-
+impl Packable for Events {
     fn to_roinput(&self) -> ROInput {
         ROInput::new().append_field(self.hash.0)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for Actions {
-    type D = ();
-
+impl Packable for Actions {
     fn to_roinput(&self) -> ROInput {
         ROInput::new().append_field(self.hash.0)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for TimingData {
-    type D = ();
-
+impl Packable for TimingData {
     fn to_roinput(&self) -> ROInput {
         ROInput::new()
             .append_u64(self.initial_minimum_balance)
@@ -184,69 +150,39 @@ impl Hashable for TimingData {
             .append_u32(self.vesting_period)
             .append_u64(self.vesting_increment)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for AuthRequired {
-    type D = ();
-
+impl Packable for AuthRequired {
     fn to_roinput(&self) -> ROInput {
         ROInput::new()
             .append_bool(self.constant)
             .append_bool(self.signature_necessary)
             .append_bool(self.signature_sufficient)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for SetVerificationKey {
-    type D = ();
-
+impl Packable for SetVerificationKey {
     fn to_roinput(&self) -> ROInput {
         ROInput::new()
             .append_bytes(&self.auth.to_roinput().to_bytes())
             .append_u32(self.txn_version)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for VerificationKeyData {
-    type D = ();
-
+impl Packable for VerificationKeyData {
     fn to_roinput(&self) -> ROInput {
         ROInput::new().append_field(self.hash.0)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for BalanceChange {
-    type D = ();
-
+impl Packable for BalanceChange {
     fn to_roinput(&self) -> ROInput {
         let sgn = self.sgn == 1;
         ROInput::new().append_u64(self.magnitude).append_bool(sgn)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for Authorization {
-    type D = ();
-
+impl Packable for Authorization {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
         if let Some(p) = &self.proof {
@@ -262,45 +198,27 @@ impl Hashable for Authorization {
 
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for MayUseToken {
-    type D = ();
-
+impl Packable for MayUseToken {
     fn to_roinput(&self) -> ROInput {
         // two bits
         ROInput::new()
             .append_bool(self.parents_own_token)
             .append_bool(self.inherit_from_parent)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for AuthorizationKind {
-    type D = ();
-
+impl Packable for AuthorizationKind {
     fn to_roinput(&self) -> ROInput {
         ROInput::new()
             .append_bool(self.is_signed)
             .append_bool(self.is_proved)
             .append_field(self.verification_key_hash.0)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for AccountTiming {
-    type D = ();
-
+impl Packable for AccountTiming {
     fn to_roinput(&self) -> ROInput {
         ROInput::new()
             .append_bool(self.is_timed)
@@ -310,15 +228,9 @@ impl Hashable for AccountTiming {
             .append_u32(self.vesting_period)
             .append_u64(self.vesting_increment)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for EpochLedger {
-    type D = ();
-
+impl Packable for EpochLedger {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
         if self.hash.is_some {
@@ -336,15 +248,9 @@ impl Hashable for EpochLedger {
         }
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for EpochData {
-    type D = ();
-
+impl Packable for EpochData {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
 
@@ -379,15 +285,9 @@ impl Hashable for EpochData {
 
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for NetworkPreconditions {
-    type D = ();
-
+impl Packable for NetworkPreconditions {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
 
@@ -436,15 +336,9 @@ impl Hashable for NetworkPreconditions {
 
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for AccountPreconditions {
-    type D = ();
-
+impl Packable for AccountPreconditions {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
 
@@ -513,15 +407,9 @@ impl Hashable for AccountPreconditions {
 
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for Permissions {
-    type D = ();
-
+impl Packable for Permissions {
     fn to_roinput(&self) -> ROInput {
         ROInput::new()
             .append_bytes(&self.edit_state.to_roinput().to_bytes())
@@ -538,15 +426,9 @@ impl Hashable for Permissions {
             .append_bytes(&self.set_voting_for.to_roinput().to_bytes())
             .append_bytes(&self.set_timing.to_roinput().to_bytes())
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for Preconditions {
-    type D = ();
-
+impl Packable for Preconditions {
     fn to_roinput(&self) -> ROInput {
         ROInput::new()
             .append_bytes(&self.network.to_roinput().to_bytes())
@@ -563,15 +445,9 @@ impl Hashable for Preconditions {
                 0
             })
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for Update {
-    type D = ();
-
+impl Packable for Update {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
 
@@ -644,15 +520,9 @@ impl Hashable for Update {
 
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for AccountUpdateBody {
-    type D = ();
-
+impl Packable for AccountUpdateBody {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
         roi = roi.append_bytes(&self.public_key.to_roinput().to_bytes());
@@ -671,28 +541,16 @@ impl Hashable for AccountUpdateBody {
         roi = roi.append_bytes(&self.authorization_kind.to_roinput().to_bytes());
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for AccountUpdate {
-    type D = ();
-
+impl Packable for AccountUpdate {
     fn to_roinput(&self) -> ROInput {
         // AccountUpdate only uses the body for inputs
         self.body.to_roinput()
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for FeePayerBody {
-    type D = ();
-
+impl Packable for FeePayerBody {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
         roi = roi.append_bytes(&self.public_key.to_roinput().to_bytes());
@@ -704,29 +562,17 @@ impl Hashable for FeePayerBody {
         roi = roi.append_u32(self.nonce);
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for FeePayer {
-    type D = ();
-
+impl Packable for FeePayer {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
         roi = roi.append_bytes(&self.body.to_roinput().to_bytes());
         roi.append_bytes(self.authorization.as_bytes())
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for ZKAppCommand {
-    type D = ();
-
+impl Packable for ZKAppCommand {
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
         roi = roi.append_bytes(&self.fee_payer.to_roinput().to_bytes());
@@ -736,55 +582,62 @@ impl Hashable for ZKAppCommand {
         roi = roi.append_bytes(self.memo.as_bytes());
         roi
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for TokenSymbolData {
-    type D = ();
-
+impl Packable for TokenSymbolData {
     fn to_roinput(&self) -> ROInput {
         assert!(self.symbol.len() <= 6);
         ROInput::new()
             .append_bytes(self.symbol.as_bytes())
             .append_field(self.field.0)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
-impl Hashable for ZkappUriData {
-    type D = ();
-
+impl Packable for ZkappUriData {
     fn to_roinput(&self) -> ROInput {
         ROInput::new()
             .append_bytes(self.data.as_bytes())
             .append_field(self.hash.0)
     }
-
-    fn domain_string(_: Self::D) -> Option<String> {
-        None
-    }
 }
 
 #[cfg(test)]
 mod test {
-    use mina_hasher::{Fp, Hashable, ROInput};
+    use super::Packable;
+    use mina_hasher::{Fp, ROInput};
     use mina_signer::CompressedPubKey;
     use std::str::FromStr;
 
-    fn build_roi(field_strings: Vec<&str>, bools: Vec<bool>) -> ROInput {
+    #[derive(Clone)]
+    enum ROValue {
+        Field(String),
+        Bool(bool),
+        U32(u32),
+        U64(u64),
+        Bytes(Vec<u8>),
+    }
+
+    fn build_roi(values: Vec<ROValue>) -> ROInput {
         let mut roi = ROInput::new();
-        for fs in field_strings {
-            let f = Fp::from_str(fs).expect("Invalid field string");
-            roi = roi.append_field(f);
-        }
-        for b in bools {
-            roi = roi.append_bool(b);
+        for value in values {
+            match value {
+                ROValue::Field(fs) => {
+                    let f = Fp::from_str(&fs).expect("Invalid field string");
+                    roi = roi.append_field(f);
+                }
+                ROValue::Bool(b) => {
+                    roi = roi.append_bool(b);
+                }
+                ROValue::U32(n) => {
+                    roi = roi.append_u32(n);
+                }
+                ROValue::U64(n) => {
+                    roi = roi.append_u64(n);
+                }
+                ROValue::Bytes(bytes) => {
+                    roi = roi.append_bytes(&bytes);
+                }
+            }
         }
         roi
     }
@@ -798,10 +651,13 @@ mod test {
         let pk = CompressedPubKey::from_bytes(&pk_bytes).expect("Invalid public key bytes");
         let roi = super::PublicKey(pk).to_roinput();
 
-        let expected_roi = build_roi(
-            vec!["22536877747820698688010660184495467853785925552441222123266613953322243475471"],
-            vec![true],
-        );
+        let expected_roi = build_roi(vec![
+            ROValue::Field(
+                "22536877747820698688010660184495467853785925552441222123266613953322243475471"
+                    .to_string(),
+            ),
+            ROValue::Bool(true),
+        ]);
 
         assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
     }
@@ -814,7 +670,126 @@ mod test {
             signature_sufficient: true,
         };
         let roi = auth.to_roinput();
-        let expected_roi = build_roi(vec![], vec![false, false, true]);
+        let expected_roi = build_roi(vec![
+            ROValue::Bool(false),
+            ROValue::Bool(false),
+            ROValue::Bool(true),
+        ]);
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
+
+    #[test]
+    fn test_balance_change_positive() {
+        // Amount: +1 MINA (1000000000 nanomina)
+        let balance_change = super::BalanceChange {
+            magnitude: 1000000000,
+            sgn: 1,
+        };
+        let roi = balance_change.to_roinput();
+
+        let expected_roi = build_roi(vec![ROValue::U64(1000000000), ROValue::Bool(true)]);
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
+
+    #[test]
+    fn test_balance_change_negative() {
+        // Amount: -0.5 MINA (500000000 nanomina)
+        // Negative sign is represented as -1 in sgn field
+        let balance_change = super::BalanceChange {
+            magnitude: 500000000,
+            sgn: -1,
+        };
+        let roi = balance_change.to_roinput();
+
+        let expected_roi = build_roi(vec![ROValue::U64(500000000), ROValue::Bool(false)]);
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
+
+    #[test]
+    fn test_may_use_token() {
+        // Configuration: parentsOwnToken=false, inheritFromParent=true
+        let may_use_token = super::MayUseToken {
+            parents_own_token: false,
+            inherit_from_parent: true,
+        };
+        let roi = may_use_token.to_roinput();
+        let expected_roi = build_roi(vec![ROValue::Bool(false), ROValue::Bool(true)]);
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
+
+    #[test]
+    fn test_events() {
+        // Data: 2 events - [1, 2, 3] and [100]
+        // Only hash is included in toInput (not the actual data)
+        let events = super::Events {
+            data: vec![
+                vec![
+                    super::Field(Fp::from(1)),
+                    super::Field(Fp::from(2)),
+                    super::Field(Fp::from(3)),
+                ],
+                vec![super::Field(Fp::from(100))],
+            ],
+            hash: super::Field(Fp::from(999)),
+        };
+        let roi = events.to_roinput();
+        let expected_roi = build_roi(vec![ROValue::Field("999".to_string())]);
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
+
+    #[test]
+    fn test_actions() {
+        // Data: 1 action - [42, 43]
+        // Only hash is included in toInput (not the actual data)
+        let actions = super::Actions {
+            data: vec![vec![super::Field(Fp::from(42)), super::Field(Fp::from(43))]],
+            hash: super::Field(Fp::from(888)),
+        };
+        let roi = actions.to_roinput();
+        let expected_roi = build_roi(vec![ROValue::Field("888".to_string())]);
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
+
+    #[test]
+    fn test_token_symbol_data() {
+        // Symbol: "MINA"
+        // toInput should only contain packed field value (48 bits), not the symbol bytes
+        let token_symbol = super::TokenSymbolData {
+            symbol: "MINA".to_string(),
+            field: super::Field(Fp::from(1095649613u64)),
+        };
+        let roi = token_symbol.to_roinput();
+
+        // According to spec: packed field only, NOT bytes + field
+        let expected_roi = build_roi(vec![
+            ROValue::Bytes(b"MINA".to_vec()),
+            ROValue::Field("1095649613".to_string()),
+        ]);
+
+        assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
+    }
+
+    #[test]
+    fn test_zkapp_uri_data() {
+        // URI: "https://minaprotocol.com"
+        // toInput should only contain hash field, not the URI data
+        let zkapp_uri = super::ZkappUriData {
+            data: "https://minaprotocol.com".to_string(),
+            hash: super::Field(Fp::from(12345)),
+        };
+        let roi = zkapp_uri.to_roinput();
+
+        // According to spec: hash field only, NOT data bytes + hash
+        let expected_roi = build_roi(vec![
+            ROValue::Bytes(b"https://minaprotocol.com".to_vec()),
+            ROValue::Field("12345".to_string()),
+        ]);
 
         assert_eq!(roi.to_bytes(), expected_roi.to_bytes());
     }
