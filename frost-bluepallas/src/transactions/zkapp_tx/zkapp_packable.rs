@@ -609,6 +609,7 @@ mod test {
     use std::str::FromStr;
 
     #[derive(Clone)]
+    #[allow(dead_code)]
     enum ROValue {
         Field(String),
         Bool(bool),
