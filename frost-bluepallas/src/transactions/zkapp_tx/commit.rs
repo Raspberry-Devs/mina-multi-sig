@@ -102,6 +102,11 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     true
 }
 
+fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
+    let memo_roi = ROInput::new().append_bytes(tx.memo.as_bytes()).to_fields();
+    hash_with_prefix(constants::ZK_APP_MEMO, &memo_roi)
+}
+
 /// Produces a commitment for a ZkApp command by hashing its structure and contents.
 /// Validates call depths and authorization kinds before computing the commitment.
 /// Returns two Fp elements, representing the accountUpdates commitment and the overall commitment respectively.
@@ -118,8 +123,7 @@ pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp,
     // Compute the account-updates commitment using the call forest hashing routine.
     let account_updates_commitment = call_forest_hash(&forest, &network)?;
 
-    let memo_roi = ROInput::new().append_bytes(tx.memo.as_bytes()).to_fields();
-    let memo_hash = hash_with_prefix(constants::ZK_APP_MEMO, &memo_roi)?;
+    let memo_hash = memo_hash(tx)?;
 
     let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone(), &network)?;
 
@@ -376,6 +380,30 @@ mod tests {
     }
 
     #[test]
+    fn test_memo_hash() {
+        let test_vectors = get_zkapp_test_vectors();
+
+        if test_vectors.is_empty() {
+            println!("Warning: No test vectors provided for memo_hash");
+            return;
+        }
+
+        for test_vector in test_vectors {
+            let computed_hash = memo_hash(&test_vector.zkapp_command).unwrap_or_else(|_| {
+                panic!("Failed to compute memo hash for test: {}", test_vector.name)
+            });
+
+            let expected_hash = parse_expected_hash(test_vector.expected_memo_hash);
+
+            assert_eq!(
+                computed_hash, expected_hash,
+                "Memo hash mismatch for test: {}",
+                test_vector.name
+            );
+        }
+    }
+
+    #[test]
     fn test_call_forest_hash() {
         let test_vectors = get_zkapp_test_vectors();
 
@@ -394,7 +422,8 @@ mod tests {
                     )
                 });
 
-            let expected_hash = parse_expected_hash(test_vector.expected_call_forest_hash);
+            let expected_hash =
+                parse_expected_hash(test_vector.expected_account_updates_commitment);
 
             assert_eq!(
                 computed_hash, expected_hash,
