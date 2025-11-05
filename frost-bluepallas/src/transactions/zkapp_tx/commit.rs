@@ -271,31 +271,11 @@ fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
 
     #[cfg(test)]
     use super::super::test_vectors::{
         get_hash_with_prefix_test_vectors, get_zkapp_test_vectors, parse_expected_hash,
     };
-
-    #[test]
-    fn test_hash_with_prefix() {
-        let prefix = "MinaAcctUpdateNode";
-        let strs = [
-            "23487734643675003113914430489774334948844391842009122040704261138931555665056",
-            "0",
-        ];
-        let elems = strs
-            .iter()
-            .map(|f| Fp::from_str(f).unwrap())
-            .collect::<Vec<Fp>>();
-
-        let hash = hash_with_prefix(prefix, &elems).unwrap();
-        assert_eq!(
-            hash.to_string(),
-            "20456728518925904340727370305821489989002971473792411299271630913563245218671"
-        );
-    }
 
     #[test]
     fn test_hash_with_prefix_vectors() {

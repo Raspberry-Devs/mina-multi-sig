@@ -7,7 +7,7 @@ use mina_hasher::Fp;
 use mina_signer::NetworkId;
 use std::str::FromStr;
 
-use super::{FeePayer, ZKAppCommand};
+use super::ZKAppCommand;
 
 /// Comprehensive test vector containing all data needed for commitment function tests
 #[derive(Clone)]
@@ -63,16 +63,20 @@ pub fn get_zkapp_test_vectors() -> &'static [ZkAppTestVector] {
 
 /// Returns additional test vectors for hash_with_prefix function
 /// TODO: Populate with actual test data
-pub fn get_hash_with_prefix_test_vectors() -> &'static [HashWithPrefixTestVector] {
-    &[
-        // Example structure - populate with actual test data
-        // HashWithPrefixTestVector {
-        //     name: "empty_data",
-        //     prefix: "TestPrefix",
-        //     input_fields: vec![],
-        //     expected_hash: "0",
-        // },
-    ]
+pub fn get_hash_with_prefix_test_vectors() -> Vec<HashWithPrefixTestVector> {
+    vec![HashWithPrefixTestVector {
+        name: "mina_acct_update_node",
+        prefix: "MinaAcctUpdateNode",
+        input_fields: vec![
+            Fp::from_str(
+                "23487734643675003113914430489774334948844391842009122040704261138931555665056",
+            )
+            .unwrap(),
+            Fp::from_str("0").unwrap(),
+        ],
+        expected_hash:
+            "20456728518925904340727370305821489989002971473792411299271630913563245218671",
+    }]
 }
 
 /// Helper function to parse expected hash strings into Fp elements
