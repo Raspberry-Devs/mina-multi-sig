@@ -1,0 +1,993 @@
+{
+  feePayer: {
+    body: {
+      publicKey: "B62qq4NCZH2siboFPtj6acz7cqyuULxHgN9rZAGFvDCi26k9QV8eXNL",
+      fee: "0",
+      validUntil: "0",
+      nonce: "14440",
+    },
+    authorization: "7mWxjLYgbJUkZNcGouvhVj5tJ8yu9hoexb9ntvPK8t5LHqzmrL6QJjjKtf5SgmxB4QWkDw7qoMMbbNGtHVpsbJHPyTy2EzRQ",
+  },
+  accountUpdates: [
+    {
+      body: {
+        publicKey: "B62qrRfsR1JQhuTPjzLfUw1WF7hntQSq87WxkMNSobmab7PKh3iQkQc",
+        tokenId: "wpekjN7FAjoBayBHmU1F6zNkAL6sekUuomeD8ncZNXYJ4XHsDM",
+        update: {
+          appState: [
+            null,
+            null,
+            "1",
+            null,
+            null,
+            "22026831369832954153737611970341244439868125363813122131441224254254910234017",
+            null,
+            "1",
+          ],
+          delegate: null,
+          verificationKey: null,
+          permissions: {
+            editState: "Signature",
+            access: "Impossible",
+            send: "Either",
+            receive: "Impossible",
+            setDelegate: "None",
+            setPermissions: "Signature",
+            setVerificationKey: {
+              auth: "Proof",
+              txnVersion: "5516",
+            },
+            setZkappUri: "Proof",
+            editActionState: "Proof",
+            setTokenSymbol: "None",
+            incrementNonce: "Impossible",
+            setVotingFor: "Impossible",
+            setTiming: "Impossible",
+          },
+          zkappUri: null,
+          tokenSymbol: null,
+          timing: {
+            initialMinimumBalance: "1",
+            cliffTime: "33394",
+            cliffAmount: "15471",
+            vestingPeriod: "4294967295",
+            vestingIncrement: "511271190540",
+          },
+          votingFor: "3NLmnffaFCyKRBLvXtWvjwoSZtiR4QYecxkkyMRqikWxGqVv1FF7",
+        },
+        balanceChange: {
+          magnitude: "0",
+          sgn: "Negative",
+        },
+        incrementNonce: true,
+        events: [
+          [
+            "3301238257578367786688712103035633655",
+          ],
+          [
+            "15216510257962135920275551543957813408159337367915783423301375765145724405170",
+            "66645483829960185",
+            "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+          ],
+        ],
+        actions: [
+          [
+            "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+            "13830963565397465658640914092409043281987306234863418961312719454794185517620",
+          ],
+        ],
+        callData: "1523604802809090",
+        callDepth: 0,
+        preconditions: {
+          network: {
+            snarkedLedgerHash: null,
+            blockchainLength: null,
+            minWindowDensity: {
+              lower: "597",
+              upper: "0",
+            },
+            totalCurrency: null,
+            globalSlotSinceGenesis: null,
+            stakingEpochData: {
+              ledger: {
+                hash: "19483323068310525516717683459657623276194645597739865750321350639577327710228",
+                totalCurrency: {
+                  lower: "18446744073709551615",
+                  upper: "1",
+                },
+              },
+              seed: null,
+              startCheckpoint: "865627196651",
+              lockCheckpoint: "16561020961037416384288658683361149559355237465563623637376369523776446390939",
+              epochLength: null,
+            },
+            nextEpochData: {
+              ledger: {
+                hash: null,
+                totalCurrency: {
+                  lower: "3161386403838220586",
+                  upper: "7",
+                },
+              },
+              seed: "0",
+              startCheckpoint: "1",
+              lockCheckpoint: "167455750708583630504227420",
+              epochLength: null,
+            },
+          },
+          account: {
+            balance: null,
+            nonce: {
+              lower: "4294967295",
+              upper: "812705",
+            },
+            receiptChainHash: "20093457472467965285957376064656736627627089904364338912313553049400122776306",
+            delegate: null,
+            state: [
+              "24760614964532952451144084270245070537274210996135431872466906298619451151114",
+              null,
+              "28619653215775438791512627395176556530643019061502124700493088659108798697982",
+              "1",
+              "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+              "27001462658935082333392655286330881048270017507577304051494974416024703347034",
+              "0",
+              null,
+            ],
+            actionState: "25079927036070901246064867767436987657692091363973573142121686150614948079097",
+            provedState: null,
+            isNew: false,
+          },
+          validWhile: null,
+        },
+        useFullCommitment: false,
+        implicitAccountCreationFee: false,
+        mayUseToken: {
+          parentsOwnToken: true,
+          inheritFromParent: false,
+        },
+        authorizationKind: {
+          isSigned: false,
+          isProved: true,
+          verificationKeyHash: "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+        },
+      },
+      authorization: {
+        proof: null,
+        signature: null,
+      },
+    },
+    {
+      body: {
+        publicKey: "B62qnQnd5eskWPSARt2YPfg5n3FEZMtf1xzz5ZX3Y4zAWahjyP9Xzkm",
+        tokenId: "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+        update: {
+          appState: [
+            null,
+            null,
+            null,
+            null,
+            null,
+            "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+            "1042455263212066954316135558936",
+            "19848073",
+          ],
+          delegate: "B62qmDC42QjqdHch36LfCaYf54BPvgHtsDZKRKN9skeZMS5CEbNiatk",
+          verificationKey: null,
+          permissions: null,
+          zkappUri: null,
+          tokenSymbol: "³t",
+          timing: {
+            initialMinimumBalance: "1",
+            cliffTime: "566",
+            cliffAmount: "0",
+            vestingPeriod: "0",
+            vestingIncrement: "117096718209304131",
+          },
+          votingFor: "3NLJMHuP8j1Riuw4UmkTm73igAPwB49dQ7gCH63WKWHsBdB8dtCA",
+        },
+        balanceChange: {
+          magnitude: "90512307498715496",
+          sgn: "Negative",
+        },
+        incrementNonce: true,
+        events: [
+        ],
+        actions: [
+          [
+            "3705192212466683449368204265740293307876013973485051691184604938253344489642",
+            "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+            "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+            "19087763264793489769785385419863505176941296478888527865130369317678918617200",
+            "921095295063572708403175",
+          ],
+        ],
+        callData: "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+        callDepth: 0,
+        preconditions: {
+          network: {
+            snarkedLedgerHash: null,
+            blockchainLength: {
+              lower: "0",
+              upper: "279764",
+            },
+            minWindowDensity: null,
+            totalCurrency: {
+              lower: "52590806508",
+              upper: "34060898627649188",
+            },
+            globalSlotSinceGenesis: null,
+            stakingEpochData: {
+              ledger: {
+                hash: null,
+                totalCurrency: {
+                  lower: "28227",
+                  upper: "883",
+                },
+              },
+              seed: null,
+              startCheckpoint: "2825445788796665362001888968889410748227869566922001878876430464639834795996",
+              lockCheckpoint: null,
+              epochLength: {
+                lower: "39",
+                upper: "7389",
+              },
+            },
+            nextEpochData: {
+              ledger: {
+                hash: null,
+                totalCurrency: null,
+              },
+              seed: "291951363258746800521592",
+              startCheckpoint: "27097426921841235475915828190561706782719634733775923521820407752992000450368",
+              lockCheckpoint: "94453716439919024715574214318891883448929636105233743916484057526553302855",
+              epochLength: {
+                lower: "3216",
+                upper: "969950059",
+              },
+            },
+          },
+          account: {
+            balance: {
+              lower: "2100",
+              upper: "651384926222364",
+            },
+            nonce: null,
+            receiptChainHash: null,
+            delegate: null,
+            state: [
+              null,
+              "27867280189830096928649753592265238510052021355932590900792574644309736546672",
+              null,
+              "0",
+              null,
+              null,
+              null,
+              null,
+            ],
+            actionState: "25079927036070901246064867767436987657692091363973573142121686150614948079097",
+            provedState: null,
+            isNew: null,
+          },
+          validWhile: {
+            lower: "1043",
+            upper: "927",
+          },
+        },
+        useFullCommitment: false,
+        implicitAccountCreationFee: false,
+        mayUseToken: {
+          parentsOwnToken: false,
+          inheritFromParent: false,
+        },
+        authorizationKind: {
+          isSigned: true,
+          isProved: false,
+          verificationKeyHash: "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+        },
+      },
+      authorization: {
+        proof: null,
+        signature: null,
+      },
+    },
+    {
+      body: {
+        publicKey: "B62qmwhiXeyySsr7xWHhgob1FojqFCXExemvPaBzefihJq7zF4onswW",
+        tokenId: "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+        update: {
+          appState: [
+            null,
+            "28643886398241429206974909384179051783497825102418223685790672254864597476716",
+            null,
+            "1150737679081066842964613151823",
+            null,
+            "0",
+            null,
+            null,
+          ],
+          delegate: "B62qobxVLbLLqpdd41ZkBtQZ4C8rwuGxqkLrwMdS3jhoEie7jVWeEe9",
+          verificationKey: null,
+          permissions: null,
+          zkappUri: "",
+          tokenSymbol: null,
+          timing: null,
+          votingFor: "3NLsUE3F9yUwchnA9eDLTixkSE22PQcBiWgrEHBfQvd4TPGrBGA3",
+        },
+        balanceChange: {
+          magnitude: "2",
+          sgn: "Negative",
+        },
+        incrementNonce: false,
+        events: [
+          [
+            "12931957376928697859",
+            "5849329341512681317823695155736997520327243059695247875299622451606490882452",
+          ],
+          [
+            "14816239472201483433804862228907274478773973663705041534715996154206776821281",
+            "11805595744089006183224499129972161453949700733977767001725427644218065520730",
+            "1",
+            "24282105584753328388446010820743372748995444582596069527693257761141101806290",
+            "28373509369208330455857688966487597390616475982565721300169662732715432093677",
+          ],
+        ],
+        actions: [
+          [
+            "16571046021669510874340605996719031661382259508768440674726166858726856476332",
+            "0",
+          ],
+          [
+            "24960222756119922797971232995193716868950338994361948285492726755734677427954",
+            "1981647075950203256186583143458938425584094178126450698900206068822894987467",
+            "0",
+          ],
+        ],
+        callData: "1",
+        callDepth: 0,
+        preconditions: {
+          network: {
+            snarkedLedgerHash: "1",
+            blockchainLength: null,
+            minWindowDensity: {
+              lower: "4294967295",
+              upper: "577",
+            },
+            totalCurrency: {
+              lower: "176633269",
+              upper: "51718",
+            },
+            globalSlotSinceGenesis: {
+              lower: "69543",
+              upper: "226",
+            },
+            stakingEpochData: {
+              ledger: {
+                hash: null,
+                totalCurrency: {
+                  lower: "11285887",
+                  upper: "0",
+                },
+              },
+              seed: "1",
+              startCheckpoint: null,
+              lockCheckpoint: null,
+              epochLength: null,
+            },
+            nextEpochData: {
+              ledger: {
+                hash: "0",
+                totalCurrency: null,
+              },
+              seed: "1",
+              startCheckpoint: null,
+              lockCheckpoint: null,
+              epochLength: null,
+            },
+          },
+          account: {
+            balance: {
+              lower: "0",
+              upper: "1",
+            },
+            nonce: null,
+            receiptChainHash: null,
+            delegate: "B62qkhSbtmPnafXL2Go9iyFwXm6dp8Lz79RMnTxY5QW9AG2XVKUFfu2",
+            state: [
+              null,
+              "11064851401160107",
+              null,
+              "15856709527818962643843835197811105072227375016250782768293595314177330135121",
+              null,
+              "1172946779036619743",
+              null,
+              null,
+            ],
+            actionState: null,
+            provedState: true,
+            isNew: null,
+          },
+          validWhile: null,
+        },
+        useFullCommitment: false,
+        implicitAccountCreationFee: true,
+        mayUseToken: {
+          parentsOwnToken: false,
+          inheritFromParent: true,
+        },
+        authorizationKind: {
+          isSigned: true,
+          isProved: false,
+          verificationKeyHash: "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+        },
+      },
+      authorization: {
+        proof: null,
+        signature: null,
+      },
+    },
+    {
+      body: {
+        publicKey: "B62qq4NCZH2siboFPtj6acz7cqyuULxHgN9rZAGFvDCi26k9QV8eXNL",
+        tokenId: "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+        update: {
+          appState: [
+            null,
+            "451570041939895252657184344363021952",
+            null,
+            null,
+            "1",
+            "0",
+            null,
+            "10378118918968422705467602175133176222241675977248766159536415002102309820120",
+          ],
+          delegate: null,
+          verificationKey: {
+            data: "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",
+            hash: "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+          },
+          permissions: {
+            editState: "Impossible",
+            access: "Either",
+            send: "None",
+            receive: "Proof",
+            setDelegate: "Signature",
+            setPermissions: "Proof",
+            setVerificationKey: {
+              auth: "Proof",
+              txnVersion: "0",
+            },
+            setZkappUri: "Impossible",
+            editActionState: "Proof",
+            setTokenSymbol: "Signature",
+            incrementNonce: "Either",
+            setVotingFor: "Impossible",
+            setTiming: "Either",
+          },
+          zkappUri: "oùÞ9Êãmzô¿1Ó¬)\t¶á&ÓâéOY\u000e¯À\u000eü",
+          tokenSymbol: null,
+          timing: {
+            initialMinimumBalance: "468",
+            cliffTime: "0",
+            cliffAmount: "4",
+            vestingPeriod: "25472475",
+            vestingIncrement: "30708098379397551",
+          },
+          votingFor: "3NL85QAC34ezQa6KSAxHW1izgFNdGF7v8u6kBcC26m721NQCphPu",
+        },
+        balanceChange: {
+          magnitude: "1",
+          sgn: "Positive",
+        },
+        incrementNonce: false,
+        events: [
+          [
+            "0",
+          ],
+        ],
+        actions: [
+        ],
+        callData: "22302029000286186028016719320877888255876699220532741299507011328987201514786",
+        callDepth: 1,
+        preconditions: {
+          network: {
+            snarkedLedgerHash: "63666211566158",
+            blockchainLength: {
+              lower: "1979960",
+              upper: "1712",
+            },
+            minWindowDensity: {
+              lower: "1",
+              upper: "1",
+            },
+            totalCurrency: null,
+            globalSlotSinceGenesis: {
+              lower: "0",
+              upper: "1",
+            },
+            stakingEpochData: {
+              ledger: {
+                hash: "25184502287165163862094720624267095048321446909488335209361342178003510175800",
+                totalCurrency: {
+                  lower: "39",
+                  upper: "1937575",
+                },
+              },
+              seed: "11372240081513675320754020694727128680755634373429898076733293034086739756848",
+              startCheckpoint: "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+              lockCheckpoint: null,
+              epochLength: null,
+            },
+            nextEpochData: {
+              ledger: {
+                hash: null,
+                totalCurrency: {
+                  lower: "15204460786162",
+                  upper: "1",
+                },
+              },
+              seed: "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+              startCheckpoint: null,
+              lockCheckpoint: null,
+              epochLength: {
+                lower: "404975140",
+                upper: "593",
+              },
+            },
+          },
+          account: {
+            balance: {
+              lower: "34105707275720",
+              upper: "1",
+            },
+            nonce: {
+              lower: "1263421",
+              upper: "1657157293",
+            },
+            receiptChainHash: null,
+            delegate: "B62qmQJDp9dMNnKQwHC6nok3RRRUiHUC4fetY9NkhpmjnBnaiWnJz5L",
+            state: [
+              "0",
+              "50",
+              "5674758732042993707116691122418959926680115872862576402928425311806157282493",
+              null,
+              null,
+              null,
+              "15572912111532360127966743233209450525149559056435965070776515328865264980934",
+              "5859864213767151970614484676246925331455226375514571335865110360970329376576",
+            ],
+            actionState: "25079927036070901246064867767436987657692091363973573142121686150614948079097",
+            provedState: false,
+            isNew: false,
+          },
+          validWhile: null,
+        },
+        useFullCommitment: false,
+        implicitAccountCreationFee: false,
+        mayUseToken: {
+          parentsOwnToken: false,
+          inheritFromParent: true,
+        },
+        authorizationKind: {
+          isSigned: true,
+          isProved: false,
+          verificationKeyHash: "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+        },
+      },
+      authorization: {
+        proof: null,
+        signature: null,
+      },
+    },
+    {
+      body: {
+        publicKey: "B62qq4NCZH2siboFPtj6acz7cqyuULxHgN9rZAGFvDCi26k9QV8eXNL",
+        tokenId: "xwXHFxMu76K7N1p8YYcqNXrmY8XreZ9rAfRkBAr7EktvHpAp22",
+        update: {
+          appState: [
+            "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+            "8316200588079222329238650589756141799950875720117455686378276924368922597126",
+            "19702631715094903123009251950082958271663223812458646012211590694249456188703",
+            "2051248757893648",
+            "102255001415264281357",
+            null,
+            null,
+            null,
+          ],
+          delegate: "B62qo8m5axfUwxKikGuyhDxgX2wEAtgyW2PXqyEvJKdCDmaqAkCgh6M",
+          verificationKey: null,
+          permissions: {
+            editState: "Signature",
+            access: "Impossible",
+            send: "Either",
+            receive: "Proof",
+            setDelegate: "Impossible",
+            setPermissions: "Either",
+            setVerificationKey: {
+              auth: "None",
+              txnVersion: "2",
+            },
+            setZkappUri: "Signature",
+            editActionState: "Either",
+            setTokenSymbol: "Proof",
+            incrementNonce: "Impossible",
+            setVotingFor: "Signature",
+            setTiming: "Either",
+          },
+          zkappUri: null,
+          tokenSymbol: "2",
+          timing: {
+            initialMinimumBalance: "1",
+            cliffTime: "969",
+            cliffAmount: "11110192699384127",
+            vestingPeriod: "0",
+            vestingIncrement: "3547107707",
+          },
+          votingFor: null,
+        },
+        balanceChange: {
+          magnitude: "3",
+          sgn: "Negative",
+        },
+        incrementNonce: false,
+        events: [
+        ],
+        actions: [
+        ],
+        callData: "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+        callDepth: 1,
+        preconditions: {
+          network: {
+            snarkedLedgerHash: null,
+            blockchainLength: null,
+            minWindowDensity: {
+              lower: "2",
+              upper: "108",
+            },
+            totalCurrency: null,
+            globalSlotSinceGenesis: {
+              lower: "20952",
+              upper: "0",
+            },
+            stakingEpochData: {
+              ledger: {
+                hash: "25078643088821286506724735898108690056423496020998611414212280219849830914797",
+                totalCurrency: {
+                  lower: "1014248",
+                  upper: "18446744073709551615",
+                },
+              },
+              seed: null,
+              startCheckpoint: null,
+              lockCheckpoint: "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+              epochLength: null,
+            },
+            nextEpochData: {
+              ledger: {
+                hash: null,
+                totalCurrency: {
+                  lower: "1599976510",
+                  upper: "1615060873966949",
+                },
+              },
+              seed: "25009831581590501146512593704076896292119921272978623576942798610420604342310",
+              startCheckpoint: "14865637632457513468025901764324452158679273293264234201172306332516709798495",
+              lockCheckpoint: "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+              epochLength: null,
+            },
+          },
+          account: {
+            balance: {
+              lower: "0",
+              upper: "878774388648175",
+            },
+            nonce: null,
+            receiptChainHash: "12800555570493796051164463178025887632013655099012684868640096898944196232700",
+            delegate: null,
+            state: [
+              null,
+              null,
+              null,
+              "1",
+              "20801334907186317317666001709879946162985539212826276788136719247577985672481",
+              null,
+              null,
+              "467765432011386082959658166",
+            ],
+            actionState: "27394125218298390538786068474571164040939721657578059637490483762555358823372",
+            provedState: true,
+            isNew: true,
+          },
+          validWhile: {
+            lower: "353131081",
+            upper: "0",
+          },
+        },
+        useFullCommitment: false,
+        implicitAccountCreationFee: true,
+        mayUseToken: {
+          parentsOwnToken: true,
+          inheritFromParent: false,
+        },
+        authorizationKind: {
+          isSigned: false,
+          isProved: false,
+          verificationKeyHash: "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+        },
+      },
+      authorization: {
+        proof: null,
+        signature: null,
+      },
+    },
+    {
+      body: {
+        publicKey: "B62qk4XQwDqiaeAB2TAig8mdJHBwrcg2eXBaEz7HGi6kDUUREZg5Wf8",
+        tokenId: "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+        update: {
+          appState: [
+            "13234088948489202818352537624182591183333887854663474032587368872047705927728",
+            null,
+            null,
+            "408667380170",
+            null,
+            null,
+            null,
+            "0",
+          ],
+          delegate: null,
+          verificationKey: null,
+          permissions: null,
+          zkappUri: null,
+          tokenSymbol: null,
+          timing: {
+            initialMinimumBalance: "3835837654",
+            cliffTime: "1649703",
+            cliffAmount: "32041401888829845",
+            vestingPeriod: "287327",
+            vestingIncrement: "20627",
+          },
+          votingFor: "3NK2tkzqqK5spR2sZ7tujjqPksL45M3UUrcA4WhCkeiPtnugyE2x",
+        },
+        balanceChange: {
+          magnitude: "0",
+          sgn: "Negative",
+        },
+        incrementNonce: true,
+        events: [
+        ],
+        actions: [
+        ],
+        callData: "1",
+        callDepth: 2,
+        preconditions: {
+          network: {
+            snarkedLedgerHash: null,
+            blockchainLength: null,
+            minWindowDensity: null,
+            totalCurrency: null,
+            globalSlotSinceGenesis: {
+              lower: "4",
+              upper: "64326527",
+            },
+            stakingEpochData: {
+              ledger: {
+                hash: "105421194403674826917214360762652",
+                totalCurrency: {
+                  lower: "1400993",
+                  upper: "18446744073709551615",
+                },
+              },
+              seed: "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+              startCheckpoint: "0",
+              lockCheckpoint: null,
+              epochLength: null,
+            },
+            nextEpochData: {
+              ledger: {
+                hash: null,
+                totalCurrency: null,
+              },
+              seed: null,
+              startCheckpoint: null,
+              lockCheckpoint: null,
+              epochLength: null,
+            },
+          },
+          account: {
+            balance: {
+              lower: "4273128662623768159",
+              upper: "39557",
+            },
+            nonce: {
+              lower: "164332",
+              upper: "16939",
+            },
+            receiptChainHash: "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+            delegate: null,
+            state: [
+              null,
+              "0",
+              "17016200266628853718115820331289599217658918393128975249470149956831464208861",
+              null,
+              null,
+              "4",
+              "1",
+              "0",
+            ],
+            actionState: null,
+            provedState: false,
+            isNew: true,
+          },
+          validWhile: {
+            lower: "3",
+            upper: "71",
+          },
+        },
+        useFullCommitment: true,
+        implicitAccountCreationFee: false,
+        mayUseToken: {
+          parentsOwnToken: false,
+          inheritFromParent: false,
+        },
+        authorizationKind: {
+          isSigned: true,
+          isProved: false,
+          verificationKeyHash: "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+        },
+      },
+      authorization: {
+        proof: null,
+        signature: null,
+      },
+    },
+    {
+      body: {
+        publicKey: "B62qmWKg2WEfaDGV3yEUCGZW915moQGESg7nupjLJBSs9VVnLNRpcpi",
+        tokenId: "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+        update: {
+          appState: [
+            null,
+            null,
+            "4957609544206208293117192850871337616872514062647969128655770159563310185998",
+            null,
+            "2745722697544501836971833848952989386120873299180020979381308376620508871781",
+            null,
+            null,
+            null,
+          ],
+          delegate: null,
+          verificationKey: null,
+          permissions: {
+            editState: "Either",
+            access: "None",
+            send: "Impossible",
+            receive: "Proof",
+            setDelegate: "Signature",
+            setPermissions: "Either",
+            setVerificationKey: {
+              auth: "None",
+              txnVersion: "104978",
+            },
+            setZkappUri: "Signature",
+            editActionState: "Proof",
+            setTokenSymbol: "Either",
+            incrementNonce: "Either",
+            setVotingFor: "None",
+            setTiming: "None",
+          },
+          zkappUri: null,
+          tokenSymbol: "Py",
+          timing: {
+            initialMinimumBalance: "361312014999738",
+            cliffTime: "1526784",
+            cliffAmount: "3687448543611702",
+            vestingPeriod: "921",
+            vestingIncrement: "1641",
+          },
+          votingFor: null,
+        },
+        balanceChange: {
+          magnitude: "34821149",
+          sgn: "Positive",
+        },
+        incrementNonce: true,
+        events: [
+          [
+            "340282366920938463463374607431768211455",
+            "20839735745563651590832045662090728323480189731243673177247455021014564522923",
+          ],
+        ],
+        actions: [
+        ],
+        callData: "1",
+        callDepth: 1,
+        preconditions: {
+          network: {
+            snarkedLedgerHash: null,
+            blockchainLength: null,
+            minWindowDensity: {
+              lower: "376844259",
+              upper: "0",
+            },
+            totalCurrency: {
+              lower: "63716020847813108",
+              upper: "24993604069",
+            },
+            globalSlotSinceGenesis: {
+              lower: "131310344",
+              upper: "1",
+            },
+            stakingEpochData: {
+              ledger: {
+                hash: null,
+                totalCurrency: {
+                  lower: "0",
+                  upper: "31852084",
+                },
+              },
+              seed: "22071229747643899929480164116718741255744422667289538799684035351472447523472",
+              startCheckpoint: "1111094845081745512595054203125177614011410980477489992614217751196552884256",
+              lockCheckpoint: null,
+              epochLength: null,
+            },
+            nextEpochData: {
+              ledger: {
+                hash: "19661131184846407165877288741452503147228103328030428179641786265939781700014",
+                totalCurrency: null,
+              },
+              seed: null,
+              startCheckpoint: null,
+              lockCheckpoint: null,
+              epochLength: {
+                lower: "2",
+                upper: "165146",
+              },
+            },
+          },
+          account: {
+            balance: null,
+            nonce: {
+              lower: "7",
+              upper: "836147846",
+            },
+            receiptChainHash: null,
+            delegate: "B62qkJSn1SXnSgy3FSc4Y81YJimBAdPQLh7JkvKBQbaoPSqwfMxNjfP",
+            state: [
+              "24744082835263256424782378845254299132721380623412292937807121565414784429714",
+              null,
+              "11221985696133830319031615539088832734871808264962274552200047618313440626921",
+              null,
+              "28948022309329048855892746252171976963363056481941560715954676764349967630336",
+              "28181600982782577010783018611064321041395419418477160873775299792189444111556",
+              null,
+              null,
+            ],
+            actionState: null,
+            provedState: false,
+            isNew: true,
+          },
+          validWhile: {
+            lower: "3",
+            upper: "147",
+          },
+        },
+        useFullCommitment: false,
+        implicitAccountCreationFee: true,
+        mayUseToken: {
+          parentsOwnToken: true,
+          inheritFromParent: false,
+        },
+        authorizationKind: {
+          isSigned: true,
+          isProved: false,
+          verificationKeyHash: "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+        },
+      },
+      authorization: {
+        proof: null,
+        signature: null,
+      },
+    },
+  ],
+  memo: "E4YVkqyxvLZhRst6Zeyz7z7RoBk8RZrTFdoyJ2wePw8cgdK574MKY",
+}
