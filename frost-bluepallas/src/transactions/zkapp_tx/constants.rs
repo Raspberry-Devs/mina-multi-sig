@@ -7,6 +7,8 @@ use mina_signer::NetworkId;
 
 use crate::{errors::BluePallasError, transactions::zkapp_tx::Field};
 
+pub const TXN_VERSION_CURRENT: u32 = 3; // Used in Emptiable 
+
 // Constant value for a dummy verification key, if an account update is not proved and instead signed
 // then we use this constant hash value to indicate that no verification key is associated with the account update.
 lazy_static! {

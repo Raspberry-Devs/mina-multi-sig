@@ -16,7 +16,7 @@ use crate::{
     transactions::zkapp_tx::{
         constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
         hash::param_to_field,
-        AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer, OptionalValue,
+        AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer,
         RangeCondition, ZKAppCommand,
     },
 };
@@ -158,22 +158,16 @@ fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
     body.increment_nonce = true;
 
     body.preconditions.network.global_slot_since_genesis = {
-        OptionalValue {
-            is_some: true,
-            value: RangeCondition {
-                lower: 0,
-                upper: vaild_until,
-            },
-        }
+        Some(RangeCondition {
+            lower: 0,
+            upper: vaild_until,
+        })
     };
     body.preconditions.account.nonce = {
-        OptionalValue {
-            is_some: true,
-            value: RangeCondition {
-                lower: nonce,
-                upper: nonce,
-            },
-        }
+        Some(RangeCondition {
+            lower: nonce,
+            upper: nonce,
+        })
     };
     body.use_full_commitment = true;
     body.implicit_account_creation_fee = true;
