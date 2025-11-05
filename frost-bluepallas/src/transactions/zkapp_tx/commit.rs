@@ -2,7 +2,6 @@
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use std::collections::VecDeque;
 
-use super::zkapp_packable::Packable;
 use mina_hasher::{Fp, ROInput};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
@@ -16,6 +15,7 @@ use crate::{
     transactions::zkapp_tx::{
         constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
         hash::param_to_field,
+        zkapp_packable::Packable,
         AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer, OptionalValue,
         RangeCondition, ZKAppCommand,
     },
@@ -211,7 +211,7 @@ fn hash_account_update(
     assert_account_update_authorization_kind(account_update)?;
 
     // TODO: Check whether this is consistent with packToFields() in o1js
-    let inputs = account_update.clone().pack().to_fields();
+    let inputs = account_update.pack().to_fields();
     let network_zk = ZkAppBodyPrefix::from(network.clone());
     hash_with_prefix(network_zk.into(), &inputs)
 }
@@ -290,5 +290,41 @@ mod tests {
             hash.to_string(),
             "20456728518925904340727370305821489989002971473792411299271630913563245218671"
         );
+    }
+
+    /// Test vector structure for call_forest_hash tests
+    struct CallForestHashTestVector {
+        /// Name/description of the test case
+        name: &'static str,
+        /// ZKAppCommand to test
+        zkapp_command: ZKAppCommand,
+        /// Network to use for the test
+        network: NetworkId,
+        /// Expected hash result as Fp
+        expected_hash: Fp,
+    }
+
+    #[test]
+    fn test_call_forest_hash() {
+        // TODO: Add test vectors here
+        // Example structure (populate with actual test data):
+        let test_vectors: &[CallForestHashTestVector] = &[];
+
+        assert!(!test_vectors.is_empty(), "No test vectors provided");
+
+        for test_vector in test_vectors {
+            let call_forest = zkapp_command_to_call_forest(&test_vector.zkapp_command);
+            let computed_hash = call_forest_hash(&call_forest, &test_vector.network)
+                .unwrap_or_else(|_| {
+                    panic!("Failed to compute hash for test: {}", test_vector.name)
+                });
+
+            // Compare with expected
+            assert_eq!(
+                computed_hash, test_vector.expected_hash,
+                "Hash mismatch for test: {}",
+                test_vector.name
+            );
+        }
     }
 }
