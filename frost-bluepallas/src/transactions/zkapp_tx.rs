@@ -5,8 +5,8 @@ mod commit;
 mod constants;
 mod hash;
 pub mod zkapp_display;
-pub mod zkapp_packable;
 pub mod zkapp_emptiable;
+pub mod zkapp_packable;
 pub mod zkapp_serde;
 
 // The final transaction structure for a ZkApp transaction
@@ -274,8 +274,8 @@ impl Default for AuthRequired {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct TokenSymbol (pub Vec<u8>);
+#[derive(Clone, Serialize, Deserialize, Default)]
+pub struct TokenSymbol(pub Vec<u8>);
 
 impl TokenSymbol {
     pub fn to_bytes(&self, bytes: &mut [u8]) {
@@ -286,26 +286,32 @@ impl TokenSymbol {
         let s: &[u8] = &self.0;
         bytes[..len].copy_from_slice(&s[..len.min(6)]);
     }
+}
 
-    pub fn from_str(s: &str) -> Self {
-        assert!(s.len() <= 6, "Token symbol must be at most 6 characters");
-        Self(s.as_bytes().to_vec())
+impl std::str::FromStr for TokenSymbol {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() <= 6 {
+            Ok(Self(s.as_bytes().to_vec()))
+        } else {
+            Err("Token symbol must be at most 6 characters".to_string())
+        }
     }
 }
 
-impl Default for TokenSymbol {
-    fn default() -> Self {
-        Self(Vec::new())
-    }
-}
+// Default is derived for TokenSymbol
 
 #[derive(Clone, Serialize, Deserialize, Default)]
-pub struct ZkappUri (pub Vec<u8>);
+pub struct ZkappUri(pub Vec<u8>);
 
-impl ZkappUri {
-    pub fn from_str(s: &str) -> Self {
-        assert!(s.len() <= 32, "Zkapp URI must be at most 32 characters");
-        Self(s.as_bytes().to_vec())
+impl std::str::FromStr for ZkappUri {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() <= 32 {
+            Ok(Self(s.as_bytes().to_vec()))
+        } else {
+            Err("Zkapp URI must be at most 32 characters".to_string())
+        }
     }
 }
 
@@ -327,5 +333,3 @@ pub struct AuthorizationKind {
     pub is_proved: Bool,
     pub verification_key_hash: VerificationKeyHash,
 }
-
-

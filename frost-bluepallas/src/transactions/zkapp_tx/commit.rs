@@ -16,8 +16,8 @@ use crate::{
     transactions::zkapp_tx::{
         constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
         hash::param_to_field,
-        AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer,
-        RangeCondition, ZKAppCommand,
+        AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer, RangeCondition,
+        ZKAppCommand,
     },
 };
 
@@ -186,7 +186,7 @@ fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
     }
 }
 
-fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
+pub fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
     let mut sponge =
         ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
     sponge.absorb(&[param_to_field(prefix)?]);

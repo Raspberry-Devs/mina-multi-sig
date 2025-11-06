@@ -18,7 +18,6 @@ impl<T> From<Option<T>> for DisplayableOption<T> {
     }
 }
 
-
 impl fmt::Display for ZKAppCommand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -104,7 +103,7 @@ impl fmt::Display for Update {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            
+
             write!(f, "{}", DisplayableOption::from(*state))?;
         }
         write!(
@@ -116,7 +115,7 @@ impl fmt::Display for Update {
             DisplayableOption::from(self.zkapp_uri.clone()),
             DisplayableOption::from(self.token_symbol.clone()),
             DisplayableOption::from(self.timing.clone()),
-            DisplayableOption::from(self.voting_for.clone())
+            DisplayableOption::from(self.voting_for)
         )
     }
 }
@@ -166,21 +165,21 @@ impl fmt::Display for Preconditions {
 impl fmt::Display for AccountPreconditions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{\n              \"balance\": {},\n              \"nonce\": {},\n              \"receipt_chain_hash\": {},\n              \"delegate\": {},\n              \"state\": [",
-               DisplayableOption::from(self.balance.clone()), DisplayableOption::from(self.nonce.clone()), DisplayableOption::from(self.receipt_chain_hash.clone()), DisplayableOption::from(self.delegate.clone()))?;
+               DisplayableOption::from(self.balance.clone()), DisplayableOption::from(self.nonce.clone()), DisplayableOption::from(self.receipt_chain_hash), DisplayableOption::from(self.delegate.clone()))?;
 
         for (i, state) in self.state.iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{}", DisplayableOption::from(state.clone()))?;
+            write!(f, "{}", DisplayableOption::from(*state))?;
         }
 
         write!(
             f,
             "],\n              \"action_state\": {},\n              \"proved_state\": {},\n              \"is_new\": {}\n            }}",
-            DisplayableOption::from(self.action_state.clone()),
-            DisplayableOption::from(self.proved_state.clone()),
-            DisplayableOption::from(self.is_new.clone())
+            DisplayableOption::from(self.action_state),
+            DisplayableOption::from(self.proved_state),
+            DisplayableOption::from(self.is_new)
         )
     }
 }
@@ -190,7 +189,7 @@ impl fmt::Display for NetworkPreconditions {
         write!(
             f,
             "{{\n              \"snarked_ledger_hash\": {},\n              \"blockchain_length\": {},\n              \"min_window_density\": {},\n              \"total_currency\": {},\n              \"global_slot_since_genesis\": {},\n              \"staking_epoch_data\": {},\n              \"next_epoch_data\": {}\n            }}",
-            DisplayableOption::from(self.snarked_ledger_hash.clone()),
+            DisplayableOption::from(self.snarked_ledger_hash),
             DisplayableOption::from(self.blockchain_length.clone()),
             DisplayableOption::from(self.min_window_density.clone()),
             DisplayableOption::from(self.total_currency.clone()),
@@ -306,9 +305,9 @@ impl fmt::Display for EpochData {
             f,
             "{{\n              \"ledger\": {},\n              \"seed\": {},\n              \"start_checkpoint\": {},\n              \"lock_checkpoint\": {},\n              \"epoch_length\": {}\n            }}",
             self.ledger,
-            DisplayableOption::from(self.seed.clone()),
-            DisplayableOption::from(self.start_checkpoint.clone()),
-            DisplayableOption::from(self.lock_checkpoint.clone()),
+            DisplayableOption::from(self.seed),
+            DisplayableOption::from(self.start_checkpoint),
+            DisplayableOption::from(self.lock_checkpoint),
             DisplayableOption::from(self.epoch_length.clone())
         )
     }
@@ -319,7 +318,7 @@ impl fmt::Display for EpochLedger {
         write!(
             f,
             "{{\n                \"hash\": {},\n                \"total_currency\": {}\n              }}",
-            DisplayableOption::from(self.hash.clone()),
+            DisplayableOption::from(self.hash),
             DisplayableOption::from(self.total_currency.clone())
         )
     }
@@ -339,7 +338,11 @@ impl fmt::Display for Field {
 
 impl fmt::Display for AuthRequired {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let AuthRequiredEncoded {constant, signature_necessary, signature_sufficient} = self.clone().encode();
+        let AuthRequiredEncoded {
+            constant,
+            signature_necessary,
+            signature_sufficient,
+        } = self.clone().encode();
         let type_name = match self {
             AuthRequired::None => "None",
             AuthRequired::Proof => "Proof",

@@ -1,6 +1,8 @@
 //! ZKApp Packable trait implementations
-use crate::transactions::zkapp_tx::AccountUpdate;
+use crate::transactions::zkapp_tx::commit::hash_with_prefix;
+use crate::transactions::zkapp_tx::constants::MINA_ZKAPP_URI;
 use crate::transactions::zkapp_tx::zkapp_emptiable::Emptiable;
+use crate::transactions::zkapp_tx::AccountUpdate;
 use crate::transactions::zkapp_tx::*;
 use mina_hasher::ROInput;
 
@@ -214,8 +216,16 @@ impl Packable for TokenSymbol {
 
 impl Packable for ZkappUri {
     fn pack(&self) -> ROInput {
-        // TODO: This is a placeholder. Implement this
-        ROInput::new()
+        let mut field_inputs = ROInput::new();
+        for c in self.0.as_slice() {
+            for j in 0..8 {
+                field_inputs = field_inputs.append_bool((c & (1 << j)) != 0);
+            }
+        }
+        field_inputs = field_inputs.append_bool(true);
+        let fields = field_inputs.to_fields();
+        let hash = hash_with_prefix(MINA_ZKAPP_URI, &fields).unwrap();
+        ROInput::new().append_field(hash)
     }
 }
 
@@ -239,17 +249,13 @@ impl Packable for Field {
 
 impl Packable for RangeCondition<UInt32> {
     fn pack(&self) -> ROInput {
-        ROInput::new()
-            .append_u32(self.lower)
-            .append_u32(self.upper)
+        ROInput::new().append_u32(self.lower).append_u32(self.upper)
     }
 }
 
 impl Packable for RangeCondition<UInt64> {
     fn pack(&self) -> ROInput {
-        ROInput::new()
-            .append_u64(self.lower)
-            .append_u64(self.upper)
+        ROInput::new().append_u64(self.lower).append_u64(self.upper)
     }
 }
 
@@ -316,11 +322,10 @@ impl<T: Packable> Packable for Vec<T> {
 #[cfg(test)]
 mod test {
     use super::Packable;
-    use ark_ff::fields;
     use mina_hasher::{Fp, ROInput};
     use mina_signer::CompressedPubKey;
     use std::str::FromStr;
-    
+
     #[derive(Clone)]
     enum ROValue {
         Field(String),
@@ -357,7 +362,12 @@ mod test {
 
     fn assert_roi_equal(roi: ROInput, expected: ROInput) {
         // Using an unsafe method to access private fields for testing purposes
-        assert!(roi.to_bytes() == expected.to_bytes(), "ROInput values are not equal. Expected \n {:?}, \n but got {:?}", expected.to_bytes(), roi.to_bytes());
+        assert!(
+            roi.to_bytes() == expected.to_bytes(),
+            "ROInput values are not equal. Expected \n {:?}, \n but got {:?}",
+            expected.to_bytes(),
+            roi.to_bytes()
+        );
     }
 
     // Helper function to get the test public key
@@ -479,29 +489,14 @@ mod test {
     fn test_token_symbol_data() {
         // Symbol: "MINA"
         // toInput should only contain packed field value (48 bits), not the symbol bytes
-        let token_symbol = super::TokenSymbol::from_str("MINA");
+        let token_symbol = super::TokenSymbol::from_str("MINA").unwrap();
         let roi = token_symbol.pack();
 
         // According to spec: packed field only, NOT bytes + field
-        let expected_roi = build_roi(vec![
-            ROValue::Bytes(Vec::<u8>::from(&[0x4d, 0x49, 0x4e, 0x41, 0x00, 0x00])),
-        ]);
+        let expected_roi = build_roi(vec![ROValue::Bytes(Vec::<u8>::from(&[
+            0x4d, 0x49, 0x4e, 0x41, 0x00, 0x00,
+        ]))]);
 
         assert_roi_equal(roi, expected_roi);
-    }
-
-    // #[test]
-    // fn test_zkapp_uri_data() {
-    //     // URI: "https://minaprotocol.com"
-    //     // toInput should only contain hash field, not the URI data
-    //     let zkapp_uri = super::ZkappUri::from_str("https://minaprotocol.com");
-    //     let roi = zkapp_uri.pack();
-
-    //     // According to spec: hash field only, NOT data bytes + hash
-    //     let expected_roi = build_roi(vec![
-    //         ROValue::Field("12345".to_string()),
-    //     ]);
-
-    //     assert_roi_equal(roi, expected_roi);
     }
 }
