@@ -1,6 +1,31 @@
 use super::*;
 use core::fmt;
 
+pub struct DisplayableOption<'a, T>(pub Option<&'a T>);
+
+impl<'a, T: fmt::Display> fmt::Display for DisplayableOption<'a, T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            Some(value) => write!(f, "{}", value),
+            None => write!(f, "null"),
+        }
+    }
+}
+
+// prefer borrowing: &Option<T> -> DisplayableOption<'_, T>
+impl<'a, T> From<&'a Option<T>> for DisplayableOption<'a, T> {
+    fn from(opt: &'a Option<T>) -> Self {
+        DisplayableOption(opt.as_ref())
+    }
+}
+
+// also allow Option<&T> directly
+impl<'a, T> From<Option<&'a T>> for DisplayableOption<'a, T> {
+    fn from(opt: Option<&'a T>) -> Self {
+        DisplayableOption(opt)
+    }
+}
+
 impl fmt::Display for ZKAppCommand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -86,18 +111,19 @@ impl fmt::Display for Update {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{}", state)?;
+
+            write!(f, "{}", DisplayableOption::from(state))?;
         }
         write!(
             f,
             "],\n          \"delegate\": {},\n          \"verification_key\": {},\n          \"permissions\": {},\n          \"zkapp_uri\": {},\n          \"token_symbol\": {},\n          \"timing\": {},\n          \"voting_for\": {}\n        }}",
-            self.delegate,
-            self.verification_key,
-            self.permissions,
-            self.zkapp_uri,
-            self.token_symbol,
-            self.timing,
-            self.voting_for
+            DisplayableOption::from(&self.delegate),
+            DisplayableOption::from(&self.verification_key),
+            DisplayableOption::from(&self.permissions),
+            DisplayableOption::from(&self.zkapp_uri),
+            DisplayableOption::from(&self.token_symbol),
+            DisplayableOption::from(&self.timing),
+            DisplayableOption::from(&self.voting_for)
         )
     }
 }
@@ -139,7 +165,7 @@ impl fmt::Display for Preconditions {
         write!(
             f,
             "{{\n            \"network\": {},\n            \"account\": {},\n            \"valid_while\": {}\n          }}",
-            self.network, self.account, self.valid_while
+            self.network, self.account, DisplayableOption::from(&self.valid_while)
         )
     }
 }
@@ -147,19 +173,21 @@ impl fmt::Display for Preconditions {
 impl fmt::Display for AccountPreconditions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{\n              \"balance\": {},\n              \"nonce\": {},\n              \"receipt_chain_hash\": {},\n              \"delegate\": {},\n              \"state\": [",
-               self.balance, self.nonce, self.receipt_chain_hash, self.delegate)?;
+               DisplayableOption::from(&self.balance), DisplayableOption::from(&self.nonce), DisplayableOption::from(&self.receipt_chain_hash), DisplayableOption::from(&self.delegate))?;
 
         for (i, state) in self.state.iter().enumerate() {
             if i > 0 {
                 write!(f, ", ")?;
             }
-            write!(f, "{}", state)?;
+            write!(f, "{}", DisplayableOption::from(state))?;
         }
 
         write!(
             f,
             "],\n              \"action_state\": {},\n              \"proved_state\": {},\n              \"is_new\": {}\n            }}",
-            self.action_state, self.proved_state, self.is_new
+            DisplayableOption::from(&self.action_state),
+            DisplayableOption::from(&self.proved_state),
+            DisplayableOption::from(&self.is_new)
         )
     }
 }
@@ -169,11 +197,11 @@ impl fmt::Display for NetworkPreconditions {
         write!(
             f,
             "{{\n              \"snarked_ledger_hash\": {},\n              \"blockchain_length\": {},\n              \"min_window_density\": {},\n              \"total_currency\": {},\n              \"global_slot_since_genesis\": {},\n              \"staking_epoch_data\": {},\n              \"next_epoch_data\": {}\n            }}",
-            self.snarked_ledger_hash,
-            self.blockchain_length,
-            self.min_window_density,
-            self.total_currency,
-            self.global_slot_since_genesis,
+            DisplayableOption::from(&self.snarked_ledger_hash),
+            DisplayableOption::from(&self.blockchain_length),
+            DisplayableOption::from(&self.min_window_density),
+            DisplayableOption::from(&self.total_currency),
+            DisplayableOption::from(&self.global_slot_since_genesis),
             self.staking_epoch_data,
             self.next_epoch_data
         )
@@ -285,10 +313,10 @@ impl fmt::Display for EpochData {
             f,
             "{{\n              \"ledger\": {},\n              \"seed\": {},\n              \"start_checkpoint\": {},\n              \"lock_checkpoint\": {},\n              \"epoch_length\": {}\n            }}",
             self.ledger,
-            self.seed,
-            self.start_checkpoint,
-            self.lock_checkpoint,
-            self.epoch_length
+            DisplayableOption::from(&self.seed),
+            DisplayableOption::from(&self.start_checkpoint),
+            DisplayableOption::from(&self.lock_checkpoint),
+            DisplayableOption::from(&self.epoch_length)
         )
     }
 }
@@ -298,7 +326,8 @@ impl fmt::Display for EpochLedger {
         write!(
             f,
             "{{\n                \"hash\": {},\n                \"total_currency\": {}\n              }}",
-            self.hash, self.total_currency
+            DisplayableOption::from(&self.hash),
+            DisplayableOption::from(&self.total_currency)
         )
     }
 }
@@ -316,6 +345,30 @@ impl fmt::Display for Field {
 }
 
 impl fmt::Display for AuthRequired {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let AuthRequiredEncoded {
+            constant,
+            signature_necessary,
+            signature_sufficient,
+        } = self.clone().encode();
+        let type_name = match self {
+            AuthRequired::None => "None",
+            AuthRequired::Proof => "Proof",
+            AuthRequired::Signature => "Signature",
+            AuthRequired::Either => "Either",
+            AuthRequired::Impossible => "Impossible",
+            AuthRequired::Both => "Both",
+        };
+
+        write!(
+            f,
+            "{{\n              \"type\": {},\n              \"constant\": {},\n              \"signature_necessary\": {},\n              \"signature_sufficient\": {}\n            }}",
+            type_name, constant, signature_necessary, signature_sufficient
+        )
+    }
+}
+
+impl fmt::Display for AuthRequiredEncoded<bool> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -355,106 +408,22 @@ impl fmt::Display for AuthorizationKind {
     }
 }
 
-impl<T: fmt::Display> fmt::Display for OptionalValue<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.is_some {
-            write!(f, "\"{}\"", self.value)
-        } else {
-            write!(f, "null")
-        }
-    }
-}
-
-impl fmt::Display for ZkappUriData {
+impl fmt::Display for ZkappUri {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{\n            \"data\": \"{}\",\n            \"hash\": \"{}\"\n          }}",
-            self.data, self.hash
+            "{{\n            \"zkapp_uri_data\": \"{}\"\n          }}",
+            String::from_utf8_lossy(&self.0)
         )
     }
 }
 
-impl fmt::Display for TokenSymbolData {
+impl fmt::Display for TokenSymbol {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{\n            \"symbol\": \"{}\",\n            \"field\": \"{}\"\n          }}",
-            self.symbol, self.field
-        )
-    }
-}
-
-impl fmt::Display for Account {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{{\n  \"public_key\": \"{}\",\n  \"token_id\": \"{}\",\n  \"token_symbol\": \"{}\",\n  \"balance\": \"{}\",\n  \"nonce\": \"{}\",\n  \"receipt_chain_hash\": \"{}\",\n  \"delegate\": {},\n  \"voting_for\": \"{}\",\n  \"timing\": {},\n  \"permissions\": {},\n  \"zkapp\": {}\n}}",
-            self.public_key,
-            self.token_id,
-            self.token_symbol,
-            self.balance,
-            self.nonce,
-            self.receipt_chain_hash,
-            match &self.delegate {
-                Some(d) => format!("\"{}\"", d),
-                None => "null".to_string(),
-            },
-            self.voting_for,
-            self.timing,
-            self.permissions,
-            match &self.zkapp {
-                Some(z) => format!("{}", z),
-                None => "null".to_string(),
-            }
-        )
-    }
-}
-
-impl fmt::Display for AccountTiming {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{{\n    \"is_timed\": {},\n    \"initial_minimum_balance\": \"{}\",\n    \"cliff_time\": \"{}\",\n    \"cliff_amount\": \"{}\",\n    \"vesting_period\": \"{}\",\n    \"vesting_increment\": \"{}\"\n  }}",
-            self.is_timed,
-            self.initial_minimum_balance,
-            self.cliff_time,
-            self.cliff_amount,
-            self.vesting_period,
-            self.vesting_increment
-        )
-    }
-}
-
-impl fmt::Display for ZkappAccount {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{\n    \"app_state\": [")?;
-        for (i, state) in self.app_state.iter().enumerate() {
-            if i > 0 {
-                write!(f, ", ")?;
-            }
-            write!(f, "\"{}\"", state)?;
-        }
-        write!(f, "],\n    \"verification_key\": ")?;
-        match &self.verification_key {
-            Some(vk) => write!(f, "{}", vk)?,
-            None => write!(f, "null")?,
-        }
-        write!(
-            f,
-            ",\n    \"zkapp_version\": \"{}\",\n    \"action_state\": [",
-            self.zkapp_version
-        )?;
-        for (i, state) in self.action_state.iter().enumerate() {
-            if i > 0 {
-                write!(f, ", ")?;
-            }
-            write!(f, "\"{}\"", state)?;
-        }
-        write!(
-            f,
-            "],\n    \"last_action_slot\": \"{}\",\n    \"proved_state\": {},\n    \"zkapp_uri\": \"{}\"\n  }}",
-            self.last_action_slot, self.proved_state, self.zkapp_uri
+            "{{\n            \"token_symbol_data\": \"{}\"\n          }}",
+            String::from_utf8_lossy(&self.0)
         )
     }
 }
@@ -495,11 +464,7 @@ mod tests {
 
     #[test]
     fn test_auth_required_display() {
-        let auth = AuthRequired {
-            constant: true,
-            signature_necessary: false,
-            signature_sufficient: true,
-        };
+        let auth = AuthRequired::None;
         let display_str = format!("{}", auth);
         assert!(display_str.contains("\"constant\": true"));
         assert!(display_str.contains("\"signature_necessary\": false"));
@@ -515,26 +480,6 @@ mod tests {
         let display_str = format!("{}", balance_change);
         assert!(display_str.contains("\"magnitude\": \"1000000\""));
         assert!(display_str.contains("\"sgn\": 1"));
-    }
-
-    #[test]
-    fn test_optional_value_some_display() {
-        let optional_val = OptionalValue {
-            is_some: true,
-            value: 123u64,
-        };
-        let display_str = format!("{}", optional_val);
-        assert_eq!(display_str, "\"123\"");
-    }
-
-    #[test]
-    fn test_optional_value_none_display() {
-        let optional_val = OptionalValue {
-            is_some: false,
-            value: 123u64,
-        };
-        let display_str = format!("{}", optional_val);
-        assert_eq!(display_str, "null");
     }
 
     #[test]
@@ -657,27 +602,5 @@ mod tests {
         let display_str = format!("{}", vk_data);
         assert!(display_str.contains("\"data\": \"test_verification_key_data\""));
         assert!(display_str.contains("\"hash\": \"42\""));
-    }
-
-    #[test]
-    fn test_zkapp_uri_data_display() {
-        let uri_data = ZkappUriData {
-            data: "https://example.com".to_string(),
-            hash: test_field(),
-        };
-        let display_str = format!("{}", uri_data);
-        assert!(display_str.contains("\"data\": \"https://example.com\""));
-        assert!(display_str.contains("\"hash\": \"42\""));
-    }
-
-    #[test]
-    fn test_token_symbol_data_display() {
-        let symbol_data = TokenSymbolData {
-            symbol: "MINA".to_string(),
-            field: test_field(),
-        };
-        let display_str = format!("{}", symbol_data);
-        assert!(display_str.contains("\"symbol\": \"MINA\""));
-        assert!(display_str.contains("\"field\": \"42\""));
     }
 }
