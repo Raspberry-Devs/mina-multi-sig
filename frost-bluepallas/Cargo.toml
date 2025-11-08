@@ -28,6 +28,7 @@ serde_json.workspace = true
 insta.workspace = true
 hex.workspace = true
 rand_chacha = "0.3"
+bs58 = "0.5.1"
 
 [features]
 default = ["serialization", "cheater-detection"]

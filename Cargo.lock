@@ -1106,6 +1106,7 @@ dependencies = [
  "ark-ff",
  "ark-serialize",
  "bitvec",
+ "bs58",
  "frost-core",
  "frost-rerandomized",
  "hex",

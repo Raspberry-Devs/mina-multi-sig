@@ -2,6 +2,7 @@
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use std::collections::VecDeque;
 
+use ark_ff::{AdditiveGroup, Field};
 use mina_hasher::{Fp, ROInput};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
@@ -102,9 +103,44 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     true
 }
 
+/// Packs a slice of bits into field elements, taking chunks of 254 bits at a time.
+/// This matches the o1js `packToFieldsLegacy` behavior for bit packing.
+fn pack_to_field(bits: &[bool]) -> Vec<Fp> {
+    let mut packed_fields = Vec::new();
+    let mut remaining_bits = bits;
+
+    while !remaining_bits.is_empty() {
+        let chunk_size = std::cmp::min(remaining_bits.len(), 254);
+        let field_bits = &remaining_bits[..chunk_size];
+        remaining_bits = &remaining_bits[chunk_size..];
+
+        // Convert bits to Fp field element
+        let mut field = Fp::ZERO;
+        for &bit in field_bits {
+            field = field.double();
+            if bit {
+                field += Fp::ONE;
+            }
+        }
+        packed_fields.push(field);
+    }
+
+    packed_fields
+}
+
 fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
-    let memo_roi = ROInput::new().append_bytes(tx.memo.as_bytes()).to_fields();
-    hash_with_prefix(constants::ZK_APP_MEMO, &memo_roi)
+    let memo_bytes = tx.memo.as_bytes();
+
+    // Convert bytes to bits (big-endian bit order within each byte)
+    let bits: Vec<bool> = memo_bytes
+        .iter()
+        .flat_map(|byte| (0..8).rev().map(move |i| (byte >> i) & 1 == 1))
+        .collect();
+
+    // Pack bits into fields (254 bits per field for Fp)
+    let packed_fields = pack_to_field(&bits);
+
+    hash_with_prefix(constants::ZK_APP_MEMO, &packed_fields)
 }
 
 /// Produces a commitment for a ZkApp command by hashing its structure and contents.
