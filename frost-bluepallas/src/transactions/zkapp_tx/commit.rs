@@ -2,7 +2,8 @@
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use std::collections::VecDeque;
 
-use ark_ff::{AdditiveGroup, Field};
+use ark_ff::{AdditiveGroup, Field, PrimeField};
+use bitvec::{order::Lsb0, vec::BitVec};
 use mina_hasher::{Fp, ROInput};
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
@@ -103,6 +104,8 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     true
 }
 
+const FIELDS_PER_PACKED_MEMO: usize = 254;
+
 /// Packs a slice of bits into field elements, taking chunks of 254 bits at a time.
 /// This matches the o1js `packToFieldsLegacy` behavior for bit packing.
 fn pack_to_field(bits: &[bool]) -> Vec<Fp> {
@@ -110,18 +113,13 @@ fn pack_to_field(bits: &[bool]) -> Vec<Fp> {
     let mut remaining_bits = bits;
 
     while !remaining_bits.is_empty() {
-        let chunk_size = std::cmp::min(remaining_bits.len(), 254);
+        let chunk_size = std::cmp::min(remaining_bits.len(), FIELDS_PER_PACKED_MEMO);
         let field_bits = &remaining_bits[..chunk_size];
         remaining_bits = &remaining_bits[chunk_size..];
 
-        // Convert bits to Fp field element
-        let mut field = Fp::ZERO;
-        for &bit in field_bits {
-            field = field.double();
-            if bit {
-                field += Fp::ONE;
-            }
-        }
+        // Convert bits to BigInt using BitVec with LSB order
+        let bitvec: BitVec<u8, Lsb0> = BitVec::from_iter(field_bits);
+        let field = Fp::from_le_bytes_mod_order(&bitvec.into_vec());
         packed_fields.push(field);
     }
 
@@ -310,6 +308,49 @@ mod tests {
     use super::super::test_vectors::{
         get_hash_with_prefix_test_vectors, get_zkapp_test_vectors, parse_expected_hash,
     };
+
+    #[test]
+    fn test_pack_to_fields() {
+        let mut bits = vec![true];
+        bits.extend(vec![false; 271]);
+
+        let packed_fields = pack_to_field(&bits);
+        assert_eq!(packed_fields.len(), 2);
+        assert_eq!(packed_fields[0], Fp::from(1u64));
+        assert_eq!(packed_fields[1], Fp::from(0u64));
+
+        let bits = vec![
+            true, false, false, false, false, false, false, false, false, true, false, false,
+            false, false, false, false, false, true, false, false, false, false, true, true, true,
+            false, true, false, true, true, false, true, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false,
+        ];
+        assert_eq!(bits.len(), 272);
+
+        let packed_fields = pack_to_field(&bits);
+        assert_eq!(packed_fields.len(), 2);
+        assert_eq!(packed_fields[0], Fp::from(3049390593u64));
+        assert_eq!(packed_fields[1], Fp::from(0u64));
+    }
 
     #[test]
     fn test_hash_with_prefix_vectors() {
