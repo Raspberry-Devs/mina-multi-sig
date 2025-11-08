@@ -7,6 +7,8 @@ use mina_signer::NetworkId;
 
 use crate::{errors::BluePallasError, transactions::zkapp_tx::Field};
 
+pub const TXN_VERSION_CURRENT: u32 = 3; // Used in Emptiable
+
 // Constant value for a dummy verification key, if an account update is not proved and instead signed
 // then we use this constant hash value to indicate that no verification key is associated with the account update.
 lazy_static! {
@@ -52,4 +54,15 @@ impl From<ZkAppBodyPrefix> for &'static str {
             ZkAppBodyPrefix::Testnet => ZK_APP_BODY_TESTNET,
         }
     }
+}
+
+// zkapp uri dfault hash
+// TODO: Test it is the same as in mina-rust
+pub const MINA_ZKAPP_URI: &str = "MinaZkappUri";
+pub(crate) fn default_zkapp_uri_hash() -> Fp {
+    use crate::transactions::zkapp_tx::commit::hash_with_prefix;
+    let mut roi = mina_hasher::ROInput::new();
+    roi = roi.append_field(Fp::ZERO);
+    roi = roi.append_field(Fp::ZERO);
+    hash_with_prefix(MINA_ZKAPP_URI, &roi.to_fields()).unwrap()
 }
