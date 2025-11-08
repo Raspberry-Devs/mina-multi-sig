@@ -106,7 +106,7 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
 /// Validates call depths and authorization kinds before computing the commitment.
 /// Returns two Fp elements, representing the accountUpdates commitment and the overall commitment respectively.
 /// Overall commitment includes memo, fee payer, and account updates commitments.
-pub fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp, Fp)> {
+pub(crate) fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp, Fp)> {
     if !is_call_depth_valid(tx) {
         return Err(Box::new(BluePallasError::InvalidZkAppCommand(
             "Call depths are not valid".to_string(),
@@ -186,7 +186,7 @@ fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
     }
 }
 
-pub fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
+pub(crate) fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
     let mut sponge =
         ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
     sponge.absorb(&[param_to_field(prefix)?]);
