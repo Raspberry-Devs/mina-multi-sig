@@ -21,7 +21,7 @@ impl Packable for AccountUpdateBody {
     fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
         roi = roi.append_roinput(self.public_key.pack());
-        roi = roi.append_field(self.token_id.0);
+        roi = roi.append_field(self.token_id.0 .0);
         roi = roi.append_roinput(self.update.pack()); // Update
         roi = roi.append_roinput(self.balance_change.pack()); // BalanceChange
         roi = roi.append_bool(self.increment_nonce);

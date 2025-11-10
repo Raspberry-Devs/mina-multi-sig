@@ -497,6 +497,8 @@ mod tests {
                     )
                 });
 
+            let computed_hash_str = computed_hash.to_string();
+
             let expected_hash =
                 parse_expected_hash(test_vector.expected_account_updates_commitment);
 

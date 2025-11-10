@@ -98,7 +98,7 @@ impl fmt::Display for AccountUpdateBody {
             f,
             "{{\n        \"public_key\": \"{}\",\n        \"token_id\": \"{}\",\n        \"update\": {},\n        \"balance_change\": {},\n        \"increment_nonce\": {},\n        \"events\": {},\n        \"actions\": {},\n        \"call_data\": \"{}\",\n        \"call_depth\": {},\n        \"preconditions\": {},\n        \"use_full_commitment\": {},\n        \"implicit_account_creation_fee\": {},\n        \"may_use_token\": {},\n        \"authorization_kind\": {}\n      }}",
             self.public_key,
-            self.token_id,
+            self.token_id.0,
             self.update,
             self.balance_change,
             self.increment_nonce,

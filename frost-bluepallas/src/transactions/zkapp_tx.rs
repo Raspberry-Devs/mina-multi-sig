@@ -1,3 +1,4 @@
+use ark_ff::Field as ArkField;
 use mina_signer::CompressedPubKey;
 use serde::{Deserialize, Serialize};
 
@@ -243,8 +244,16 @@ pub type UInt64 = u64;
 pub type UInt32 = u32;
 pub type Sign = i8; // -1 or 1
 
+// Wrapper structs
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TokenId(pub Field);
+impl Default for TokenId {
+    fn default() -> Self {
+        TokenId(Field(mina_hasher::Fp::ONE))
+    }
+}
+
 // Derived types
-pub type TokenId = Field;
 pub type StateHash = Field;
 pub type ActionState = Field;
 pub type VerificationKeyHash = Field;
