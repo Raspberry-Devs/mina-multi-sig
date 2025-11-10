@@ -330,6 +330,7 @@ mod test {
     enum ROValue {
         Field(String),
         Bool(bool),
+        #[allow(dead_code)]
         U32(u32),
         U64(u64),
         Bytes(Vec<u8>),

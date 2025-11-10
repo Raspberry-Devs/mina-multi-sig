@@ -2,9 +2,9 @@
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use std::collections::VecDeque;
 
-use ark_ff::{AdditiveGroup, Field, PrimeField};
+use ark_ff::PrimeField;
 use bitvec::{order::Lsb0, vec::BitVec};
-use mina_hasher::{Fp, ROInput};
+use mina_hasher::Fp;
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
     pasta::fp_kimchi,
@@ -22,6 +22,8 @@ use crate::{
         ZKAppCommand,
     },
 };
+
+const FIELDS_PER_PACKED_MEMO: usize = 254;
 
 /// A single node in the call forest representing an account update and its children
 #[derive(Clone)]
@@ -103,8 +105,6 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
 
     true
 }
-
-const FIELDS_PER_PACKED_MEMO: usize = 254;
 
 /// Packs a slice of bits into field elements, taking chunks of 254 bits at a time.
 /// This matches the o1js `packToFieldsLegacy` behavior for bit packing.
@@ -247,7 +247,8 @@ fn hash_account_update(
     assert_account_update_authorization_kind(account_update)?;
 
     // TODO: Check whether this is consistent with packToFields() in o1js
-    let inputs = account_update.pack().to_fields();
+    let packed_inputs = account_update.pack();
+    let inputs = packed_inputs.to_fields();
     let network_zk = ZkAppBodyPrefix::from(network.clone());
     hash_with_prefix(network_zk.into(), &inputs)
 }

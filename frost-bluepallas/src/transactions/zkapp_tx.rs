@@ -18,7 +18,7 @@ mod test_vectors;
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates
 // or by a different key
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ZKAppCommand {
     pub fee_payer: FeePayer,
     pub account_updates: Vec<AccountUpdate>,
@@ -40,13 +40,13 @@ impl Default for ZKAppCommand {
 }
 
 // Fee payer
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct FeePayer {
     pub body: FeePayerBody,
     pub authorization: String,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct FeePayerBody {
     pub public_key: PublicKey,
     pub fee: UInt64,
@@ -56,13 +56,13 @@ pub struct FeePayerBody {
 
 // Account update
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct AccountUpdate {
     pub body: AccountUpdateBody,
     pub authorization: Authorization,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct AccountUpdateBody {
     pub public_key: PublicKey,
     pub token_id: TokenId,
@@ -80,7 +80,7 @@ pub struct AccountUpdateBody {
     pub authorization_kind: AuthorizationKind,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Update {
     pub app_state: Vec<Option<Field>>,
     pub delegate: Option<PublicKey>,
@@ -92,7 +92,7 @@ pub struct Update {
     pub voting_for: Option<Field>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Permissions {
     pub edit_state: AuthRequired,
     pub access: AuthRequired,
@@ -109,20 +109,20 @@ pub struct Permissions {
     pub set_timing: AuthRequired,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct SetVerificationKey {
     pub auth: AuthRequired,
     pub txn_version: UInt32,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Preconditions {
     pub network: NetworkPreconditions,
     pub account: AccountPreconditions,
     pub valid_while: Option<RangeCondition<UInt32>>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct AccountPreconditions {
     pub balance: Option<RangeCondition<UInt64>>,
     pub nonce: Option<RangeCondition<UInt32>>,
@@ -134,7 +134,7 @@ pub struct AccountPreconditions {
     pub is_new: Option<Bool>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct NetworkPreconditions {
     pub snarked_ledger_hash: Option<Field>,
     pub blockchain_length: Option<RangeCondition<UInt32>>,
@@ -145,19 +145,19 @@ pub struct NetworkPreconditions {
     pub next_epoch_data: EpochData,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Events {
     pub data: Vec<Vec<Field>>,
     pub hash: Field,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Actions {
     pub data: Vec<Vec<Field>>,
     pub hash: Field,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Authorization {
     pub proof: Option<String>,
     pub signature: Option<String>,
@@ -165,19 +165,19 @@ pub struct Authorization {
 
 // Supporting types
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct RangeCondition<T> {
     pub lower: T,
     pub upper: T,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct VerificationKeyData {
     pub data: String,
     pub hash: VerificationKeyHash,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct TimingData {
     pub initial_minimum_balance: UInt64,
     pub cliff_time: UInt32,
@@ -186,7 +186,7 @@ pub struct TimingData {
     pub vesting_increment: UInt64,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct EpochData {
     pub ledger: EpochLedger,
     pub seed: Option<Field>,
@@ -195,7 +195,7 @@ pub struct EpochData {
     pub epoch_length: Option<RangeCondition<UInt32>>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct EpochLedger {
     pub hash: Option<Field>,
     pub total_currency: Option<RangeCondition<UInt64>>,
@@ -260,7 +260,7 @@ pub type VerificationKeyHash = Field;
 pub type ReceiptChainHash = Field;
 pub type TransactionVersion = UInt32;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum AuthRequired {
     None,
     Either,
@@ -301,7 +301,7 @@ impl Default for AuthRequired {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct TokenSymbol(pub Vec<u8>);
 
 impl TokenSymbol {
@@ -328,7 +328,7 @@ impl std::str::FromStr for TokenSymbol {
 
 // Default is derived for TokenSymbol
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct ZkappUri(pub Vec<u8>);
 
 impl std::str::FromStr for ZkappUri {
@@ -342,19 +342,27 @@ impl std::str::FromStr for ZkappUri {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct MayUseToken {
     pub parents_own_token: Bool,
     pub inherit_from_parent: Bool,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BalanceChange {
     pub magnitude: UInt64,
     pub sgn: Sign,
 }
+impl Default for BalanceChange {
+    fn default() -> Self {
+        Self {
+            magnitude: 0,
+            sgn: 1,
+        }
+    }
+}
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct AuthorizationKind {
     pub is_signed: Bool,
     pub is_proved: Bool,
