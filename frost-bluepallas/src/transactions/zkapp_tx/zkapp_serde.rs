@@ -1,4 +1,7 @@
-use crate::transactions::zkapp_tx::{Field, PublicKey};
+use crate::transactions::{
+    zkapp_tx::{Field, PublicKey},
+    MEMO_BYTES,
+};
 use mina_hasher::Fp;
 use mina_signer::CompressedPubKey;
 use serde::{ser::Serialize, Deserialize};
@@ -51,11 +54,53 @@ impl<'de> Deserialize<'de> for Field {
     }
 }
 
+pub(crate) fn memo_serde<S>(memo: &[u8; MEMO_BYTES], serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    // Serialize memo as base58 string
+    let encoded = bs58::encode(memo).into_string();
+    serializer.serialize_str(&encoded)
+}
+
+pub(crate) fn memo_deser<'de, D>(deserializer: D) -> Result<[u8; MEMO_BYTES], D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    let decoded = bs58::decode(&s)
+        .into_vec()
+        .map_err(serde::de::Error::custom)?;
+
+    if decoded.len() != MEMO_BYTES {
+        return Err(serde::de::Error::custom(format!(
+            "Invalid memo length: expected {}, got {}",
+            MEMO_BYTES,
+            decoded.len()
+        )));
+    }
+
+    if decoded.first() != Some(&0x01) {
+        return Err(serde::de::Error::custom(
+            "Invalid memo header: missing 0x01 prefix",
+        ));
+    }
+
+    let mut memo = [0u8; MEMO_BYTES];
+    memo.copy_from_slice(&decoded);
+    Ok(memo)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::transactions::zkapp_tx::*;
     use mina_signer::CompressedPubKey;
     use serde_json;
+
+    const TEST_MEMO: [u8; MEMO_BYTES] = [
+        0x01, 0x04, b'T', b'e', b's', b't', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ];
 
     fn create_test_public_key() -> PublicKey {
         let test_address = "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg";
@@ -80,7 +125,7 @@ mod tests {
                 authorization: "test_auth".to_string(),
             },
             account_updates: vec![],
-            memo: "Test".to_string(),
+            memo: TEST_MEMO,
         }
     }
 
@@ -202,11 +247,11 @@ mod tests {
                 "authorization": "test_auth"
             },
             "account_updates": [],
-            "memo": "Test"
+            "memo": "2LLNoLLTNMVDUcSsdkJXnDByvpXjxSmdy6MWWXSW73QkSK"
         }"#;
 
         let result: ZKAppCommand = serde_json::from_str(json_str).unwrap();
-        assert_eq!(result.memo, "Test");
+        assert_eq!(result.memo, TEST_MEMO);
         assert_eq!(result.fee_payer.body.fee, 1000000);
         assert_eq!(result.fee_payer.body.valid_until, None);
     }

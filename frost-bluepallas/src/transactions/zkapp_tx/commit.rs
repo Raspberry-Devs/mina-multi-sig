@@ -127,7 +127,7 @@ fn pack_to_field(bits: &[bool]) -> Vec<Fp> {
 }
 
 fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
-    let memo_bytes = tx.memo.as_bytes();
+    let memo_bytes = tx.memo;
 
     // Convert bytes to bits (big-endian bit order within each byte)
     let bits: Vec<bool> = memo_bytes

@@ -1,3 +1,5 @@
+use crate::transactions::MEMO_HEADER_BYTES;
+
 use super::*;
 use core::fmt;
 
@@ -41,7 +43,16 @@ impl fmt::Display for ZKAppCommand {
             write!(f, "    {}", update)?;
         }
 
-        write!(f, "\n  ],\n  \"memo\": \"{}\"\n}}", self.memo)
+        let memo_str = match self.memo.len() {
+            len if len < MEMO_HEADER_BYTES => String::new(),
+            _ => self.memo[MEMO_HEADER_BYTES..]
+                .iter()
+                .take_while(|&&b| b != 0)
+                .map(|&b| b as char)
+                .collect::<String>(),
+        };
+
+        write!(f, "\n  ],\n  \"memo\": \"{}\"\n}}", memo_str)
     }
 }
 

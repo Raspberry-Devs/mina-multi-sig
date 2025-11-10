@@ -1,6 +1,8 @@
 use mina_signer::CompressedPubKey;
 use serde::{Deserialize, Serialize};
 
+use crate::transactions::MEMO_BYTES;
+
 mod commit;
 mod constants;
 mod hash;
@@ -15,15 +17,28 @@ mod test_vectors;
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates
 // or by a different key
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ZKAppCommand {
     pub fee_payer: FeePayer,
     pub account_updates: Vec<AccountUpdate>,
-    pub memo: String,
+    #[serde(
+        serialize_with = "zkapp_serde::memo_serde",
+        deserialize_with = "zkapp_serde::memo_deser"
+    )]
+    pub memo: [u8; MEMO_BYTES],
+}
+
+impl Default for ZKAppCommand {
+    fn default() -> Self {
+        Self {
+            fee_payer: FeePayer::default(),
+            account_updates: Vec::default(),
+            memo: [0u8; MEMO_BYTES],
+        }
+    }
 }
 
 // Fee payer
-
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct FeePayer {
     pub body: FeePayerBody,
