@@ -129,14 +129,18 @@ fn pack_to_field(bits: &[bool]) -> Vec<Fp> {
 fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
     let memo_bytes = tx.memo;
 
-    // Convert bytes to bits (big-endian bit order within each byte)
+    // Convert bytes to bits (little-endian bit order within each byte)
     let bits: Vec<bool> = memo_bytes
         .iter()
-        .flat_map(|byte| (0..8).rev().map(move |i| (byte >> i) & 1 == 1))
+        .flat_map(|&byte| (0..8).map(move |i| (byte >> i) & 1 != 0))
         .collect();
 
     // Pack bits into fields (254 bits per field for Fp)
     let packed_fields = pack_to_field(&bits);
+    let packed_fields_str = packed_fields
+        .iter()
+        .map(|f| f.to_string())
+        .collect::<Vec<String>>();
 
     hash_with_prefix(constants::ZK_APP_MEMO, &packed_fields)
 }

@@ -200,26 +200,20 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: {
                     // base58 decode of original memo string; ensure bs58 = "0.4" in Cargo.toml
-                    let decoded = bs58::decode("E4YPF5f9RZFMEtw4iBseLCd5bbApbZEaDHDV9j76vqdUcx95HQoTq")
+                    let decoded = bs58::decode("E4ZSiVLYwpLPhYVBKuEvSAHd8QX6pKxnZxHXh9nXDfSHTcSC2hFC7")
                         .into_vec()
                         .expect("invalid base58 memo");
-                    decoded.try_into().expect("invalid memo length")
+                    // Remove check sum and version bytes
+                    let payload = &decoded[1..decoded.len() - 4];
+                    payload.try_into().expect("invalid memo length")
                 },
             },
             network: NetworkId::MAINNET,
-            expected_memo_hash: "7058328916357264459393113209042072363968938759462457191302163089925033650967",
+            expected_memo_hash: "17702488080931343904217209413805842420807508491702871670372914661658606201287",
             expected_fee_payer_hash: "23266113660560458530300204899910304152144943649268975906345136134187634114743",
             expected_account_updates_commitment: "28758693545720568902829770225552807981665617078386073531248463565309362381334",
             expected_full_commitment: "19160795306106068369715028799222959710783075923317163435087167380705433226448",
         }]
-}
-
-fn memo_from_b58(memo_b58: &str) -> Vec<u8> {
-    bs58::decode(memo_b58)
-        .into_vec()
-        .expect("invalid base58 memo")
-
-    // Check start and
 }
 
 /// Returns additional test vectors for hash_with_prefix function
