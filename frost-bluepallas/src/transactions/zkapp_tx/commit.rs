@@ -250,7 +250,7 @@ fn hash_account_update(
     assert_account_update_authorization_kind(account_update)?;
 
     // TODO: Check whether this is consistent with packToFields() in o1js
-    let packed_inputs = account_update.pack();
+    let packed_inputs = account_update.pack().to_mina_hasher_roi();
     let inputs = packed_inputs.to_fields();
     let network_zk = ZkAppBodyPrefix::from(network.clone());
     hash_with_prefix(network_zk.into(), &inputs)
