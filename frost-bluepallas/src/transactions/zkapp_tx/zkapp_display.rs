@@ -203,6 +203,12 @@ impl fmt::Display for AccountPreconditions {
     }
 }
 
+impl fmt::Display for ActionState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl fmt::Display for NetworkPreconditions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -235,11 +241,7 @@ impl fmt::Display for Events {
             }
             write!(f, "]")?;
         }
-        write!(
-            f,
-            "],\n            \"hash\": \"{}\"\n          }}",
-            self.hash
-        )
+        write!(f, "]\n}}",)
     }
 }
 
@@ -259,11 +261,7 @@ impl fmt::Display for Actions {
             }
             write!(f, "]")?;
         }
-        write!(
-            f,
-            "],\n            \"hash\": \"{}\"\n          }}",
-            self.hash
-        )
+        write!(f, "]\n          }}",)
     }
 }
 
@@ -543,7 +541,6 @@ mod tests {
     fn test_events_display() {
         let events = Events {
             data: vec![vec![test_field(), test_field()], vec![test_field()]],
-            hash: test_field(),
         };
         let display_str = format!("{}", events);
         assert!(display_str.contains("\"data\": ["));
@@ -554,7 +551,6 @@ mod tests {
     fn test_actions_display() {
         let actions = Actions {
             data: vec![vec![test_field()]],
-            hash: test_field(),
         };
         let display_str = format!("{}", actions);
         assert!(display_str.contains("\"data\": ["));

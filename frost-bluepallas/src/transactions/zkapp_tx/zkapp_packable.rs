@@ -1,10 +1,13 @@
 //! ZKApp Packable trait implementations
-use crate::transactions::zkapp_tx::commit::hash_with_prefix;
-use crate::transactions::zkapp_tx::constants::MINA_ZKAPP_URI;
+use crate::transactions::zkapp_tx::commit::{hash_noinput, hash_with_prefix};
+use crate::transactions::zkapp_tx::constants::{
+    MINA_ZKAPP_URI, ZK_APP_ACTIONS_EMPTY, ZK_APP_ACTIONS_PREFIX, ZK_APP_EVENTS_EMPTY,
+    ZK_APP_EVENTS_PREFIX, ZK_APP_EVENT_PREFIX,
+};
 use crate::transactions::zkapp_tx::zkapp_emptiable::Emptiable;
 use crate::transactions::zkapp_tx::AccountUpdate;
 use crate::transactions::zkapp_tx::*;
-use mina_hasher::ROInput;
+use mina_hasher::{Fp, ROInput};
 
 pub trait Packable {
     fn pack(&self) -> ROInput;
@@ -41,6 +44,7 @@ impl Packable for AccountUpdateBody {
 impl Packable for Update {
     fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
+
         roi = roi.append_roinput(self.app_state.pack());
         roi = roi.append_roinput(self.delegate.pack());
         roi = roi.append_roinput(self.verification_key.pack());
@@ -74,13 +78,33 @@ impl Packable for Permissions {
 
 impl Packable for Events {
     fn pack(&self) -> ROInput {
-        ROInput::new().append_field(self.hash.0)
+        let init = hash_noinput(ZK_APP_EVENTS_EMPTY).unwrap();
+
+        let out: Fp = self.data.iter().rfold(init, |acc: Fp, event: &Vec<Field>| {
+            let event_hash = hash_with_prefix(
+                ZK_APP_EVENT_PREFIX,
+                event.iter().map(|f| f.0).collect::<Vec<Fp>>().as_slice(),
+            )
+            .unwrap();
+            hash_with_prefix(ZK_APP_EVENTS_PREFIX, &[acc, event_hash]).unwrap()
+        });
+        ROInput::new().append_field(out)
     }
 }
 
 impl Packable for Actions {
     fn pack(&self) -> ROInput {
-        ROInput::new().append_field(self.hash.0)
+        let init = hash_noinput(ZK_APP_ACTIONS_EMPTY).unwrap();
+
+        let out: Fp = self.data.iter().rfold(init, |acc: Fp, event: &Vec<Field>| {
+            let event_hash = hash_with_prefix(
+                ZK_APP_EVENT_PREFIX,
+                event.iter().map(|f| f.0).collect::<Vec<Fp>>().as_slice(),
+            )
+            .unwrap();
+            hash_with_prefix(ZK_APP_ACTIONS_PREFIX, &[acc, event_hash]).unwrap()
+        });
+        ROInput::new().append_field(out)
     }
 }
 
@@ -247,6 +271,12 @@ impl Packable for Field {
     }
 }
 
+impl Packable for ActionState {
+    fn pack(&self) -> ROInput {
+        ROInput::new().append_field(self.0 .0)
+    }
+}
+
 impl Packable for RangeCondition<UInt32> {
     fn pack(&self) -> ROInput {
         ROInput::new().append_u32(self.lower).append_u32(self.upper)
@@ -306,6 +336,16 @@ impl Packable for Option<Bool> {
 }
 
 impl<T: Packable> Packable for Vec<T> {
+    fn pack(&self) -> ROInput {
+        let mut roi = ROInput::new();
+        for item in self {
+            roi = roi.append_roinput(item.pack());
+        }
+        roi
+    }
+}
+
+impl<T: Packable, const N: usize> Packable for [T; N] {
     fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
         for item in self {
@@ -464,7 +504,6 @@ mod test {
                 ],
                 vec![super::Field(Fp::from(100))],
             ],
-            hash: super::Field(Fp::from(999)),
         };
         let roi = events.pack();
         let expected_roi = build_roi(vec![ROValue::Field("999".to_string())]);
@@ -478,7 +517,6 @@ mod test {
         // Only hash is included in toInput (not the actual data)
         let actions = super::Actions {
             data: vec![vec![super::Field(Fp::from(42)), super::Field(Fp::from(43))]],
-            hash: super::Field(Fp::from(888)),
         };
         let roi = actions.pack();
         let expected_roi = build_roi(vec![ROValue::Field("888".to_string())]);

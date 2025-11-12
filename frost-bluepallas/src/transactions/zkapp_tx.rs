@@ -2,7 +2,10 @@ use ark_ff::Field as ArkField;
 use mina_signer::CompressedPubKey;
 use serde::{Deserialize, Serialize};
 
-use crate::transactions::MEMO_BYTES;
+use crate::transactions::{
+    zkapp_tx::{commit::hash_noinput, constants::APP_STATE_LENGTH},
+    MEMO_BYTES,
+};
 
 mod commit;
 mod constants;
@@ -82,7 +85,7 @@ pub struct AccountUpdateBody {
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Update {
-    pub app_state: Vec<Option<Field>>,
+    pub app_state: [Option<Field>; APP_STATE_LENGTH],
     pub delegate: Option<PublicKey>,
     pub verification_key: Option<VerificationKeyData>,
     pub permissions: Option<Permissions>,
@@ -128,7 +131,7 @@ pub struct AccountPreconditions {
     pub nonce: Option<RangeCondition<UInt32>>,
     pub receipt_chain_hash: Option<ReceiptChainHash>,
     pub delegate: Option<PublicKey>,
-    pub state: Vec<Option<Field>>,
+    pub state: [Option<Field>; APP_STATE_LENGTH],
     pub action_state: Option<ActionState>,
     pub proved_state: Option<Bool>,
     pub is_new: Option<Bool>,
@@ -148,13 +151,11 @@ pub struct NetworkPreconditions {
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Events {
     pub data: Vec<Vec<Field>>,
-    pub hash: Field,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Actions {
     pub data: Vec<Vec<Field>>,
-    pub hash: Field,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -253,9 +254,11 @@ impl Default for TokenId {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ActionState(pub Field);
+
 // Derived types
 pub type StateHash = Field;
-pub type ActionState = Field;
 pub type VerificationKeyHash = Field;
 pub type ReceiptChainHash = Field;
 pub type TransactionVersion = UInt32;

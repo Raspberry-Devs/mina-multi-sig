@@ -2,8 +2,9 @@
 
 use super::zkapp_packable::Packable;
 use crate::transactions::zkapp_tx::{
-    Field, Permissions, PublicKey, RangeCondition, SetVerificationKey, TimingData, TokenSymbol,
-    UInt32, UInt64, VerificationKeyData, ZkappUri,
+    commit::hash_noinput, constants::ZK_ACTION_STATE_EMPTY, ActionState, Field, Permissions,
+    PublicKey, RangeCondition, SetVerificationKey, TimingData, TokenSymbol, UInt32, UInt64,
+    VerificationKeyData, ZkappUri,
 };
 use mina_hasher::ROInput;
 use mina_signer::CompressedPubKey;
@@ -15,6 +16,14 @@ pub trait Emptiable {
 impl Emptiable for Field {
     fn empty_roi() -> ROInput {
         Self(mina_hasher::Fp::from(0)).pack()
+    }
+}
+
+impl Emptiable for ActionState {
+    fn empty_roi() -> ROInput {
+        let field = hash_noinput(ZK_ACTION_STATE_EMPTY).unwrap();
+
+        ROInput::new().append_field(field)
     }
 }
 

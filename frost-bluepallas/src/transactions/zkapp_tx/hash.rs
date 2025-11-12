@@ -19,7 +19,7 @@ fn param_to_field_impl(param: &str, default: &[u8; 32]) -> Result<Fp, BluePallas
 pub fn param_to_field(param: &str) -> Result<Fp, BluePallasError> {
     const DEFAULT: &[u8; 32] = b"********************\0\0\0\0\0\0\0\0\0\0\0\0";
 
-    if param.len() > 20 {
+    if param.len() > DEFAULT.len() {
         return Err(BluePallasError::InvalidZkAppCommand(
             "must be 20 byte maximum".to_string(),
         ));

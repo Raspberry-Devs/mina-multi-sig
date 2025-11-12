@@ -137,10 +137,6 @@ fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
 
     // Pack bits into fields (254 bits per field for Fp)
     let packed_fields = pack_to_field(&bits);
-    let packed_fields_str = packed_fields
-        .iter()
-        .map(|f| f.to_string())
-        .collect::<Vec<String>>();
 
     hash_with_prefix(constants::ZK_APP_MEMO, &packed_fields)
 }
@@ -226,6 +222,13 @@ fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
             signature: Some(authorization),
         },
     }
+}
+
+pub(crate) fn hash_noinput(prefix: &str) -> BluePallasResult<Fp> {
+    let mut sponge =
+        ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
+    sponge.absorb(&[param_to_field(prefix)?]);
+    Ok(sponge.squeeze())
 }
 
 pub(crate) fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
