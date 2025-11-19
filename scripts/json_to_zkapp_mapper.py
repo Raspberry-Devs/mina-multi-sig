@@ -70,6 +70,13 @@ def format_field(value: Union[str, int, None]) -> str:
     raise ValueError(f"Unsupported field value: {value!r}")
 
 
+def format_field_token(value: Union[str, int, None]) -> str:
+    """Format a field used inside TokenId."""
+    # TokenId always wraps a Field, but the inner representation is the same.
+    inner = format_field(value)
+    return f"TokenId({inner})"
+
+
 def format_public_key(key_data: Union[str, Dict[str, Any], None]) -> str:
     """Format a public key for Rust PublicKey type."""
     if key_data is None:
@@ -128,61 +135,60 @@ def format_auth_required(auth_str: Optional[str]) -> str:
 
 
 def format_app_state(app_state: List[Any]) -> str:
-    """Format app_state: Vec<Option<Field>>."""
-    items = []
+    """Format app_state as a slice [Option<Field>; 8]."""
+    items: List[str] = []
     for item in app_state:
         if item is None:
             items.append("None")
         else:
             items.append(f"Some({format_field(item)})")
-    joined = ',\n                                    '.join(items)
-    return f"vec![\n                                    {joined},\n                                ]"
+    joined_inline = ", ".join(items)
+    # match zkapp_proper.rs style: slice literal
+    return f"[{joined_inline}]"
 
 
 def format_events(events: List[List[Union[str, int]]]) -> str:
-    """Format events array for Rust Events struct."""
+    """Format events for Rust Events struct without hash field."""
     if not events:
         data_formatted = "vec![]"
     else:
-        formatted_events = []
+        formatted_events: List[str] = []
         for event in events:
             formatted_fields = [format_field(field) for field in event]
             formatted_events.append(f"vec![{', '.join(formatted_fields)}]")
         joined_events = ',\n                                    '.join(formatted_events)
         data_formatted = f"vec![\n                                    {joined_events},\n                                ]"
     return f"""Events {{
-                                data: {data_formatted},
-                                hash: Field::default(),
+                                data: {data_formatted}
                             }}"""
 
 
 def format_actions(actions: List[List[Union[str, int]]]) -> str:
-    """Format actions array for Rust Actions struct."""
+    """Format actions array for Rust Actions struct without hash field."""
     if not actions:
         data_formatted = "vec![]"
     else:
-        formatted_actions = []
+        formatted_actions: List[str] = []
         for action in actions:
             formatted_fields = [format_field(field) for field in action]
             formatted_actions.append(f"vec![{', '.join(formatted_fields)}]")
         joined_actions = ',\n                                    '.join(formatted_actions)
         data_formatted = f"vec![\n                                    {joined_actions},\n                                ]"
     return f"""Actions {{
-                                data: {data_formatted},
-                                hash: Field::default(),
+                                data: {data_formatted}
                             }}"""
 
 
 def format_account_state(state: List[Any]) -> str:
-    """Format account state: Vec<Option<Field>>."""
-    items = []
+    """Format account state as a slice [Option<Field>; 8]."""
+    items: List[str] = []
     for item in state:
         if item is None:
             items.append("None")
         else:
             items.append(f"Some({format_field(item)})")
-    joined = ',\n                                            '.join(items)
-    return f"vec![\n                                            {joined},\n                                        ]"
+    joined_inline = ", ".join(items)
+    return f"[{joined_inline}]"
 
 
 def format_verification_key(vk_data: Optional[Dict[str, Any]]) -> str:
@@ -276,7 +282,15 @@ def format_epoch_data(epoch_data: Dict[str, Any]) -> str:
                                     }}"""
 
 
-def format_account_update(update: Dict[str, Any], index: int) -> str:
+def format_action_state_opt(value: Any) -> str:
+    """Format Option<ActionState>."""
+    if value is None:
+        return "None"
+    inner = format_field(value)
+    return f"Some(ActionState({inner}))"
+
+
+def format_account_update(update: Dict[str, Any], index: int, proper: bool) -> str:
     """Format a single account update for Rust."""
     body = update["body"]
 
@@ -300,11 +314,14 @@ def format_account_update(update: Dict[str, Any], index: int) -> str:
     # update fields
     update_data = body["update"]
 
+    # Always wrap token_id in TokenId(...)
+    token_formatter = format_field_token
+
     return f"""// Account update {index + 1}
                     AccountUpdate {{
                         body: AccountUpdateBody {{
                             public_key: {format_public_key(body["publicKey"])},
-                            token_id: {format_field(body["tokenId"])},
+                            token_id: {token_formatter(body["tokenId"])},
                             update: Update {{
                                 app_state: {format_app_state(update_data["appState"])},
                                 delegate: {format_option_public_key(update_data.get("delegate"))},
@@ -340,7 +357,7 @@ def format_account_update(update: Dict[str, Any], index: int) -> str:
                                     receipt_chain_hash: {format_option_field(account.get("receiptChainHash"))},
                                     delegate: {format_option_public_key(account.get("delegate"))},
                                     state: {format_account_state(account["state"])},
-                                    action_state: {format_option_field(account.get("actionState"))},
+                                    action_state: {format_action_state_opt(account.get("actionState"))},
                                     proved_state: {format_option_bool(account.get("provedState"))},
                                     is_new: {format_option_bool(account.get("isNew"))},
                                 }},
@@ -371,12 +388,31 @@ def generate_zkapp_command(js_data: Dict[str, Any], test_name: str = "complex_zk
     account_updates = js_data["accountUpdates"]
     memo = js_data["memo"]
 
-    formatted_updates = []
+    # Heuristic: still used for token_id / action_state / network & hashes.
+    proper = test_name == "multiple_account_updates"
+
+    formatted_updates: List[str] = []
     for i, update in enumerate(account_updates):
-        formatted_updates.append(format_account_update(update, i))
+        formatted_updates.append(format_account_update(update, i, proper))
 
     valid_until_val = fee_payer["body"].get("validUntil", None)
     valid_until = f"Some({_int_token(valid_until_val)})" if valid_until_val is not None else "None"
+
+    # Always use decode_memo_from_base58 for memo
+    memo_expr = f'decode_memo_from_base58("{escape_string(memo)}")'
+
+    if proper:
+        network = "NetworkId::TESTNET"
+        expected_memo_hash = js_data.get("expectedMemoHash", "0")
+        expected_fee_payer_hash = js_data.get("expectedFeePayerHash", "0")
+        expected_account_updates_commitment = js_data.get("expectedAccountUpdatesCommitment", "0")
+        expected_full_commitment = js_data.get("expectedFullCommitment", "0")
+    else:
+        network = "NetworkId::MAINNET"
+        expected_memo_hash = "0"
+        expected_fee_payer_hash = "0"
+        expected_account_updates_commitment = "0"
+        expected_full_commitment = "0"
 
     return f"""ZkAppTestVector {{
             name: "{test_name}",
@@ -393,13 +429,13 @@ def generate_zkapp_command(js_data: Dict[str, Any], test_name: str = "complex_zk
                 account_updates: vec![
 {",".join(formatted_updates)},
                 ],
-                memo: "{escape_string(memo)}".to_string(),
+                memo: {memo_expr},
             }},
-            network: NetworkId::MAINNET,
-            expected_memo_hash: "0",
-            expected_fee_payer_hash: "0",
-            expected_account_updates_commitment: "0",
-            expected_full_commitment: "0",
+            network: {network},
+            expected_memo_hash: "{expected_memo_hash}",
+            expected_fee_payer_hash: "{expected_fee_payer_hash}",
+            expected_account_updates_commitment: "{expected_account_updates_commitment}",
+            expected_full_commitment: "{expected_full_commitment}",
         }}"""
 
 
