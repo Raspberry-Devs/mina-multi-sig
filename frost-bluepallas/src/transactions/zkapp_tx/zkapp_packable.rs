@@ -7,6 +7,7 @@ use crate::transactions::zkapp_tx::constants::{
 use crate::transactions::zkapp_tx::zkapp_emptiable::Emptiable;
 use crate::transactions::zkapp_tx::AccountUpdate;
 use crate::transactions::zkapp_tx::*;
+use ark_ec::AdditiveGroup;
 use mina_hasher::{Fp, ROInput as MinaHasherROInput};
 
 // ------------------------------------------------------------------------------------------------
@@ -25,10 +26,41 @@ pub enum BitData {
     BYTES { val: Vec<u8> },
 }
 
+impl BitData {
+    pub fn bit_data_size(&self) -> usize {
+        match self {
+            BitData::U32 { .. } => 32,
+            BitData::U64 { .. } => 64,
+            BitData::BOOL { .. } => 1,
+            BitData::BYTES { val } => val.len() * 8,
+        }
+    }
+
+    pub fn to_field(&self) -> Fp {
+        match self {
+            BitData::U32 { val } => Fp::from(*val as u64),
+            BitData::U64 { val } => Fp::from(*val),
+            BitData::BOOL { val } => {
+                if *val {
+                    Fp::ONE
+                } else {
+                    Fp::ZERO
+                }
+            }
+            BitData::BYTES { val } => {
+                let mut bytes = [0u8; 32];
+                let len = val.len().min(32);
+                bytes[..len].copy_from_slice(&val[..len]);
+                Fp::from_random_bytes(&bytes).expect("Failed to convert bytes to field")
+            }
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct ROInput {
-    bits: Vec<BitData>,
-    fields: Vec<Fp>,
+    pub bits: Vec<BitData>,
+    pub fields: Vec<Fp>,
 }
 
 // Represents bits as tuples simillarly as o1js in Typescript
@@ -124,7 +156,6 @@ impl Packable for AccountUpdateBody {
         roi = roi.append_roinput(self.events.pack()); // Events
         roi = roi.append_roinput(self.actions.pack()); // Actions
         roi = roi.append_field(self.call_data.0);
-        roi = roi.append_u32(self.call_depth);
         roi = roi.append_roinput(self.preconditions.pack()); // Preconditions
         roi = roi.append_bool(self.use_full_commitment);
         roi = roi.append_bool(self.implicit_account_creation_fee);

@@ -16,7 +16,7 @@ use crate::{
     errors::{BluePallasError, BluePallasResult},
     transactions::zkapp_tx::{
         constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
-        hash::param_to_field,
+        hash::{pack_to_fields, param_to_field},
         zkapp_packable::Packable,
         AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer, RangeCondition,
         ZKAppCommand,
@@ -108,7 +108,7 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
 
 /// Packs a slice of bits into field elements, taking chunks of 254 bits at a time.
 /// This matches the o1js `packToFieldsLegacy` behavior for bit packing.
-fn pack_to_field(bits: &[bool]) -> Vec<Fp> {
+fn pack_to_field_bool(bits: &[bool]) -> Vec<Fp> {
     let mut packed_fields = Vec::new();
     let mut remaining_bits = bits;
 
@@ -136,7 +136,7 @@ fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
         .collect();
 
     // Pack bits into fields (254 bits per field for Fp)
-    let packed_fields = pack_to_field(&bits);
+    let packed_fields = pack_to_field_bool(&bits);
 
     hash_with_prefix(constants::ZK_APP_MEMO, &packed_fields)
 }
@@ -250,10 +250,16 @@ fn hash_account_update(
     assert_account_update_authorization_kind(account_update)?;
 
     // TODO: Check whether this is consistent with packToFields() in o1js
-    let packed_inputs = account_update.pack().to_mina_hasher_roi();
-    let inputs = packed_inputs.to_fields();
+    let roi = account_update.pack();
+    let bit_str = roi
+        .bits
+        .iter()
+        .map(|b| format!("{:?}", b))
+        .collect::<Vec<String>>();
+    let _bit_str = bit_str.join("");
+    let inputs = pack_to_fields(roi);
     let network_zk = ZkAppBodyPrefix::from(network.clone());
-    hash_with_prefix(network_zk.into(), &inputs)
+    hash_with_prefix(network_zk.into(), &inputs.fields)
 }
 
 fn assert_account_update_authorization_kind(
@@ -322,7 +328,7 @@ mod tests {
         let mut bits = vec![true];
         bits.extend(vec![false; 271]);
 
-        let packed_fields = pack_to_field(&bits);
+        let packed_fields = pack_to_field_bool(&bits);
         assert_eq!(packed_fields.len(), 2);
         assert_eq!(packed_fields[0], Fp::from(1u64));
         assert_eq!(packed_fields[1], Fp::from(0u64));
@@ -354,7 +360,7 @@ mod tests {
         ];
         assert_eq!(bits.len(), 272);
 
-        let packed_fields = pack_to_field(&bits);
+        let packed_fields = pack_to_field_bool(&bits);
         assert_eq!(packed_fields.len(), 2);
         assert_eq!(packed_fields[0], Fp::from(3049390593u64));
         assert_eq!(packed_fields[1], Fp::from(0u64));
