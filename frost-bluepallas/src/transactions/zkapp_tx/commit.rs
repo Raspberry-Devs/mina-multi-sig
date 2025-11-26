@@ -250,6 +250,11 @@ fn hash_account_update(
     assert_account_update_authorization_kind(account_update)?;
 
     let roi = account_update.pack();
+    let fields_str = roi
+        .fields
+        .iter()
+        .map(|f| f.to_string())
+        .collect::<Vec<String>>();
     let bits_str = roi
         .bits
         .iter()

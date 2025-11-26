@@ -107,7 +107,7 @@ def compare_arrays(arr1, arr2):
 # --------------------------
 
 # (1) Paste your giant text blob here:
-textA = "BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }U32 { val: 2453 }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }BYTES { val: [0, 0, 0, 0, 0, 0] }BOOL { val: true }U64 { val: 0 }U32 { val: 60852 }U64 { val: 3933 }U32 { val: 16023 }U64 { val: 3075949746781736 }BOOL { val: false }U64 { val: 18446744073709551615 }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: false }U32 { val: 0 }U32 { val: 4294967295 }BOOL { val: true }U32 { val: 173530 }U32 { val: 45726 }BOOL { val: false }U64 { val: 0 }U64 { val: 18446744073709551615 }BOOL { val: false }U32 { val: 0 }U32 { val: 4294967295 }BOOL { val: true }BOOL { val: true }U64 { val: 108277737489898340 }U64 { val: 156620495353075 }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: true }U32 { val: 8639 }U32 { val: 0 }BOOL { val: true }BOOL { val: true }U64 { val: 2329838522953452 }U64 { val: 1555697 }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: false }U32 { val: 0 }U32 { val: 4294967295 }BOOL { val: false }U64 { val: 0 }U64 { val: 18446744073709551615 }BOOL { val: false }U32 { val: 0 }U32 { val: 4294967295 }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }U32 { val: 0 }U32 { val: 4294967295 }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: false }"
+textA = "BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }U32 { val: 3 }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: false }BYTES { val: [0, 0, 0, 0, 0, 0] }BOOL { val: true }U64 { val: 3728633945706664709 }U32 { val: 12282 }U64 { val: 1 }U32 { val: 13092938 }U64 { val: 1133034378618331073 }BOOL { val: false }U64 { val: 54521 }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: true }U32 { val: 4294967295 }U32 { val: 3 }BOOL { val: true }U32 { val: 1 }U32 { val: 1377887 }BOOL { val: true }U64 { val: 1 }U64 { val: 18446744073709551615 }BOOL { val: true }U32 { val: 1378969044 }U32 { val: 0 }BOOL { val: true }BOOL { val: true }U64 { val: 30129300470 }U64 { val: 2835200861991394646 }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }U32 { val: 857183953 }U32 { val: 14 }BOOL { val: false }BOOL { val: true }U64 { val: 492790850673 }U64 { val: 88380204 }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }U32 { val: 0 }U32 { val: 4294967295 }BOOL { val: false }U64 { val: 0 }U64 { val: 18446744073709551615 }BOOL { val: false }U32 { val: 0 }U32 { val: 4294967295 }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: true }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: false }BOOL { val: false }U32 { val: 0 }U32 { val: 4294967295 }BOOL { val: false }BOOL { val: false }BOOL { val: true }BOOL { val: false }BOOL { val: false }BOOL { val: false }"
 # (2) Paste your second array here (must be valid Python literal with n removed or converted)
 #     Example: replace 123n → 123
 arrayB = [
@@ -116,10 +116,6 @@ arrayB = [
     1,
   ],
   [
-    0,
-    1,
-  ],
-  [
     1,
     1,
   ],
@@ -129,10 +125,6 @@ arrayB = [
   ],
   [
     1,
-    1,
-  ],
-  [
-    0,
     1,
   ],
   [
@@ -156,35 +148,11 @@ arrayB = [
     1,
   ],
   [
-    0,
-    1,
-  ],
-  [
     1,
     1,
   ],
   [
-    0,
     1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
     1,
   ],
   [
@@ -197,18 +165,6 @@ arrayB = [
   ],
   [
     1,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
     1,
   ],
   [
@@ -248,18 +204,54 @@ arrayB = [
     1,
   ],
   [
-    2453,
+    0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    3,
     32,
   ],
   [
-    0,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
     1,
     1,
   ],
@@ -268,15 +260,11 @@ arrayB = [
     1,
   ],
   [
-    0,
-    1,
-  ],
-  [
     1,
     1,
   ],
   [
-    0,
+    1,
     1,
   ],
   [
@@ -304,18 +292,6 @@ arrayB = [
     1,
   ],
   [
-    1,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
     0,
     1,
   ],
@@ -324,7 +300,31 @@ arrayB = [
     1,
   ],
   [
+    1,
+    1,
+  ],
+  [
     0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
     1,
   ],
   [
@@ -340,28 +340,76 @@ arrayB = [
     1,
   ],
   [
-    0,
+    3728633945706664709,
     64,
   ],
   [
-    60852,
+    12282,
     32,
   ],
   [
-    3933,
+    1,
     64,
   ],
   [
-    16023,
+    13092938,
     32,
   ],
   [
-    3075949746781736,
+    1133034378618331073,
     64,
   ],
   [
     0,
     1,
+  ],
+  [
+    54521,
+    64,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    4294967295,
+    32,
+  ],
+  [
+    3,
+    32,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    32,
+  ],
+  [
+    1377887,
+    32,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    64,
   ],
   [
     18446744073709551615,
@@ -372,23 +420,11 @@ arrayB = [
     1,
   ],
   [
-    1,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
+    1378969044,
     32,
   ],
   [
-    4294967295,
+    0,
     32,
   ],
   [
@@ -396,91 +432,15 @@ arrayB = [
     1,
   ],
   [
-    173530,
-    32,
-  ],
-  [
-    45726,
-    32,
-  ],
-  [
-    0,
+    1,
     1,
   ],
   [
-    0,
+    30129300470,
     64,
   ],
   [
-    18446744073709551615,
-    64,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
-    32,
-  ],
-  [
-    4294967295,
-    32,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    108277737489898340,
-    64,
-  ],
-  [
-    156620495353075,
-    64,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    8639,
-    32,
-  ],
-  [
-    0,
-    32,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    2329838522953452,
-    64,
-  ],
-  [
-    1555697,
+    2835200861991394646,
     64,
   ],
   [
@@ -488,7 +448,47 @@ arrayB = [
     1,
   ],
   [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    857183953,
+    32,
+  ],
+  [
+    14,
+    32,
+  ],
+  [
     0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    492790850673,
+    64,
+  ],
+  [
+    88380204,
+    64,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
     1,
   ],
   [
@@ -532,50 +532,6 @@ arrayB = [
     32,
   ],
   [
-    1,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    0,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
-    1,
-    1,
-  ],
-  [
     0,
     1,
   ],
@@ -589,6 +545,50 @@ arrayB = [
   ],
   [
     1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    0,
+    1,
+  ],
+  [
+    1,
+    1,
+  ],
+  [
+    0,
+    1,
+  ],
+  [
+    0,
+    1,
+  ],
+  [
+    0,
     1,
   ],
   [
@@ -608,11 +608,11 @@ arrayB = [
     32,
   ],
   [
-    1,
+    0,
     1,
   ],
   [
-    1,
+    0,
     1,
   ],
   [
@@ -624,7 +624,7 @@ arrayB = [
     1,
   ],
   [
-    1,
+    0,
     1,
   ],
   [

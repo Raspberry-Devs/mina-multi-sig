@@ -4,6 +4,7 @@ use crate::transactions::zkapp_tx::constants::{
     MINA_ZKAPP_URI, ZK_APP_ACTIONS_EMPTY, ZK_APP_ACTIONS_PREFIX, ZK_APP_EVENTS_EMPTY,
     ZK_APP_EVENTS_PREFIX, ZK_APP_EVENT_PREFIX,
 };
+use crate::transactions::zkapp_tx::hash::pack_to_fields;
 use crate::transactions::zkapp_tx::zkapp_emptiable::Emptiable;
 use crate::transactions::zkapp_tx::AccountUpdate;
 use crate::transactions::zkapp_tx::*;
@@ -371,7 +372,7 @@ impl Packable for ZkappUri {
             }
         }
         field_inputs = field_inputs.append_bool(true);
-        let fields = field_inputs.to_mina_hasher_roi().to_fields();
+        let fields = pack_to_fields(field_inputs).fields;
         let hash = hash_with_prefix(MINA_ZKAPP_URI, &fields).unwrap();
         ROInput::new().append_field(hash)
     }
