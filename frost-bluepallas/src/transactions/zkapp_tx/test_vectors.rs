@@ -609,6 +609,353 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
             expected_fee_payer_hash: "13599943768324718842045631264846766373395338777851778014399949785850374160876",
             expected_account_updates_commitment: "18157416997738750511548808808606476591395902704575661339284356171982987558452",
             expected_full_commitment: "11465652597178027662545139048165778162608334013746722764317712703090464610236",
+        },
+        ZkAppTestVector {
+            name: "double_account_update_with_events",
+            zkapp_command: ZKAppCommand {
+                fee_payer: FeePayer {
+                    body: FeePayerBody {
+                        public_key: PublicKey(CompressedPubKey::from_address("B62qppyJBbq3bXjkpRTKQWrRurNJKUCKsVGXWdVpEtxvk7UJbj6uzUt").unwrap()),
+                        fee: 151,
+                        valid_until: Some(0),
+                        nonce: 1928082,
+                    },
+                    authorization: "7mWxjLYgbJUkZNcGouvhVj5tJ8yu9hoexb9ntvPK8t5LHqzmrL6QJjjKtf5SgmxB4QWkDw7qoMMbbNGtHVpsbJHPyTy2EzRQ".to_string(),
+                },
+                account_updates: vec![
+// Account update 1
+                    AccountUpdate {
+                        body: AccountUpdateBody {
+                            public_key: PublicKey(CompressedPubKey::from_address("B62qj7GVkFu6FtpAVTmLc4LmzYgt8Afm7CTBCDkoPPUw7vU6f7hpMG7").unwrap()),
+                            token_id: TokenId(Field(Fp::from_str("1").unwrap())),
+                            update: Update {
+                                app_state: [None, None, None, Some(Field(Fp::from_str("8819888681218165626446829170481097373073529465021744751038551417536043148673").unwrap())), None, None, Some(Field(Fp::from_str("1692330205296585158450366281162692382719215091321008255255817727117989698655").unwrap())), None],
+                                delegate: Some(PublicKey(CompressedPubKey::from_address("B62qocNdwPaHkTtSB87HLb6RUpSm62YX3Km2d1UiiwKDeZ122qginSZ").unwrap())),
+                                verification_key: None,
+                                permissions: None,
+                                zkapp_uri: None,
+                                token_symbol: Some(TokenSymbol("@".as_bytes().to_vec())),
+                                timing: None,
+                                voting_for: Some(Field(Fp::from_str("12990381296866422932578728271658285").unwrap())),
+                            },
+                            balance_change: BalanceChange {
+                                magnitude: 111,
+                                sgn: -1,
+                            },
+                            increment_nonce: false,
+                            events: Events {
+                                data: vec![
+                                    vec![Field(Fp::from_str("562408180161977288896337561286080521093963918674847434255053002192155663164").unwrap())],
+                                    vec![Field(Fp::from_str("28948022309329048855892746252171976963363056481941560715954676764349967630336").unwrap()), Field(Fp::from_str("1").unwrap()), Field(Fp::from_str("29035303265434039087799091422").unwrap())],
+                                ]
+                            },
+                            actions: Actions {
+                                data: vec![]
+                            },
+                            call_data: Field(Fp::from_str("3910415258479541505554893188524842").unwrap()),
+                            call_depth: 0,
+                            preconditions: Preconditions {
+                                network: NetworkPreconditions {
+                                    snarked_ledger_hash: Some(Field(Fp::from_str("17832250625107159026622621").unwrap())),
+                                    blockchain_length: None,
+                                    min_window_density: Some(RangeCondition { lower: 1622547766, upper: 12483700 }),
+                                    total_currency: None,
+                                    global_slot_since_genesis: None,
+                                    staking_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: Some(Field(Fp::from_str("51821503901769895").unwrap())),
+                                            total_currency: None,
+                                        },
+                                        seed: None,
+                                        start_checkpoint: None,
+                                        lock_checkpoint: None,
+                                        epoch_length: None,
+                                    },
+                                    next_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: None,
+                                            total_currency: Some(RangeCondition { lower: 5492, upper: 9240 }),
+                                        },
+                                        seed: None,
+                                        start_checkpoint: None,
+                                        lock_checkpoint: Some(Field(Fp::from_str("23620217203579031836388864172183398476037989218729185450324161327256194641491").unwrap())),
+                                        epoch_length: Some(RangeCondition { lower: 3, upper: 14 }),
+                                    },
+                                },
+                                account: AccountPreconditions {
+                                    balance: None,
+                                    nonce: Some(RangeCondition { lower: 131981827, upper: 0 }),
+                                    receipt_chain_hash: Some(Field(Fp::from_str("12611067225855484915935185642780160742344057998944763254977936423282972300986").unwrap())),
+                                    delegate: None,
+                                    state: [None, None, None, None, None, None, None, None],
+                                    action_state: Some(ActionState(Field(Fp::from_str("0").unwrap()))),
+                                    proved_state: None,
+                                    is_new: None,
+                                },
+                                valid_while: Some(RangeCondition { lower: 0, upper: 11083 }),
+                            },
+                            use_full_commitment: true,
+                            implicit_account_creation_fee: false,
+                            may_use_token: MayUseToken {
+                                parents_own_token: true,
+                                inherit_from_parent: false,
+                            },
+                            authorization_kind: AuthorizationKind {
+                                is_signed: false,
+                                is_proved: false,
+                                verification_key_hash: Field(Fp::from_str("3392518251768960475377392625298437850623664973002200885669375116181514017494").unwrap()),
+                            },
+                        },
+                        authorization: Authorization {
+                            proof: None,
+                            signature: None,
+                        },
+                    },// Account update 2
+                    AccountUpdate {
+                        body: AccountUpdateBody {
+                            public_key: PublicKey(CompressedPubKey::from_address("B62qqxKu6uAH8YE4ruCVEHiFrGEA8yfkgoypyziLPRJyNQhSZko6e6j").unwrap()),
+                            token_id: TokenId(Field(Fp::from_str("6146106391706486453845129162516639816604601077972282898764679643756409268549").unwrap())),
+                            update: Update {
+                                app_state: [None, None, None, None, None, Some(Field(Fp::from_str("1").unwrap())), None, Some(Field(Fp::from_str("323439875152756399374005967069376665314565730243793527987318640003836125956").unwrap()))],
+                                delegate: None,
+                                verification_key: Some(VerificationKeyData {
+                                        data: "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".to_string(),
+                                        hash: Field(Fp::from_str("3392518251768960475377392625298437850623664973002200885669375116181514017494").unwrap()),
+                                    }),
+                                permissions: Some(Permissions {
+                                        edit_state: AuthRequired::None,
+                                        access: AuthRequired::Signature,
+                                        send: AuthRequired::Either,
+                                        receive: AuthRequired::None,
+                                        set_delegate: AuthRequired::Either,
+                                        set_permissions: AuthRequired::Either,
+                                        set_verification_key: SetVerificationKey {
+                                            auth: AuthRequired::Either,
+                                            txn_version: 37676,
+                                        },
+                                        set_zkapp_uri: AuthRequired::Proof,
+                                        edit_action_state: AuthRequired::Signature,
+                                        set_token_symbol: AuthRequired::Either,
+                                        increment_nonce: AuthRequired::Impossible,
+                                        set_voting_for: AuthRequired::Signature,
+                                        set_timing: AuthRequired::Signature,
+                                    }),
+                                zkapp_uri: None,
+                                token_symbol: None,
+                                timing: None,
+                                voting_for: Some(Field(Fp::from_str("19608909489600594446776217430597835525198526882652587387280316089853339299158").unwrap())),
+                            },
+                            balance_change: BalanceChange {
+                                magnitude: 18446744073709551615,
+                                sgn: -1,
+                            },
+                            increment_nonce: true,
+                            events: Events {
+                                data: vec![]
+                            },
+                            actions: Actions {
+                                data: vec![]
+                            },
+                            call_data: Field(Fp::from_str("4551716132475598677738840472488214637458989517970441192584623411570370054398").unwrap()),
+                            call_depth: 1,
+                            preconditions: Preconditions {
+                                network: NetworkPreconditions {
+                                    snarked_ledger_hash: Some(Field(Fp::from_str("21780810669622180198827412605752019112694213974273572536627080129337651111000").unwrap())),
+                                    blockchain_length: None,
+                                    min_window_density: Some(RangeCondition { lower: 1, upper: 4294967295 }),
+                                    total_currency: Some(RangeCondition { lower: 1, upper: 791419 }),
+                                    global_slot_since_genesis: Some(RangeCondition { lower: 1592950278, upper: 0 }),
+                                    staking_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: Some(Field(Fp::from_str("0").unwrap())),
+                                            total_currency: Some(RangeCondition { lower: 54317587316106, upper: 2 }),
+                                        },
+                                        seed: None,
+                                        start_checkpoint: Some(Field(Fp::from_str("1").unwrap())),
+                                        lock_checkpoint: Some(Field(Fp::from_str("15978213110436055127252479336795396787655578520537771434072403615386456001953").unwrap())),
+                                        epoch_length: None,
+                                    },
+                                    next_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: Some(Field(Fp::from_str("13720321199042430609594319210292573869541827991514013501061000440117311411445").unwrap())),
+                                            total_currency: None,
+                                        },
+                                        seed: None,
+                                        start_checkpoint: None,
+                                        lock_checkpoint: Some(Field(Fp::from_str("710854467491030399989232252308792998948313006762629017627744695857927968609").unwrap())),
+                                        epoch_length: None,
+                                    },
+                                },
+                                account: AccountPreconditions {
+                                    balance: None,
+                                    nonce: Some(RangeCondition { lower: 2, upper: 1441884673 }),
+                                    receipt_chain_hash: None,
+                                    delegate: Some(PublicKey(CompressedPubKey::from_address("B62qqUYQSrFYwGzLauwLWHUi6dN7TQQcCPs32zu3Ts6Vd3VxwPjEJvq").unwrap())),
+                                    state: [Some(Field(Fp::from_str("18918325975863313496709857743978177716638145595943124736161520517413057154437").unwrap())), Some(Field(Fp::from_str("312624389692019").unwrap())), None, Some(Field(Fp::from_str("2718746757160").unwrap())), None, None, None, Some(Field(Fp::from_str("1").unwrap()))],
+                                    action_state: Some(ActionState(Field(Fp::from_str("16114744759163440918180162018664357525802952947202795285482829361715282711734").unwrap()))),
+                                    proved_state: None,
+                                    is_new: Some(false),
+                                },
+                                valid_while: None,
+                            },
+                            use_full_commitment: false,
+                            implicit_account_creation_fee: true,
+                            may_use_token: MayUseToken {
+                                parents_own_token: false,
+                                inherit_from_parent: false,
+                            },
+                            authorization_kind: AuthorizationKind {
+                                is_signed: true,
+                                is_proved: false,
+                                verification_key_hash: Field(Fp::from_str("3392518251768960475377392625298437850623664973002200885669375116181514017494").unwrap()),
+                            },
+                        },
+                        authorization: Authorization {
+                            proof: None,
+                            signature: None,
+                        },
+                    },
+                ],
+                memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
+            },
+            network: NetworkId::MAINNET,
+            expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
+            expected_fee_payer_hash: "18557821528466210466362221959818444224122964900994620153505407721900866383710",
+            expected_account_updates_commitment: "692918817100816493287714686901447970091023252434376857771101589716855696298",
+            expected_full_commitment: "74048136809654753455198087562447614502111152254006883311057305232424176558",
+        },
+        ZkAppTestVector {
+            name: "single_account_update_testnet",
+            zkapp_command: ZKAppCommand {
+                fee_payer: FeePayer {
+                    body: FeePayerBody {
+                        public_key: PublicKey(CompressedPubKey::from_address("B62qiUPy8wfB76vfLhwBUiYapDykGLk4ExhWDsYdUHSwQrHiycvMs2s").unwrap()),
+                        fee: 69039324267186314,
+                        valid_until: Some(5070715),
+                        nonce: 97154,
+                    },
+                    authorization: "7mWxjLYgbJUkZNcGouvhVj5tJ8yu9hoexb9ntvPK8t5LHqzmrL6QJjjKtf5SgmxB4QWkDw7qoMMbbNGtHVpsbJHPyTy2EzRQ".to_string(),
+                },
+                account_updates: vec![
+// Account update 1
+                    AccountUpdate {
+                        body: AccountUpdateBody {
+                            public_key: PublicKey(CompressedPubKey::from_address("B62qn2Tm2iK8CKE1bLewuBWWDqvW3g5S2gLyNhcLpDuy9r8DmEaCDdq").unwrap()),
+                            token_id: TokenId(Field(Fp::from_str("983242309351426044275241150").unwrap())),
+                            update: Update {
+                                app_state: [None, None, None, Some(Field(Fp::from_str("3496483045982956626344235296784258884962324970175121121486871437306983836437").unwrap())), Some(Field(Fp::from_str("28328378550802158595477611399583852661215863011907495366080017130083848444623").unwrap())), Some(Field(Fp::from_str("1").unwrap())), Some(Field(Fp::from_str("5281406273745783538451").unwrap())), Some(Field(Fp::from_str("1").unwrap()))],
+                                delegate: None,
+                                verification_key: Some(VerificationKeyData {
+                                        data: "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".to_string(),
+                                        hash: Field(Fp::from_str("3392518251768960475377392625298437850623664973002200885669375116181514017494").unwrap()),
+                                    }),
+                                permissions: Some(Permissions {
+                                        edit_state: AuthRequired::None,
+                                        access: AuthRequired::Either,
+                                        send: AuthRequired::Either,
+                                        receive: AuthRequired::Either,
+                                        set_delegate: AuthRequired::Impossible,
+                                        set_permissions: AuthRequired::None,
+                                        set_verification_key: SetVerificationKey {
+                                            auth: AuthRequired::None,
+                                            txn_version: 262711,
+                                        },
+                                        set_zkapp_uri: AuthRequired::None,
+                                        edit_action_state: AuthRequired::Proof,
+                                        set_token_symbol: AuthRequired::Either,
+                                        increment_nonce: AuthRequired::Signature,
+                                        set_voting_for: AuthRequired::Impossible,
+                                        set_timing: AuthRequired::None,
+                                    }),
+                                zkapp_uri: Some(ZkappUri("C".as_bytes().to_vec())),
+                                token_symbol: Some(TokenSymbol("".as_bytes().to_vec())),
+                                timing: Some(TimingData {
+                                        initial_minimum_balance: 181413,
+                                        cliff_time: 2138,
+                                        cliff_amount: 2888735079,
+                                        vesting_period: 17259962,
+                                        vesting_increment: 2,
+                                    }),
+                                voting_for: None,
+                            },
+                            balance_change: BalanceChange {
+                                magnitude: 216439,
+                                sgn: 1,
+                            },
+                            increment_nonce: true,
+                            events: Events {
+                                data: vec![]
+                            },
+                            actions: Actions {
+                                data: vec![]
+                            },
+                            call_data: Field(Fp::from_str("13940844251910663436331889860060718171445830904412681518568422235019737090171").unwrap()),
+                            call_depth: 0,
+                            preconditions: Preconditions {
+                                network: NetworkPreconditions {
+                                    snarked_ledger_hash: Some(Field(Fp::from_str("24970569756830890907032583414011800560825949545614573312036245161921365580155").unwrap())),
+                                    blockchain_length: Some(RangeCondition { lower: 1832279324, upper: 15 }),
+                                    min_window_density: None,
+                                    total_currency: Some(RangeCondition { lower: 1108052, upper: 121104388238 }),
+                                    global_slot_since_genesis: Some(RangeCondition { lower: 1, upper: 1 }),
+                                    staking_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: Some(Field(Fp::from_str("1").unwrap())),
+                                            total_currency: None,
+                                        },
+                                        seed: Some(Field(Fp::from_str("1069664032282738273837302310296469895222139999747098872502886640413086011037").unwrap())),
+                                        start_checkpoint: Some(Field(Fp::from_str("2206947745596275636271014387481303219667876497705740677468373873041316013377").unwrap())),
+                                        lock_checkpoint: Some(Field(Fp::from_str("13894592038331160844841226371684122072072682417678163406966544621591962919540").unwrap())),
+                                        epoch_length: Some(RangeCondition { lower: 1, upper: 1 }),
+                                    },
+                                    next_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: Some(Field(Fp::from_str("0").unwrap())),
+                                            total_currency: None,
+                                        },
+                                        seed: None,
+                                        start_checkpoint: Some(Field(Fp::from_str("11103193587320135865201097212279431597669221538126176806032109027788707580455").unwrap())),
+                                        lock_checkpoint: None,
+                                        epoch_length: Some(RangeCondition { lower: 48486, upper: 218 }),
+                                    },
+                                },
+                                account: AccountPreconditions {
+                                    balance: Some(RangeCondition { lower: 866, upper: 0 }),
+                                    nonce: Some(RangeCondition { lower: 5321269, upper: 2 }),
+                                    receipt_chain_hash: Some(Field(Fp::from_str("2886782260929269424992032700419650791772721097705349472210579774432180382123").unwrap())),
+                                    delegate: Some(PublicKey(CompressedPubKey::from_address("B62qkGP6ayDU7uByoSCiGnavpJNvEtqSAZB2TVozmRqo4fVUu3DF3es").unwrap())),
+                                    state: [None, Some(Field(Fp::from_str("1").unwrap())), None, Some(Field(Fp::from_str("0").unwrap())), None, Some(Field(Fp::from_str("481675703").unwrap())), Some(Field(Fp::from_str("880259374099972146003142351257535").unwrap())), None],
+                                    action_state: Some(ActionState(Field(Fp::from_str("27335263573332287112997735065213262568906234416835184540680538945325656448403").unwrap()))),
+                                    proved_state: None,
+                                    is_new: Some(false),
+                                },
+                                valid_while: Some(RangeCondition { lower: 1028632684, upper: 0 }),
+                            },
+                            use_full_commitment: false,
+                            implicit_account_creation_fee: false,
+                            may_use_token: MayUseToken {
+                                parents_own_token: false,
+                                inherit_from_parent: false,
+                            },
+                            authorization_kind: AuthorizationKind {
+                                is_signed: false,
+                                is_proved: true,
+                                verification_key_hash: Field(Fp::from_str("3392518251768960475377392625298437850623664973002200885669375116181514017494").unwrap()),
+                            },
+                        },
+                        authorization: Authorization {
+                            proof: None,
+                            signature: None,
+                        },
+                    },
+                ],
+                memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
+            },
+            network: NetworkId::TESTNET,
+            expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
+            expected_fee_payer_hash: "22591001022197211780755176808690376369488425396145396343616148937337644278803",
+            expected_account_updates_commitment: "890036752761563610176645072391048796311042767532971976592942060327069338763",
+            expected_full_commitment: "7386435648427501000342780996487927693328565178920002003169322679773714537812",
         }
 ]
 }
