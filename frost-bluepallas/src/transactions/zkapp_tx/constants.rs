@@ -32,6 +32,17 @@ pub const PREFIX_ACCOUNT_UPDATE_NODE: &str = "MinaAcctUpdateNode**";
 pub const PREFIX_ACCOUNT_UPDATE_CONS: &str = "MinaAcctUpdateCons**";
 pub const ZK_APP_MEMO: &str = "MinaZkappMemo";
 
+pub const ZK_APP_EVENTS_EMPTY: &str = "MinaZkappEventsEmpty";
+pub const ZK_APP_EVENTS_PREFIX: &str = "MinaZkappEvents";
+pub const ZK_APP_EVENT_PREFIX: &str = "MinaZkappEvent";
+
+pub const ZK_APP_ACTIONS_EMPTY: &str = "MinaZkappActionsEmpty";
+pub const ZK_APP_ACTIONS_PREFIX: &str = "MinaZkappSeqEvents";
+
+pub const ZK_ACTION_STATE_EMPTY: &str = "MinaZkappActionStateEmptyElt";
+
+pub(crate) const APP_STATE_LENGTH: usize = 8;
+
 // Enum to represent the prefix used for hashing zkapp body based on network
 pub enum ZkAppBodyPrefix {
     Mainnet,

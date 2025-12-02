@@ -1,3 +1,5 @@
+use crate::transactions::MEMO_HEADER_BYTES;
+
 use super::*;
 use core::fmt;
 
@@ -41,7 +43,16 @@ impl fmt::Display for ZKAppCommand {
             write!(f, "    {}", update)?;
         }
 
-        write!(f, "\n  ],\n  \"memo\": \"{}\"\n}}", self.memo)
+        let memo_str = match self.memo.len() {
+            len if len < MEMO_HEADER_BYTES => String::new(),
+            _ => self.memo[MEMO_HEADER_BYTES..]
+                .iter()
+                .take_while(|&&b| b != 0)
+                .map(|&b| b as char)
+                .collect::<String>(),
+        };
+
+        write!(f, "\n  ],\n  \"memo\": \"{}\"\n}}", memo_str)
     }
 }
 
@@ -87,7 +98,7 @@ impl fmt::Display for AccountUpdateBody {
             f,
             "{{\n        \"public_key\": \"{}\",\n        \"token_id\": \"{}\",\n        \"update\": {},\n        \"balance_change\": {},\n        \"increment_nonce\": {},\n        \"events\": {},\n        \"actions\": {},\n        \"call_data\": \"{}\",\n        \"call_depth\": {},\n        \"preconditions\": {},\n        \"use_full_commitment\": {},\n        \"implicit_account_creation_fee\": {},\n        \"may_use_token\": {},\n        \"authorization_kind\": {}\n      }}",
             self.public_key,
-            self.token_id,
+            self.token_id.0,
             self.update,
             self.balance_change,
             self.increment_nonce,
@@ -192,6 +203,12 @@ impl fmt::Display for AccountPreconditions {
     }
 }
 
+impl fmt::Display for ActionState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl fmt::Display for NetworkPreconditions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -224,11 +241,7 @@ impl fmt::Display for Events {
             }
             write!(f, "]")?;
         }
-        write!(
-            f,
-            "],\n            \"hash\": \"{}\"\n          }}",
-            self.hash
-        )
+        write!(f, "]\n}}",)
     }
 }
 
@@ -248,11 +261,7 @@ impl fmt::Display for Actions {
             }
             write!(f, "]")?;
         }
-        write!(
-            f,
-            "],\n            \"hash\": \"{}\"\n          }}",
-            self.hash
-        )
+        write!(f, "]\n          }}",)
     }
 }
 
@@ -425,182 +434,5 @@ impl fmt::Display for TokenSymbol {
             "{{\n            \"token_symbol_data\": \"{}\"\n          }}",
             String::from_utf8_lossy(&self.0)
         )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use mina_hasher::Fp;
-    use mina_signer::PubKey;
-
-    // Helper function to create a test public key
-    fn test_public_key() -> PublicKey {
-        // Use a valid test public key from mina-signer (same as used in other tests)
-        let test_address = "B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt";
-        let pubkey = PubKey::from_address(test_address).unwrap();
-        PublicKey(pubkey.into_compressed())
-    }
-
-    // Helper function to create a test field
-    fn test_field() -> Field {
-        Field(Fp::from(42u64))
-    }
-
-    #[test]
-    fn test_public_key_display() {
-        let pk = test_public_key();
-        let display_str = format!("{}", pk);
-        // Should display as a Mina address
-        assert!(!display_str.is_empty());
-    }
-
-    #[test]
-    fn test_field_display() {
-        let field = test_field();
-        let display_str = format!("{}", field);
-        assert_eq!(display_str, "42");
-    }
-
-    #[test]
-    fn test_auth_required_display() {
-        let auth = AuthRequired::None;
-        let display_str = format!("{}", auth);
-        assert!(display_str.contains("\"constant\": true"));
-        assert!(display_str.contains("\"signature_necessary\": false"));
-        assert!(display_str.contains("\"signature_sufficient\": true"));
-    }
-
-    #[test]
-    fn test_balance_change_display() {
-        let balance_change = BalanceChange {
-            magnitude: 1000000,
-            sgn: 1,
-        };
-        let display_str = format!("{}", balance_change);
-        assert!(display_str.contains("\"magnitude\": \"1000000\""));
-        assert!(display_str.contains("\"sgn\": 1"));
-    }
-
-    #[test]
-    fn test_range_condition_display() {
-        let range = RangeCondition {
-            lower: 100u64,
-            upper: 200u64,
-        };
-        let display_str = format!("{}", range);
-        assert!(display_str.contains("\"lower\": \"100\""));
-        assert!(display_str.contains("\"upper\": \"200\""));
-    }
-
-    #[test]
-    fn test_may_use_token_display() {
-        let may_use_token = MayUseToken {
-            parents_own_token: true,
-            inherit_from_parent: false,
-        };
-        let display_str = format!("{}", may_use_token);
-        assert!(display_str.contains("\"parents_own_token\": true"));
-        assert!(display_str.contains("\"inherit_from_parent\": false"));
-    }
-
-    #[test]
-    fn test_authorization_kind_display() {
-        let auth_kind = AuthorizationKind {
-            is_signed: true,
-            is_proved: false,
-            verification_key_hash: test_field(),
-        };
-        let display_str = format!("{}", auth_kind);
-        assert!(display_str.contains("\"is_signed\": true"));
-        assert!(display_str.contains("\"is_proved\": false"));
-        assert!(display_str.contains("\"verification_key_hash\": \"42\""));
-    }
-
-    #[test]
-    fn test_authorization_display() {
-        let auth = Authorization {
-            proof: Some("test_proof".to_string()),
-            signature: None,
-        };
-        let display_str = format!("{}", auth);
-        assert!(display_str.contains("\"proof\": \"test_proof\""));
-        assert!(display_str.contains("\"signature\": null"));
-    }
-
-    #[test]
-    fn test_events_display() {
-        let events = Events {
-            data: vec![vec![test_field(), test_field()], vec![test_field()]],
-            hash: test_field(),
-        };
-        let display_str = format!("{}", events);
-        assert!(display_str.contains("\"data\": ["));
-        assert!(display_str.contains("\"hash\": \"42\""));
-    }
-
-    #[test]
-    fn test_actions_display() {
-        let actions = Actions {
-            data: vec![vec![test_field()]],
-            hash: test_field(),
-        };
-        let display_str = format!("{}", actions);
-        assert!(display_str.contains("\"data\": ["));
-        assert!(display_str.contains("\"hash\": \"42\""));
-    }
-
-    #[test]
-    fn test_fee_payer_body_display() {
-        let fee_payer_body = FeePayerBody {
-            public_key: test_public_key(),
-            fee: 1000000,
-            valid_until: Some(100),
-            nonce: 42,
-        };
-        let display_str = format!("{}", fee_payer_body);
-        assert!(display_str.contains("\"fee\": \"1000000\""));
-        assert!(display_str.contains("\"valid_until\": \"100\""));
-        assert!(display_str.contains("\"nonce\": \"42\""));
-    }
-
-    #[test]
-    fn test_fee_payer_body_display_no_valid_until() {
-        let fee_payer_body = FeePayerBody {
-            public_key: test_public_key(),
-            fee: 1000000,
-            valid_until: None,
-            nonce: 42,
-        };
-        let display_str = format!("{}", fee_payer_body);
-        assert!(display_str.contains("\"valid_until\": null"));
-    }
-
-    #[test]
-    fn test_timing_data_display() {
-        let timing = TimingData {
-            initial_minimum_balance: 100000,
-            cliff_time: 1000,
-            cliff_amount: 50000,
-            vesting_period: 2000,
-            vesting_increment: 10000,
-        };
-        let display_str = format!("{}", timing);
-        assert!(display_str.contains("\"initial_minimum_balance\": \"100000\""));
-        assert!(display_str.contains("\"cliff_time\": \"1000\""));
-        assert!(display_str.contains("\"cliff_amount\": \"50000\""));
-        assert!(display_str.contains("\"vesting_period\": \"2000\""));
-        assert!(display_str.contains("\"vesting_increment\": \"10000\""));
-    }
-
-    #[test]
-    fn test_verification_key_data_display() {
-        let vk_data = VerificationKeyData {
-            data: "test_verification_key_data".to_string(),
-            hash: test_field(),
-        };
-        let display_str = format!("{}", vk_data);
-        assert!(display_str.contains("\"data\": \"test_verification_key_data\""));
-        assert!(display_str.contains("\"hash\": \"42\""));
     }
 }

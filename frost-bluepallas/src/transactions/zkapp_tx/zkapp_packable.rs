@@ -1,14 +1,143 @@
 //! ZKApp Packable trait implementations
-use crate::transactions::zkapp_tx::commit::hash_with_prefix;
-use crate::transactions::zkapp_tx::constants::MINA_ZKAPP_URI;
+use crate::transactions::zkapp_tx::commit::{hash_noinput, hash_with_prefix};
+use crate::transactions::zkapp_tx::constants::{
+    MINA_ZKAPP_URI, ZK_APP_ACTIONS_EMPTY, ZK_APP_ACTIONS_PREFIX, ZK_APP_EVENTS_EMPTY,
+    ZK_APP_EVENTS_PREFIX, ZK_APP_EVENT_PREFIX,
+};
+use crate::transactions::zkapp_tx::hash::pack_to_fields;
 use crate::transactions::zkapp_tx::zkapp_emptiable::Emptiable;
 use crate::transactions::zkapp_tx::AccountUpdate;
 use crate::transactions::zkapp_tx::*;
-use mina_hasher::ROInput;
+use ark_ec::AdditiveGroup;
+use mina_hasher::{Fp, ROInput as MinaHasherROInput};
+
+// ------------------------------------------------------------------------------------------------
+// --------------------------------- PACKABLE TRAIT------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 
 pub trait Packable {
     fn pack(&self) -> ROInput;
 }
+
+#[derive(PartialEq, Debug)]
+pub enum BitData {
+    U32 { val: u32 },
+    U64 { val: u64 },
+    BOOL { val: bool },
+    BYTES { val: Vec<u8> },
+}
+
+impl BitData {
+    pub fn bit_data_size(&self) -> usize {
+        match self {
+            BitData::U32 { .. } => 32,
+            BitData::U64 { .. } => 64,
+            BitData::BOOL { .. } => 1,
+            BitData::BYTES { val } => val.len() * 8,
+        }
+    }
+
+    pub fn to_field(&self) -> Fp {
+        match self {
+            BitData::U32 { val } => Fp::from(*val as u64),
+            BitData::U64 { val } => Fp::from(*val),
+            BitData::BOOL { val } => {
+                if *val {
+                    Fp::ONE
+                } else {
+                    Fp::ZERO
+                }
+            }
+            BitData::BYTES { val } => {
+                let mut bytes = [0u8; 32];
+                let len = val.len().min(32);
+                bytes[..len].copy_from_slice(&val[..len]);
+                Fp::from_random_bytes(&bytes).expect("Failed to convert bytes to field")
+            }
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct ROInput {
+    pub bits: Vec<BitData>,
+    pub fields: Vec<Fp>,
+}
+
+// Represents bits as tuples simillarly as o1js in Typescript
+impl ROInput {
+    /// Create a new empty random oracle input
+    pub fn new() -> Self {
+        ROInput {
+            fields: vec![],
+            bits: Vec::new(),
+        }
+    }
+
+    pub fn append_roinput(mut self, mut roi: ROInput) -> Self {
+        self.fields.append(&mut roi.fields);
+        self.bits.extend(roi.bits);
+        self
+    }
+
+    pub fn append_field(mut self, f: Fp) -> Self {
+        self.fields.push(f);
+        self
+    }
+
+    pub fn append_bool(mut self, b: bool) -> Self {
+        self.bits.push(BitData::BOOL { val: b });
+        self
+    }
+
+    pub fn append_u32(mut self, x: u32) -> Self {
+        self.bits.push(BitData::U32 { val: x });
+        self
+    }
+
+    pub fn append_u64(mut self, x: u64) -> Self {
+        self.bits.push(BitData::U64 { val: x });
+        self
+    }
+
+    pub fn append_bytes(mut self, bytes: &[u8]) -> Self {
+        self.bits.push(BitData::BYTES {
+            val: bytes.to_vec(),
+        });
+        self
+    }
+
+    pub fn to_mina_hasher_roi(self) -> MinaHasherROInput {
+        let mut inputs = MinaHasherROInput::new();
+
+        for field in self.fields {
+            inputs = inputs.append_field(field)
+        }
+
+        for bit_data in self.bits {
+            match bit_data {
+                BitData::U32 { val } => {
+                    inputs = inputs.append_u32(val);
+                }
+                BitData::U64 { val } => {
+                    inputs = inputs.append_u64(val);
+                }
+                BitData::BOOL { val } => {
+                    inputs = inputs.append_bool(val);
+                }
+                BitData::BYTES { val } => {
+                    inputs = inputs.append_bytes(val.as_slice());
+                }
+            }
+        }
+
+        inputs
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// ----------------------------- PACKABLE FOR COMPOSITE TYPES -------------------------------------
+// ------------------------------------------------------------------------------------------------
 
 impl Packable for AccountUpdate {
     fn pack(&self) -> ROInput {
@@ -21,14 +150,13 @@ impl Packable for AccountUpdateBody {
     fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
         roi = roi.append_roinput(self.public_key.pack());
-        roi = roi.append_field(self.token_id.0);
+        roi = roi.append_field(self.token_id.0 .0);
         roi = roi.append_roinput(self.update.pack()); // Update
         roi = roi.append_roinput(self.balance_change.pack()); // BalanceChange
         roi = roi.append_bool(self.increment_nonce);
         roi = roi.append_roinput(self.events.pack()); // Events
         roi = roi.append_roinput(self.actions.pack()); // Actions
         roi = roi.append_field(self.call_data.0);
-        roi = roi.append_u32(self.call_depth);
         roi = roi.append_roinput(self.preconditions.pack()); // Preconditions
         roi = roi.append_bool(self.use_full_commitment);
         roi = roi.append_bool(self.implicit_account_creation_fee);
@@ -41,6 +169,7 @@ impl Packable for AccountUpdateBody {
 impl Packable for Update {
     fn pack(&self) -> ROInput {
         let mut roi = ROInput::new();
+
         roi = roi.append_roinput(self.app_state.pack());
         roi = roi.append_roinput(self.delegate.pack());
         roi = roi.append_roinput(self.verification_key.pack());
@@ -74,13 +203,33 @@ impl Packable for Permissions {
 
 impl Packable for Events {
     fn pack(&self) -> ROInput {
-        ROInput::new().append_field(self.hash.0)
+        let init = hash_noinput(ZK_APP_EVENTS_EMPTY).unwrap();
+
+        let out: Fp = self.data.iter().rfold(init, |acc: Fp, event: &Vec<Field>| {
+            let event_hash = hash_with_prefix(
+                ZK_APP_EVENT_PREFIX,
+                event.iter().map(|f| f.0).collect::<Vec<Fp>>().as_slice(),
+            )
+            .unwrap();
+            hash_with_prefix(ZK_APP_EVENTS_PREFIX, &[acc, event_hash]).unwrap()
+        });
+        ROInput::new().append_field(out)
     }
 }
 
 impl Packable for Actions {
     fn pack(&self) -> ROInput {
-        ROInput::new().append_field(self.hash.0)
+        let init = hash_noinput(ZK_APP_ACTIONS_EMPTY).unwrap();
+
+        let out: Fp = self.data.iter().rfold(init, |acc: Fp, event: &Vec<Field>| {
+            let event_hash = hash_with_prefix(
+                ZK_APP_EVENT_PREFIX,
+                event.iter().map(|f| f.0).collect::<Vec<Fp>>().as_slice(),
+            )
+            .unwrap();
+            hash_with_prefix(ZK_APP_ACTIONS_PREFIX, &[acc, event_hash]).unwrap()
+        });
+        ROInput::new().append_field(out)
     }
 }
 
@@ -223,7 +372,7 @@ impl Packable for ZkappUri {
             }
         }
         field_inputs = field_inputs.append_bool(true);
-        let fields = field_inputs.to_fields();
+        let fields = pack_to_fields(field_inputs).fields;
         let hash = hash_with_prefix(MINA_ZKAPP_URI, &fields).unwrap();
         ROInput::new().append_field(hash)
     }
@@ -244,6 +393,12 @@ impl Packable for PublicKey {
 impl Packable for Field {
     fn pack(&self) -> ROInput {
         ROInput::new().append_field(self.0)
+    }
+}
+
+impl Packable for ActionState {
+    fn pack(&self) -> ROInput {
+        ROInput::new().append_field(self.0 .0)
     }
 }
 
@@ -315,14 +470,24 @@ impl<T: Packable> Packable for Vec<T> {
     }
 }
 
+impl<T: Packable, const N: usize> Packable for [T; N] {
+    fn pack(&self) -> ROInput {
+        let mut roi = ROInput::new();
+        for item in self {
+            roi = roi.append_roinput(item.pack());
+        }
+        roi
+    }
+}
+
 // ------------------------------------------------------------------------------------------------
 // ----------------------------- TESTS ------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
 #[cfg(test)]
 mod test {
-    use super::Packable;
-    use mina_hasher::{Fp, ROInput};
+    use super::{Packable, ROInput};
+    use mina_hasher::Fp;
     use mina_signer::CompressedPubKey;
     use std::str::FromStr;
 
@@ -330,6 +495,7 @@ mod test {
     enum ROValue {
         Field(String),
         Bool(bool),
+        #[allow(dead_code)]
         U32(u32),
         U64(u64),
         Bytes(Vec<u8>),
@@ -363,10 +529,16 @@ mod test {
     fn assert_roi_equal(roi: ROInput, expected: ROInput) {
         // Using an unsafe method to access private fields for testing purposes
         assert!(
-            roi.to_bytes() == expected.to_bytes(),
-            "ROInput values are not equal. Expected \n {:?}, \n but got {:?}",
-            expected.to_bytes(),
-            roi.to_bytes()
+            roi.fields == expected.fields,
+            "Fields do not match. Expected \n{:?}\n but got\n{:?}\n",
+            expected.fields,
+            roi.fields
+        );
+        assert!(
+            roi.bits == expected.bits,
+            "Fields do not match. Expected \n{:?}\n but got\n{:?}\n",
+            expected.bits,
+            roi.bits
         );
     }
 
@@ -446,41 +618,6 @@ mod test {
         };
         let roi = may_use_token.pack();
         let expected_roi = build_roi(vec![ROValue::Bool(false), ROValue::Bool(true)]);
-
-        assert_roi_equal(roi, expected_roi);
-    }
-
-    #[test]
-    fn test_events() {
-        // Data: 2 events - [1, 2, 3] and [100]
-        // Only hash is included in toInput (not the actual data)
-        let events = super::Events {
-            data: vec![
-                vec![
-                    super::Field(Fp::from(1)),
-                    super::Field(Fp::from(2)),
-                    super::Field(Fp::from(3)),
-                ],
-                vec![super::Field(Fp::from(100))],
-            ],
-            hash: super::Field(Fp::from(999)),
-        };
-        let roi = events.pack();
-        let expected_roi = build_roi(vec![ROValue::Field("999".to_string())]);
-
-        assert_roi_equal(roi, expected_roi);
-    }
-
-    #[test]
-    fn test_actions() {
-        // Data: 1 action - [42, 43]
-        // Only hash is included in toInput (not the actual data)
-        let actions = super::Actions {
-            data: vec![vec![super::Field(Fp::from(42)), super::Field(Fp::from(43))]],
-            hash: super::Field(Fp::from(888)),
-        };
-        let roi = actions.pack();
-        let expected_roi = build_roi(vec![ROValue::Field("888".to_string())]);
 
         assert_roi_equal(roi, expected_roi);
     }

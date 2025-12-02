@@ -2,8 +2,9 @@
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use std::collections::VecDeque;
 
-use super::zkapp_packable::Packable;
-use mina_hasher::{Fp, ROInput};
+use ark_ff::PrimeField;
+use bitvec::{order::Lsb0, vec::BitVec};
+use mina_hasher::Fp;
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
     pasta::fp_kimchi,
@@ -15,11 +16,14 @@ use crate::{
     errors::{BluePallasError, BluePallasResult},
     transactions::zkapp_tx::{
         constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
-        hash::param_to_field,
+        hash::{pack_to_fields, param_to_field},
+        zkapp_packable::Packable,
         AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer, RangeCondition,
         ZKAppCommand,
     },
 };
+
+const FIELDS_PER_PACKED_MEMO: usize = 254;
 
 /// A single node in the call forest representing an account update and its children
 #[derive(Clone)]
@@ -102,6 +106,41 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     true
 }
 
+/// Packs a slice of bits into field elements, taking chunks of 254 bits at a time.
+/// This matches the o1js `packToFieldsLegacy` behavior for bit packing.
+fn pack_to_field_bool(bits: &[bool]) -> Vec<Fp> {
+    let mut packed_fields = Vec::new();
+    let mut remaining_bits = bits;
+
+    while !remaining_bits.is_empty() {
+        let chunk_size = std::cmp::min(remaining_bits.len(), FIELDS_PER_PACKED_MEMO);
+        let field_bits = &remaining_bits[..chunk_size];
+        remaining_bits = &remaining_bits[chunk_size..];
+
+        // Convert bits to BigInt using BitVec with LSB order
+        let bitvec: BitVec<u8, Lsb0> = BitVec::from_iter(field_bits);
+        let field = Fp::from_le_bytes_mod_order(&bitvec.into_vec());
+        packed_fields.push(field);
+    }
+
+    packed_fields
+}
+
+fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
+    let memo_bytes = tx.memo;
+
+    // Convert bytes to bits (little-endian bit order within each byte)
+    let bits: Vec<bool> = memo_bytes
+        .iter()
+        .flat_map(|&byte| (0..8).map(move |i| (byte >> i) & 1 != 0))
+        .collect();
+
+    // Pack bits into fields (254 bits per field for Fp)
+    let packed_fields = pack_to_field_bool(&bits);
+
+    hash_with_prefix(constants::ZK_APP_MEMO, &packed_fields)
+}
+
 /// Produces a commitment for a ZkApp command by hashing its structure and contents.
 /// Validates call depths and authorization kinds before computing the commitment.
 /// Returns two Fp elements, representing the accountUpdates commitment and the overall commitment respectively.
@@ -118,8 +157,7 @@ pub(crate) fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResu
     // Compute the account-updates commitment using the call forest hashing routine.
     let account_updates_commitment = call_forest_hash(&forest, &network)?;
 
-    let memo_roi = ROInput::new().append_bytes(tx.memo.as_bytes()).to_fields();
-    let memo_hash = hash_with_prefix(constants::ZK_APP_MEMO, &memo_roi)?;
+    let memo_hash = memo_hash(tx)?;
 
     let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone(), &network)?;
 
@@ -186,6 +224,13 @@ fn account_update_from_fee_payer(fee: FeePayer) -> AccountUpdate {
     }
 }
 
+pub(crate) fn hash_noinput(prefix: &str) -> BluePallasResult<Fp> {
+    let mut sponge =
+        ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
+    sponge.absorb(&[param_to_field(prefix)?]);
+    Ok(sponge.squeeze())
+}
+
 pub(crate) fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
     let mut sponge =
         ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
@@ -204,10 +249,30 @@ fn hash_account_update(
     // Check that account update is valid
     assert_account_update_authorization_kind(account_update)?;
 
-    // TODO: Check whether this is consistent with packToFields() in o1js
-    let inputs = account_update.clone().pack().to_fields();
+    let roi = account_update.pack();
+    let fields_str = roi
+        .fields
+        .iter()
+        .map(|f| f.to_string())
+        .collect::<Vec<String>>();
+    let bits_str = roi
+        .bits
+        .iter()
+        .map(|b| format!("{:?}", b))
+        .collect::<Vec<String>>();
+    let bits_str_full = roi
+        .bits
+        .iter()
+        .map(|b| format!("{:?}", b))
+        .collect::<String>();
+    let inputs = pack_to_fields(roi);
+    let input_str = inputs
+        .fields
+        .iter()
+        .map(|f| f.to_string())
+        .collect::<Vec<String>>();
     let network_zk = ZkAppBodyPrefix::from(network.clone());
-    hash_with_prefix(network_zk.into(), &inputs)
+    hash_with_prefix(network_zk.into(), &inputs.fields)
 }
 
 fn assert_account_update_authorization_kind(
@@ -251,12 +316,16 @@ fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResul
     for call_tree in forest.iter().rev() {
         let calls = call_forest_hash(&call_tree.children, network)?;
         let tree_hash = hash_account_update(&call_tree.account_update, network)?;
+        let tree_hash_str = tree_hash.to_string();
         let node_hash =
             hash_with_prefix(constants::PREFIX_ACCOUNT_UPDATE_NODE, &[tree_hash, calls])?;
+        let node_hash_str = node_hash.to_string();
         stack_hash = hash_with_prefix(
             constants::PREFIX_ACCOUNT_UPDATE_CONS,
             &[node_hash, stack_hash],
         )?;
+
+        let stack_hash_str = stack_hash.to_string();
     }
 
     Ok(stack_hash)
@@ -265,24 +334,206 @@ fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
+
+    #[cfg(test)]
+    use super::super::test_vectors::{
+        get_hash_with_prefix_test_vectors, get_zkapp_test_vectors, parse_expected_hash,
+    };
 
     #[test]
-    fn test_hash_with_prefix() {
-        let prefix = "MinaAcctUpdateNode";
-        let strs = [
-            "23487734643675003113914430489774334948844391842009122040704261138931555665056",
-            "0",
-        ];
-        let elems = strs
-            .iter()
-            .map(|f| Fp::from_str(f).unwrap())
-            .collect::<Vec<Fp>>();
+    fn test_pack_to_fields() {
+        let mut bits = vec![true];
+        bits.extend(vec![false; 271]);
 
-        let hash = hash_with_prefix(prefix, &elems).unwrap();
-        assert_eq!(
-            hash.to_string(),
-            "20456728518925904340727370305821489989002971473792411299271630913563245218671"
-        );
+        let packed_fields = pack_to_field_bool(&bits);
+        assert_eq!(packed_fields.len(), 2);
+        assert_eq!(packed_fields[0], Fp::from(1u64));
+        assert_eq!(packed_fields[1], Fp::from(0u64));
+
+        let bits = vec![
+            true, false, false, false, false, false, false, false, false, true, false, false,
+            false, false, false, false, false, true, false, false, false, false, true, true, true,
+            false, true, false, true, true, false, true, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false,
+        ];
+        assert_eq!(bits.len(), 272);
+
+        let packed_fields = pack_to_field_bool(&bits);
+        assert_eq!(packed_fields.len(), 2);
+        assert_eq!(packed_fields[0], Fp::from(3049390593u64));
+        assert_eq!(packed_fields[1], Fp::from(0u64));
+    }
+
+    #[test]
+    fn test_hash_with_prefix_vectors() {
+        let test_vectors = get_hash_with_prefix_test_vectors();
+
+        // Skip test if no vectors provided
+        if test_vectors.is_empty() {
+            println!("Warning: No test vectors provided for hash_with_prefix");
+            return;
+        }
+
+        for test_vector in test_vectors {
+            let computed_hash = hash_with_prefix(test_vector.prefix, &test_vector.input_fields)
+                .unwrap_or_else(|_| {
+                    panic!("Failed to compute hash for test: {}", test_vector.name)
+                });
+
+            let expected_hash = parse_expected_hash(test_vector.expected_hash);
+
+            assert_eq!(
+                computed_hash, expected_hash,
+                "Hash mismatch for test: {}",
+                test_vector.name
+            );
+        }
+    }
+
+    #[test]
+    fn test_fee_payer_hash() {
+        let test_vectors = get_zkapp_test_vectors();
+
+        // Skip test if no vectors provided
+        if test_vectors.is_empty() {
+            println!("Warning: No test vectors provided for fee_payer_hash");
+            return;
+        }
+
+        for test_vector in test_vectors {
+            let computed_hash = fee_payer_hash(
+                test_vector.zkapp_command.fee_payer.clone(),
+                &test_vector.network,
+            )
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Failed to compute fee payer hash for test: {}",
+                    test_vector.name
+                )
+            });
+
+            let expected_hash = parse_expected_hash(test_vector.expected_fee_payer_hash);
+
+            assert_eq!(
+                computed_hash, expected_hash,
+                "Fee payer hash mismatch for test: {}",
+                test_vector.name
+            );
+        }
+    }
+
+    #[test]
+    fn test_zk_commit() {
+        let test_vectors = get_zkapp_test_vectors();
+
+        // Skip test if no vectors provided
+        if test_vectors.is_empty() {
+            println!("Warning: No test vectors provided for zk_commit");
+            return;
+        }
+
+        for test_vector in test_vectors {
+            let (computed_account_updates_commitment, computed_full_commitment) =
+                zk_commit(&test_vector.zkapp_command, test_vector.network.clone()).unwrap_or_else(
+                    |_| {
+                        panic!(
+                            "Failed to compute commitment for test: {}",
+                            test_vector.name
+                        )
+                    },
+                );
+
+            let expected_account_updates_commitment =
+                parse_expected_hash(test_vector.expected_account_updates_commitment);
+            let expected_full_commitment =
+                parse_expected_hash(test_vector.expected_full_commitment);
+
+            assert_eq!(
+                computed_account_updates_commitment, expected_account_updates_commitment,
+                "Account updates commitment mismatch for test: {}",
+                test_vector.name
+            );
+
+            assert_eq!(
+                computed_full_commitment, expected_full_commitment,
+                "Full commitment mismatch for test: {}",
+                test_vector.name
+            );
+        }
+    }
+
+    #[test]
+    fn test_memo_hash() {
+        let test_vectors = get_zkapp_test_vectors();
+
+        if test_vectors.is_empty() {
+            println!("Warning: No test vectors provided for memo_hash");
+            return;
+        }
+
+        for test_vector in test_vectors {
+            let computed_hash = memo_hash(&test_vector.zkapp_command).unwrap_or_else(|_| {
+                panic!("Failed to compute memo hash for test: {}", test_vector.name)
+            });
+
+            let expected_hash = parse_expected_hash(test_vector.expected_memo_hash);
+
+            assert_eq!(
+                computed_hash, expected_hash,
+                "Memo hash mismatch for test: {}",
+                test_vector.name
+            );
+        }
+    }
+
+    #[test]
+    fn test_call_forest_hash() {
+        let test_vectors = get_zkapp_test_vectors();
+
+        if test_vectors.is_empty() {
+            println!("Warning: No test vectors provided for call_forest_hash");
+            return;
+        }
+
+        for test_vector in test_vectors {
+            let call_forest = zkapp_command_to_call_forest(&test_vector.zkapp_command);
+            let computed_hash = call_forest_hash(&call_forest, &test_vector.network)
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "Failed to compute call forest hash for test: {}",
+                        test_vector.name
+                    )
+                });
+
+            let computed_hash_str = computed_hash.to_string();
+
+            let expected_hash =
+                parse_expected_hash(test_vector.expected_account_updates_commitment);
+
+            assert_eq!(
+                computed_hash, expected_hash,
+                "Call forest hash mismatch for test: {}",
+                test_vector.name
+            );
+        }
     }
 }
