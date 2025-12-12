@@ -2,9 +2,9 @@ name: Client Commands
 
 on:
   push:
-    branches: ["main", "zkApp-tx"] # Temporary until we merge the branch
+    branches: ["main"]
   pull_request:
-    branches: ["main", "zkApp-tx"] # Temporary until we merge the branch
+    branches: ["main"]
     paths:
       - "mina-frost-client/**"
       - ".github/workflows/client-commands.yml"

@@ -3,12 +3,12 @@ members = ["frost-bluepallas", "mina-frost-client"]
 resolver = "2"
 
 [workspace.dependencies]
-frost-core = { version = "2.1.0", features = ["internals"] }
-frost-rerandomized = "2.1.0"
-mina-hasher = { git = "https://github.com/o1-labs/proof-systems", rev = "90798a4" }
-mina-curves = { git = "https://github.com/o1-labs/proof-systems", rev = "90798a4" }
-mina-signer = { git = "https://github.com/o1-labs/proof-systems", rev = "90798a4" }
-mina-poseidon = { git = "https://github.com/o1-labs/proof-systems", rev = "90798a4" }
+frost-core = { version = "2.2.0", features = ["internals"] }
+frost-rerandomized = "2.2.0"
+mina-hasher = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
+mina-curves = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
+mina-signer = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
+mina-poseidon = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
 
 ark-ec = "0.5.0"
 ark-ff = "0.5.0"

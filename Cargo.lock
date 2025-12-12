@@ -686,25 +686,22 @@ dependencies = [
 
 [[package]]
 name = "criterion"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2b12d017a929603d80db1831cd3a24082f8137ce19c69e6447f54f5fc8d692f"
+checksum = "3bf7af66b0989381bd0be551bd7cc91912a655a58c6918420c9527b1fd8b4679"
 dependencies = [
  "anes",
  "cast",
  "ciborium",
  "clap",
  "criterion-plot",
- "is-terminal",
- "itertools 0.10.5",
+ "itertools 0.13.0",
  "num-traits",
- "once_cell",
  "oorandom",
  "plotters",
  "rayon",
  "regex",
  "serde",
- "serde_derive",
  "serde_json",
  "tinytemplate",
  "walkdir",
@@ -1126,9 +1123,9 @@ dependencies = [
 
 [[package]]
 name = "frost-core"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1858230cabb6792a5020daf4b0074f57b7d1e2a520ac544c77f102babee62ff4"
+checksum = "2619366c227233c0f817ae01156bd21b8cf74d2bd96cbe0889f4c2e266724e44"
 dependencies = [
  "byteorder",
  "const-crc32-nostd",
@@ -1145,7 +1142,6 @@ dependencies = [
  "serde_json",
  "serdect 0.2.0",
  "thiserror 2.0.14",
- "thiserror-nostd-notrait",
  "visibility",
  "zeroize",
 ]
@@ -1166,9 +1162,9 @@ dependencies = [
 
 [[package]]
 name = "frost-rerandomized"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8a3b10d9c1e9f298522510940b5b8c3d55040420517ec8d2bb86c4c2d1ae3ee"
+checksum = "4c5eb1ea58c0250b7ce834337f7b19e0417686d14ffc7f626137dea9149762d4"
 dependencies = [
  "derive-getters",
  "document-features",
@@ -1339,12 +1335,6 @@ name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
-
-[[package]]
-name = "hermit-abi"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc0fef456e4baa96da950455cd02c081ca953b141298e41db3fc7e36b1da849c"
 
 [[package]]
 name = "hex"
@@ -1674,17 +1664,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "is-terminal"
-version = "0.4.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e04d7f318608d35d4b61ddd75cbdaee86b023ebe2bd5a66ee0915f0bf93095a9"
-dependencies = [
- "hermit-abi",
- "libc",
- "windows-sys 0.59.0",
-]
-
-[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1848,7 +1827,7 @@ dependencies = [
 [[package]]
 name = "mina-curves"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
 dependencies = [
  "ark-bn254",
  "ark-ec",
@@ -1899,7 +1878,7 @@ dependencies = [
 [[package]]
 name = "mina-hasher"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
 dependencies = [
  "ark-ff",
  "bitvec",
@@ -1912,7 +1891,7 @@ dependencies = [
 [[package]]
 name = "mina-poseidon"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -1930,7 +1909,7 @@ dependencies = [
 [[package]]
 name = "mina-signer"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -1940,6 +1919,7 @@ dependencies = [
  "hex",
  "mina-curves",
  "mina-hasher",
+ "num-bigint",
  "o1-utils",
  "rand 0.8.5",
  "sha2",
@@ -2029,7 +2009,7 @@ dependencies = [
 [[package]]
 name = "o1-utils"
 version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?rev=90798a4#90798a4eac46ebff1ffa2471fcd6b6fef5b74fe8"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -3145,26 +3125,6 @@ name = "thiserror-impl"
 version = "2.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc5b44b4ab9c2fdd0e0512e6bece8388e214c0749f5862b114cc5b7a25daf227"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.105",
-]
-
-[[package]]
-name = "thiserror-nostd-notrait"
-version = "1.0.57"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8444e638022c44d2a9337031dee8acb732bcc7fbf52ac654edc236b26408b61"
-dependencies = [
- "thiserror-nostd-notrait-impl",
-]
-
-[[package]]
-name = "thiserror-nostd-notrait-impl"
-version = "1.0.57"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "585e5ef40a784ce60b49c67d762110688d211d395d39e096be204535cf64590e"
 dependencies = [
  "proc-macro2",
  "quote",

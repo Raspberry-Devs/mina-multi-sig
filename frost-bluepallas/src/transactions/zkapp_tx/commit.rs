@@ -250,27 +250,7 @@ fn hash_account_update(
     assert_account_update_authorization_kind(account_update)?;
 
     let roi = account_update.pack();
-    let fields_str = roi
-        .fields
-        .iter()
-        .map(|f| f.to_string())
-        .collect::<Vec<String>>();
-    let bits_str = roi
-        .bits
-        .iter()
-        .map(|b| format!("{:?}", b))
-        .collect::<Vec<String>>();
-    let bits_str_full = roi
-        .bits
-        .iter()
-        .map(|b| format!("{:?}", b))
-        .collect::<String>();
     let inputs = pack_to_fields(roi);
-    let input_str = inputs
-        .fields
-        .iter()
-        .map(|f| f.to_string())
-        .collect::<Vec<String>>();
     let network_zk = ZkAppBodyPrefix::from(network.clone());
     hash_with_prefix(network_zk.into(), &inputs.fields)
 }
@@ -316,16 +296,12 @@ fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResul
     for call_tree in forest.iter().rev() {
         let calls = call_forest_hash(&call_tree.children, network)?;
         let tree_hash = hash_account_update(&call_tree.account_update, network)?;
-        let tree_hash_str = tree_hash.to_string();
         let node_hash =
             hash_with_prefix(constants::PREFIX_ACCOUNT_UPDATE_NODE, &[tree_hash, calls])?;
-        let node_hash_str = node_hash.to_string();
         stack_hash = hash_with_prefix(
             constants::PREFIX_ACCOUNT_UPDATE_CONS,
             &[node_hash, stack_hash],
         )?;
-
-        let stack_hash_str = stack_hash.to_string();
     }
 
     Ok(stack_hash)
@@ -523,8 +499,6 @@ mod tests {
                         test_vector.name
                     )
                 });
-
-            let computed_hash_str = computed_hash.to_string();
 
             let expected_hash =
                 parse_expected_hash(test_vector.expected_account_updates_commitment);

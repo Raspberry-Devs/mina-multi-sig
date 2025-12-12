@@ -2,10 +2,7 @@ use ark_ff::Field as ArkField;
 use mina_signer::CompressedPubKey;
 use serde::{Deserialize, Serialize};
 
-use crate::transactions::{
-    zkapp_tx::{commit::hash_noinput, constants::APP_STATE_LENGTH},
-    MEMO_BYTES,
-};
+use crate::transactions::{zkapp_tx::constants::APP_STATE_LENGTH, MEMO_BYTES};
 
 mod commit;
 mod constants;
