@@ -4,7 +4,6 @@ resolver = "2"
 
 [workspace.dependencies]
 frost-core = { version = "2.2.0", features = ["internals"] }
-frost-rerandomized = "2.2.0"
 mina-hasher = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
 mina-curves = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
 mina-signer = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
@@ -28,14 +27,11 @@ hex = "0.4.3"
 insta = "1.43.1"
 itertools = "0.14.0"
 lazy_static = "1.5.0"
-message-io = "0.18"
 postcard = "1.1.1"
 rand = "0.8.5"
 rand_core = "0.6.4"
-reddsa = { git = "https://github.com/ZcashFoundation/reddsa.git", rev = "ed49e9ca0699a6450f6d4a9fe62ff168f5ea1ead" }
 regex = "1.11.1"
 reqwest = { version = "0.12.12", default-features = false }
-rpassword = "7.3.1"
 serde = "1.0.204"
 serde_json = "=1.0.109"
 serdect = "0.3.0"

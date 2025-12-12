@@ -9,7 +9,6 @@ ark-ff.workspace = true
 ark-serialize.workspace = true
 bitvec = "1.0.1"
 frost-core.workspace = true
-frost-rerandomized.workspace = true
 mina-curves.workspace = true
 mina-hasher.workspace = true
 mina-signer.workspace = true
