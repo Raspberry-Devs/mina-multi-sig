@@ -6,7 +6,7 @@
 //! agrees with the group public key according to the `mina-signer` crate
 
 use ark_ff::BigInt;
-use frost_bluepallas::transactions::Transaction;
+use frost_bluepallas::transactions::legacy_tx::Transaction;
 use lazy_static::lazy_static;
 use mina_signer::NetworkId;
 use mina_signer::PubKey;

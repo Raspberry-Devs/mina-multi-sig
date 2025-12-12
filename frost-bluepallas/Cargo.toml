@@ -9,13 +9,17 @@ ark-ff.workspace = true
 ark-serialize.workspace = true
 bitvec = "1.0.1"
 frost-core.workspace = true
-frost-rerandomized.workspace = true
 mina-curves.workspace = true
 mina-hasher.workspace = true
 mina-signer.workspace = true
+mina-poseidon.workspace = true
+
+num-bigint = "0.4.6"
 num-traits.workspace = true
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 serde = { workspace = true, features = ["derive"] }
+lazy_static.workspace = true
+bs58 = "0.5.1"
 
 [dev-dependencies]
 frost-core = { version = "2.1.0", features = ["test-impl", "internals"] }
@@ -24,6 +28,7 @@ serde_json.workspace = true
 insta.workspace = true
 hex.workspace = true
 rand_chacha = "0.3"
+bs58 = "0.5.1"
 
 [features]
 default = ["serialization", "cheater-detection"]

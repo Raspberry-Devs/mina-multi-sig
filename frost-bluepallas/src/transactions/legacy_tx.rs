@@ -15,12 +15,11 @@ const HEADER_BYTES: usize = 4;
 
 use crate::{
     errors::{BluePallasError, BluePallasResult},
+    transactions::{MEMO_BYTES, MEMO_HEADER_BYTES},
     translate::Translatable,
 };
 
 /// Copied from https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs
-const MEMO_BYTES: usize = 34;
-const MEMO_HEADER_BYTES: usize = 2; // 0x01 + length byte
 const TAG_BITS: usize = 3;
 const PAYMENT_TX_TAG: [bool; TAG_BITS] = [false, false, false];
 const DELEGATION_TX_TAG: [bool; TAG_BITS] = [false, false, true];

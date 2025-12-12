@@ -12,7 +12,7 @@ on:
   schedule:
     - cron: "0 2 * * 0" # Weekly rebuild on Sundays at 2 AM to get latest deps
   push:
-    branches: ["main"]
+    branches: ["main", "zkApp-tx"] # Temporary until we merge the branch
     paths: [".docker/frost-ci.Dockerfile"] # Also trigger when this workflow changes
 
 env:

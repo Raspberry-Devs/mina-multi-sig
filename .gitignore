@@ -9,4 +9,4 @@ target/
 # Vscode files
 .vscode/
 
-frost-client/tests/assets/
+mina-frost-client/tests/assets/

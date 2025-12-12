@@ -37,6 +37,9 @@ pub enum BluePallasError {
 
     /// Invalid Memo provided
     InvalidMemo(String),
+
+    /// Invalid ZKApp Command structure
+    InvalidZkAppCommand(String),
 }
 
 impl fmt::Display for BluePallasError {
@@ -60,6 +63,9 @@ impl fmt::Display for BluePallasError {
                 write!(f, "Failed to save signature: {}", msg)
             }
             BluePallasError::InvalidMemo(msg) => write!(f, "Invalid memo: {}", msg),
+            BluePallasError::InvalidZkAppCommand(msg) => {
+                write!(f, "Invalid ZKApp command: {}", msg)
+            }
         }
     }
 }

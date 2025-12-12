@@ -3,7 +3,7 @@ use ark_ff::fields::PrimeField;
 use ark_ff::BigInteger;
 use frost_bluepallas::{
     hasher::{message_hash, PallasMessage},
-    transactions::Transaction,
+    transactions::legacy_tx::Transaction,
     translate::{translate_pk, translate_sig, Translatable},
     PallasGroup,
 };

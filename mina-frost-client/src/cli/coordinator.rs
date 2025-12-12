@@ -7,7 +7,7 @@ use eyre::OptionExt;
 use frost_bluepallas::{
     errors::BluePallasError,
     signature::{PubKeySer, Sig, TransactionSignature},
-    transactions::Transaction,
+    transactions::legacy_tx::Transaction,
     translate::Translatable,
     BluePallas,
 };

@@ -8,8 +8,8 @@ use serde::{
 };
 
 use crate::{
-    errors::BluePallasError, transactions::Transaction, translate::translate_pk, BluePallas,
-    VerifyingKey,
+    errors::BluePallasError, transactions::legacy_tx::Transaction, translate::translate_pk,
+    BluePallas, VerifyingKey,
 };
 
 pub struct Sig {
