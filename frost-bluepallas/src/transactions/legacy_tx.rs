@@ -1,7 +1,11 @@
-use core::fmt;
-
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    vec::Vec,
+};
 use ark_ff::PrimeField;
 use bitvec::prelude::*;
+use core::fmt;
 use mina_curves::pasta::Pallas;
 use mina_hasher::{Fp, Hashable, ROInput};
 use mina_signer::{CompressedPubKey, NetworkId, PubKey};

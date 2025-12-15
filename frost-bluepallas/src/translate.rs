@@ -1,4 +1,5 @@
 use crate::{errors::BluePallasResult, BluePallas, SigningKey};
+use alloc::vec::Vec;
 use ark_ec::CurveGroup;
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::Hashable;

@@ -1,6 +1,6 @@
 /// ZkApp transaction commitment computation
 /// This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
-use std::collections::VecDeque;
+use alloc::{boxed::Box, collections::VecDeque, string::ToString, vec::Vec};
 
 use ark_ff::PrimeField;
 use bitvec::{order::Lsb0, vec::BitVec};
@@ -113,7 +113,7 @@ fn pack_to_field_bool(bits: &[bool]) -> Vec<Fp> {
     let mut remaining_bits = bits;
 
     while !remaining_bits.is_empty() {
-        let chunk_size = std::cmp::min(remaining_bits.len(), FIELDS_PER_PACKED_MEMO);
+        let chunk_size = core::cmp::min(remaining_bits.len(), FIELDS_PER_PACKED_MEMO);
         let field_bits = &remaining_bits[..chunk_size];
         remaining_bits = &remaining_bits[chunk_size..];
 
@@ -363,10 +363,9 @@ mod tests {
     fn test_hash_with_prefix_vectors() {
         let test_vectors = get_hash_with_prefix_test_vectors();
 
-        // Skip test if no vectors provided
+        // Panic if no vectors provided
         if test_vectors.is_empty() {
-            println!("Warning: No test vectors provided for hash_with_prefix");
-            return;
+            panic!("No test vectors provided for hash_with_prefix tests");
         }
 
         for test_vector in test_vectors {
@@ -389,10 +388,9 @@ mod tests {
     fn test_fee_payer_hash() {
         let test_vectors = get_zkapp_test_vectors();
 
-        // Skip test if no vectors provided
+        // Panic if no vectors provided
         if test_vectors.is_empty() {
-            println!("Warning: No test vectors provided for fee_payer_hash");
-            return;
+            panic!("No test vectors provided for fee payer hash tests");
         }
 
         for test_vector in test_vectors {
@@ -421,10 +419,9 @@ mod tests {
     fn test_zk_commit() {
         let test_vectors = get_zkapp_test_vectors();
 
-        // Skip test if no vectors provided
+        // Panic if no vectors provided
         if test_vectors.is_empty() {
-            println!("Warning: No test vectors provided for zk_commit");
-            return;
+            panic!("No test vectors provided for zk_commit tests");
         }
 
         for test_vector in test_vectors {
@@ -462,8 +459,7 @@ mod tests {
         let test_vectors = get_zkapp_test_vectors();
 
         if test_vectors.is_empty() {
-            println!("Warning: No test vectors provided for memo_hash");
-            return;
+            panic!("No test vectors provided for memo hash tests");
         }
 
         for test_vector in test_vectors {
@@ -486,7 +482,6 @@ mod tests {
         let test_vectors = get_zkapp_test_vectors();
 
         if test_vectors.is_empty() {
-            println!("Warning: No test vectors provided for call_forest_hash");
             return;
         }
 

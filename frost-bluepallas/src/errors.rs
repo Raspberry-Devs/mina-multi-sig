@@ -1,9 +1,10 @@
 //! Error types for the frost-bluepallas library
 
-use std::fmt;
+use alloc::{boxed::Box, string::String};
+use core::{error, fmt, result::Result};
 
 // TODO: Replace with BluePallasError within
-pub type BluePallasResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+pub type BluePallasResult<T> = Result<T, Box<dyn error::Error>>;
 
 /// Error enum for frost-bluepallas operations
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -70,7 +71,7 @@ impl fmt::Display for BluePallasError {
     }
 }
 
-impl std::error::Error for BluePallasError {}
+impl error::Error for BluePallasError {}
 
 // Convenience constructors
 impl BluePallasError {

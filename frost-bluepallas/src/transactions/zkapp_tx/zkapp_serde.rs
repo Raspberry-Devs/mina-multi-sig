@@ -2,6 +2,7 @@ use crate::transactions::{
     zkapp_tx::{Field, PublicKey},
     MEMO_BYTES,
 };
+use alloc::string::{String, ToString};
 use mina_hasher::Fp;
 use mina_signer::CompressedPubKey;
 use serde::{ser::Serialize, Deserialize};

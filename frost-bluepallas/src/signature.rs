@@ -1,3 +1,4 @@
+use alloc::string::ToString;
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInt, PrimeField};
 use frost_core::Signature;
@@ -95,8 +96,8 @@ pub struct TransactionSignature {
 mod tests {
     use super::*;
     use crate::{helper, translate};
+    use core::convert::TryInto;
     use mina_signer::Keypair;
-    use std::convert::TryInto;
 
     #[test]
     fn test_frost_sig_to_sig_conversion_matches_translate() -> Result<(), BluePallasError> {
