@@ -34,9 +34,10 @@ use rand_core::{CryptoRng, RngCore};
 pub type Error = frost_core::Error<BluePallas>;
 
 use crate::{
-    hasher::{hash_to_array, hash_to_scalar, message_hash, PallasMessage},
+    hasher::{hash_to_array, hash_to_scalar, message_hash},
     negate::NegateY,
     round1::SigningNonces,
+    transactions::generic_tx::TransactionEnvelope,
     translate::translate_pk,
 };
 
@@ -193,9 +194,11 @@ impl Ciphersuite for BluePallas {
             translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let rx = R.into_affine().x;
 
-        let mina_msg = PallasMessage::new(message.to_vec());
+        // Deserialize the message with TransactionEnvelope
+        let mina_msg = TransactionEnvelope::deserialize(message)
+            .map_err(|_| frost_core::Error::DeserializationError)?;
 
-        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, mina_msg)
+        let scalar = message_hash::<TransactionEnvelope>(&mina_pk, rx, mina_msg)
             .map_err(|_| frost_core::FieldError::MalformedScalar)?;
 
         Ok(frost_core::Challenge::from_scalar(scalar))

@@ -45,6 +45,16 @@ impl TransactionEnvelope {
     pub fn new_legacy(network_id: NetworkId, tx: legacy_tx::Transaction) -> Self {
         Self::new(network_id, TransactionKind::new_legacy(tx))
     }
+
+    /// Serialize the TransactionEnvelope to a byte vector using postcard.
+    pub fn serialize(&self) -> Result<Vec<u8>, postcard::Error> {
+        postcard::to_allocvec(self)
+    }
+
+    /// Deserialize a TransactionEnvelope from a byte slice using postcard.
+    pub fn deserialize(bytes: &[u8]) -> Result<Self, postcard::Error> {
+        postcard::from_bytes(bytes)
+    }
 }
 
 impl Hashable for TransactionEnvelope {

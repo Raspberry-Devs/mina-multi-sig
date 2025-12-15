@@ -41,13 +41,12 @@ pub fn translate_minask(msg: &mina_signer::Keypair) -> BluePallasResult<SigningK
 
 #[cfg(test)]
 mod tests {
-    use crate::hasher::PallasMessage;
 
     use super::*;
     use ark_ff::fields::models::fp::{Fp, MontBackend};
     use frost_core::SigningKey;
     use mina_curves::pasta::fields::fq::FrConfig;
-    use mina_signer::{seckey::SecKey, NetworkId};
+    use mina_signer::seckey::SecKey;
 
     #[test]
     fn test_translate_pk() -> BluePallasResult<()> {
@@ -68,13 +67,6 @@ mod tests {
         let fr_pk: VerifyingKey<BluePallas> = fr_sk.into();
 
         assert_eq!(translate_pk(&fr_pk)?, mina_pk);
-        Ok(())
-    }
-
-    #[test]
-    fn check_hashable_impl() -> BluePallasResult<()> {
-        // panics if prefix.len() > MAX_DOMAIN_STRING_LEN
-        mina_signer::create_legacy::<PallasMessage>(NetworkId::TESTNET);
         Ok(())
     }
 }
