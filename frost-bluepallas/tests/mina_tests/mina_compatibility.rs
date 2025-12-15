@@ -21,6 +21,8 @@ use frost_bluepallas::helper::generate_signature_random;
 fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
     // Esnure that the FROST implementation can sign a message and Mina can verify it
 
+    let network_id = NetworkId::TESTNET;
+
     let rng = rand_chacha::ChaChaRng::seed_from_u64(100);
     let fr_msg = b"Test message for FROST and Mina compatibility".to_vec();
 
@@ -55,7 +57,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         "Generator point must match"
     );
 
-    let mina_chall = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone())?;
+    let mina_chall = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id.clone())?;
     let chall = frost_bluepallas::BluePallas::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
 
     // As of now this should be trivially true because the implementations are the same
@@ -71,7 +73,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         ctx.verify(&mina_sig, &mina_pk, &mina_msg)
     );
 
-    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone())?;
+    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id)?;
 
     let sv = CurvePoint::generator()
         .mul_bigint(mina_sig.s.into_bigint())

@@ -195,10 +195,13 @@ impl Ciphersuite for BluePallas {
         let rx = R.into_affine().x;
 
         // Deserialize the message with TransactionEnvelope
+        // This will recover the original transaction, including the network_id
         let mina_msg = TransactionEnvelope::deserialize(message)
             .map_err(|_| frost_core::Error::DeserializationError)?;
 
-        let scalar = message_hash::<TransactionEnvelope>(&mina_pk, rx, mina_msg)
+        let network_id = mina_msg.network_id();
+
+        let scalar = message_hash::<TransactionEnvelope>(&mina_pk, rx, mina_msg, network_id)
             .map_err(|_| frost_core::FieldError::MalformedScalar)?;
 
         Ok(frost_core::Challenge::from_scalar(scalar))

@@ -17,6 +17,15 @@ impl Serialize for NetworkIdSerde {
     }
 }
 
+impl PartialEq for NetworkIdSerde {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (&self.0, &other.0),
+            (NetworkId::TESTNET, NetworkId::TESTNET) | (NetworkId::MAINNET, NetworkId::MAINNET)
+        )
+    }
+}
+
 impl<'de> Deserialize<'de> for NetworkIdSerde {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

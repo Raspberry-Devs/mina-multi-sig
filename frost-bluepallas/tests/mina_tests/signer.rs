@@ -1,7 +1,7 @@
 #![allow(clippy::needless_borrows_for_generic_args)]
 
 use frost_bluepallas::{
-    hasher::{set_network_id, PallasMessage},
+    hasher::PallasMessage,
     helper,
     transactions::legacy_tx::Transaction,
     translate::{translate_minask, translate_pk, Translatable},
@@ -12,7 +12,9 @@ use mina_signer::{Keypair, NetworkId, PubKey, Signer};
 #[cfg(test)]
 #[test]
 fn signer_test_raw() {
-    set_network_id(NetworkId::TESTNET).expect("Failed to set network ID");
+    use frost_bluepallas::hasher::PallasMessage;
+
+    let network_id = NetworkId::TESTNET;
 
     let kp = Keypair::from_hex("164244176fddb5d769b7de2027469d027ad428fadcc0c02396e6280142efb718")
         .expect("failed to create keypair");
@@ -63,7 +65,7 @@ fn signer_test_raw() {
     );
 
     // Create ctx signer and verify the signature
-    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy(network_id.clone());
     let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
     assert!(is_valid, "Mina signature verification failed");
@@ -126,7 +128,7 @@ fn sign_mina_tx_mainnet() {
     let mut rng = rand_core::OsRng;
 
     // Set network id to Mainnet
-    set_network_id(NetworkId::MAINNET).expect("Failed to set network ID");
+    let network_id = NetworkId::MAINNET;
 
     // Use trusted dealer to setup public and packages
     let max_signers = 3;
@@ -168,7 +170,7 @@ fn sign_mina_tx_mainnet() {
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with MAINNET
-    let mut ctx = mina_signer::create_legacy(NetworkId::MAINNET);
+    let mut ctx = mina_signer::create_legacy(network_id);
     let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
     assert!(is_valid, "Mina signature verification failed on MAINNET");

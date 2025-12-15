@@ -94,7 +94,11 @@ pub struct TransactionSignature {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{helper, translate};
+    use crate::{
+        helper,
+        transactions::{generic_tx::TransactionEnvelope, legacy_tx},
+        translate,
+    };
     use mina_signer::Keypair;
     use std::convert::TryInto;
 
@@ -109,13 +113,20 @@ mod tests {
             .map_err(|_| BluePallasError::InvalidSignature("Failed to translate keypair".into()))?;
 
         // Create a test message
-        let test_msg = b"test message for signature conversion";
+        let test_msg = legacy_tx::Transaction::new_payment(
+            mina_keypair.public.clone(),
+            mina_keypair.public.clone(),
+            1000,
+            1,
+            0,
+        );
+        let test_msg = TransactionEnvelope::new_legacy(mina_signer::NetworkId::MAINNET, test_msg)
+            .serialize()
+            .unwrap();
 
         // Generate FROST signature
         let (frost_sig, _vk) =
-            helper::generate_signature_from_sk(test_msg, &signing_key, rand_core::OsRng).map_err(
-                |_| BluePallasError::InvalidSignature("Failed to generate signature".into()),
-            )?;
+            helper::generate_signature_from_sk(&test_msg, &signing_key, rand_core::OsRng).unwrap();
 
         // Method 1: Existing translation approach
         let mina_sig = translate::translate_sig(&frost_sig).map_err(|_| {
