@@ -40,6 +40,9 @@ pub enum BluePallasError {
 
     /// Invalid ZKApp Command structure
     InvalidZkAppCommand(String),
+
+    /// Unknown transaction type during deserialization
+    UnknownTransactionType(String),
 }
 
 impl fmt::Display for BluePallasError {
@@ -65,6 +68,9 @@ impl fmt::Display for BluePallasError {
             BluePallasError::InvalidMemo(msg) => write!(f, "Invalid memo: {}", msg),
             BluePallasError::InvalidZkAppCommand(msg) => {
                 write!(f, "Invalid ZKApp command: {}", msg)
+            }
+            BluePallasError::UnknownTransactionType(msg) => {
+                write!(f, "Unknown transaction type: {}", msg)
             }
         }
     }

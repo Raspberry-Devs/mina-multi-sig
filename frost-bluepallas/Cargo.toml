@@ -18,8 +18,10 @@ num-bigint = "0.4.6"
 num-traits.workspace = true
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 lazy_static.workspace = true
 bs58 = "0.5.1"
+postcard.workspace = true
 
 [dev-dependencies]
 frost-core = { version = "2.1.0", features = ["test-impl", "internals"] }
