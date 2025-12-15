@@ -9,6 +9,7 @@ mod constants;
 mod hash;
 pub mod zkapp_display;
 pub mod zkapp_emptiable;
+pub mod zkapp_hashable;
 pub mod zkapp_packable;
 pub mod zkapp_serde;
 

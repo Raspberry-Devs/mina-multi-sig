@@ -1,4 +1,9 @@
-use crate::transactions::{legacy_tx, network_id_serde::NetworkIdSerde, zkapp_tx::ZKAppCommand};
+use crate::transactions::{
+    legacy_tx,
+    network_id_serde::NetworkIdSerde,
+    zkapp_tx::{zkapp_hashable::ZKAppCommandHashable, ZKAppCommand},
+};
+use mina_hasher::Hashable;
 use mina_signer::NetworkId;
 use serde::{Deserialize, Serialize};
 
@@ -39,5 +44,28 @@ impl TransactionEnvelope {
 
     pub fn new_legacy(network_id: NetworkId, tx: legacy_tx::Transaction) -> Self {
         Self::new(network_id, TransactionKind::new_legacy(tx))
+    }
+}
+
+impl Hashable for TransactionEnvelope {
+    type D = NetworkId;
+
+    fn domain_string(domain_param: Self::D) -> Option<String> {
+        match domain_param {
+            NetworkId::MAINNET => "MinaSignatureMainnet",
+            NetworkId::TESTNET => "CodaSignature",
+        }
+        .to_string()
+        .into()
+    }
+
+    fn to_roinput(&self) -> mina_hasher::ROInput {
+        match &self.kind {
+            TransactionKind::ZkApp(zkapp_tx) => {
+                let zkapp_hashable = ZKAppCommandHashable::new(zkapp_tx, self.network_id.0.clone());
+                zkapp_hashable.to_roinput()
+            }
+            TransactionKind::Legacy(legacy_tx) => legacy_tx.to_roinput(),
+        }
     }
 }
