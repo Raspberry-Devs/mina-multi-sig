@@ -1,53 +1,43 @@
-use crate::{
-    errors::BluePallasError,
-    transactions::{legacy_tx, zkapp_tx::ZKAppCommand},
-};
+use crate::transactions::{legacy_tx, network_id_serde::NetworkIdSerde, zkapp_tx::ZKAppCommand};
+use mina_signer::NetworkId;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
-pub enum TransactionEnvelope {
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "transaction")]
+pub enum TransactionKind {
     ZkApp(ZKAppCommand),
     Legacy(legacy_tx::Transaction),
 }
 
-impl TransactionEnvelope {
+impl TransactionKind {
     pub fn new_zkapp(tx: ZKAppCommand) -> Self {
-        TransactionEnvelope::ZkApp(tx)
+        TransactionKind::ZkApp(tx)
     }
 
     pub fn new_legacy(tx: legacy_tx::Transaction) -> Self {
-        TransactionEnvelope::Legacy(tx)
+        TransactionKind::Legacy(tx)
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct TransactionEnvelope {
+    network_id: NetworkIdSerde,
+    kind: TransactionKind,
+}
+
+impl TransactionEnvelope {
+    pub fn new(network_id: NetworkId, kind: TransactionKind) -> Self {
+        Self {
+            network_id: network_id.into(),
+            kind,
+        }
     }
 
-    pub fn deserialize(transaction_str: &str) -> Result<Self, BluePallasError> {
-        // Attempt to deserialize as ZKApp first
-        if let Ok(zkapp_tx) = serde_json::from_str::<ZKAppCommand>(transaction_str) {
-            return Ok(TransactionEnvelope::ZkApp(zkapp_tx));
-        }
-        // Fallback to Legacy transaction
-        if let Ok(legacy_tx) = serde_json::from_str::<legacy_tx::Transaction>(transaction_str) {
-            return Ok(TransactionEnvelope::Legacy(legacy_tx));
-        }
-
-        Err(BluePallasError::UnknownTransactionType(
-            "Transaction string does not match known formats".to_string(),
-        ))
+    pub fn new_zkapp(network_id: NetworkId, tx: ZKAppCommand) -> Self {
+        Self::new(network_id, TransactionKind::new_zkapp(tx))
     }
 
-    /// Serialize into bytes using binary format
-    pub fn serialize(&self) -> Result<Vec<u8>, BluePallasError> {
-        match self {
-            TransactionEnvelope::ZkApp(tx) => postcard::to_allocvec(tx).map_err(|e| {
-                BluePallasError::UnknownTransactionType(format!(
-                    "Failed to serialize ZKApp transaction: {}",
-                    e
-                ))
-            }),
-            TransactionEnvelope::Legacy(tx) => postcard::to_allocvec(tx).map_err(|e| {
-                BluePallasError::UnknownTransactionType(format!(
-                    "Failed to serialize Legacy transaction: {}",
-                    e
-                ))
-            }),
-        }
+    pub fn new_legacy(network_id: NetworkId, tx: legacy_tx::Transaction) -> Self {
+        Self::new(network_id, TransactionKind::new_legacy(tx))
     }
 }

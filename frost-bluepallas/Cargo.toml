@@ -24,7 +24,7 @@ bs58 = "0.5.1"
 postcard.workspace = true
 
 [dev-dependencies]
-frost-core = { version = "2.1.0", features = ["test-impl", "internals"] }
+frost-core = { version = "2.2.0", features = ["test-impl", "internals"] }
 lazy_static.workspace = true
 serde_json.workspace = true
 insta.workspace = true
