@@ -9,20 +9,9 @@ impl Serialize for NetworkIdSerde {
     where
         S: Serializer,
     {
-        let value = match self.0 {
-            NetworkId::TESTNET => 0u8,
-            NetworkId::MAINNET => 1u8,
-        };
-        serializer.serialize_u8(value)
-    }
-}
-
-impl PartialEq for NetworkIdSerde {
-    fn eq(&self, other: &Self) -> bool {
-        matches!(
-            (&self.0, &other.0),
-            (NetworkId::TESTNET, NetworkId::TESTNET) | (NetworkId::MAINNET, NetworkId::MAINNET)
-        )
+        // NetworkId uses chain_id field internally
+        // TESTNET = 0x00, MAINNET = 0x01
+        serializer.serialize_u8(self.0.clone() as u8)
     }
 }
 
@@ -35,7 +24,10 @@ impl<'de> Deserialize<'de> for NetworkIdSerde {
         match value {
             0 => Ok(NetworkIdSerde(NetworkId::TESTNET)),
             1 => Ok(NetworkIdSerde(NetworkId::MAINNET)),
-            _ => Err(serde::de::Error::custom("invalid NetworkId")),
+            _ => Err(serde::de::Error::custom(format!(
+                "invalid NetworkId: expected 0 or 1, got {}",
+                value
+            ))),
         }
     }
 }
@@ -46,29 +38,56 @@ impl From<NetworkId> for NetworkIdSerde {
     }
 }
 
+impl PartialEq for NetworkIdSerde {
+    fn eq(&self, other: &Self) -> bool {
+        matches!((&self.0, &other.0), (NetworkId::TESTNET, NetworkId::TESTNET) | (NetworkId::MAINNET, NetworkId::MAINNET))
+    }
+}
+
+impl Eq for NetworkIdSerde {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde::de::value::{Error as DeError, U8Deserializer};
+    use serde_json;
 
     #[test]
-    fn deser_0_is_testnet() {
-        let deser = U8Deserializer::<DeError>::new(0);
-        let got = NetworkIdSerde::deserialize(deser).expect("0 should deserialize");
-        assert!(matches!(got.0, NetworkId::TESTNET));
+    fn test_testnet_serialization() {
+        let testnet = NetworkIdSerde(NetworkId::TESTNET);
+        let serialized = serde_json::to_string(&testnet).expect("should serialize");
+        assert_eq!(serialized, "0");
     }
 
     #[test]
-    fn deser_1_is_mainnet() {
-        let deser = U8Deserializer::<DeError>::new(1);
-        let got = NetworkIdSerde::deserialize(deser).expect("1 should deserialize");
-        assert!(matches!(got.0, NetworkId::MAINNET));
+    fn test_mainnet_serialization() {
+        let mainnet = NetworkIdSerde(NetworkId::MAINNET);
+        let serialized = serde_json::to_string(&mainnet).expect("should serialize");
+        assert_eq!(serialized, "1");
     }
 
     #[test]
-    fn deser_other_values_error() {
-        let deser = U8Deserializer::<DeError>::new(2);
-        let err = NetworkIdSerde::deserialize(deser).unwrap_err();
-        assert!(err.to_string().contains("invalid NetworkId"));
+    fn test_testnet_deserialization() {
+        let deserialized: NetworkIdSerde = serde_json::from_str("0").expect("should deserialize");
+        assert_eq!(deserialized.0 as u8, 0);
+    }
+
+    #[test]
+    fn test_mainnet_deserialization() {
+        let deserialized: NetworkIdSerde = serde_json::from_str("1").expect("should deserialize");
+        assert_eq!(deserialized.0 as u8, 1);
+    }
+
+    #[test]
+    fn test_invalid_network_id() {
+        let result: Result<NetworkIdSerde, _> = serde_json::from_str("2");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_roundtrip() {
+        let original = NetworkIdSerde(NetworkId::TESTNET);
+        let json = serde_json::to_string(&original).expect("should serialize");
+        let deserialized: NetworkIdSerde = serde_json::from_str(&json).expect("should deserialize");
+        assert_eq!(original, deserialized);
     }
 }

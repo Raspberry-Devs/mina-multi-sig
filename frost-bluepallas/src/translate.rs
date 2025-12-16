@@ -1,9 +1,8 @@
 use crate::{errors::BluePallasResult, BluePallas, SigningKey};
 use ark_ec::CurveGroup;
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
-use mina_hasher::Hashable;
 // Fr for frost
-use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, NetworkId};
+use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig};
 
 // Note
 // CurvePoint = Affine<PallasParameters>                                        mina side
@@ -23,14 +22,6 @@ pub fn translate_sig(fr_sig: &FrSig<BluePallas>) -> BluePallasResult<MinaSig> {
     let z: Scalar<BluePallas> = *fr_sig.z();
 
     Ok(MinaSig { rx, s: z })
-}
-
-/// Trait for types that can be translated to a Mina message
-pub trait Translatable: Hashable<D = NetworkId> {
-    fn translate_msg(&self) -> Vec<u8>;
-    fn from_bytes(bytes: &[u8]) -> BluePallasResult<Self>
-    where
-        Self: Sized;
 }
 
 pub fn translate_minask(msg: &mina_signer::Keypair) -> BluePallasResult<SigningKey> {

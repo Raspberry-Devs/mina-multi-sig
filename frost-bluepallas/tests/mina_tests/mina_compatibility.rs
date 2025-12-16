@@ -2,10 +2,7 @@ use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::fields::PrimeField;
 use ark_ff::BigInteger;
 use frost_bluepallas::{
-    hasher::{message_hash, PallasMessage},
-    transactions::legacy_tx::Transaction,
-    translate::{translate_pk, translate_sig, Translatable},
-    PallasGroup,
+    PallasGroup, hasher::{PallasMessage, message_hash}, transactions::{generic_tx::TransactionEnvelope, legacy_tx::Transaction}, translate::{translate_pk, translate_sig}
 };
 use frost_core::{Ciphersuite, Group};
 
@@ -130,7 +127,7 @@ fn roi_mina_tx() {
     .set_memo_str("Hello Mina!")
     .unwrap();
 
-    let msg = PallasMessage::new(tx.translate_msg());
+    let msg = PallasMessage::new(tx.to_roinput().serialize());
     assert_eq!(
         msg.to_roinput(),
         tx.to_roinput(),
@@ -178,7 +175,8 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
     }"#;
     // We want to now deserialize into a transaction
     let tx: Transaction = serde_json::from_str(json).unwrap();
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let msg = tx_env.serialize().unwrap();
 
     for _ in 0..64 {
         let rng = rand_core::OsRng;
@@ -201,8 +199,8 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
             "Signature commitment y-coordinate must be even"
         );
 
-        let mut ctx = mina_signer::create_legacy::<Transaction>(NetworkId::TESTNET);
-        assert!(ctx.verify(&mina_sig, &mina_pk, &tx));
+        let mut ctx = mina_signer::create_legacy::<TransactionEnvelope>(NetworkId::TESTNET);
+        assert!(ctx.verify(&mina_sig, &mina_pk, &tx_env));
     }
 
     Ok(())

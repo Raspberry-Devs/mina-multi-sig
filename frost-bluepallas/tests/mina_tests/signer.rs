@@ -3,8 +3,8 @@
 use frost_bluepallas::{
     hasher::PallasMessage,
     helper,
-    transactions::legacy_tx::Transaction,
-    translate::{translate_minask, translate_pk, Translatable},
+    transactions::{generic_tx::TransactionEnvelope, legacy_tx::Transaction},
+    translate::{translate_minask, translate_pk},
 };
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, NetworkId, PubKey, Signer};

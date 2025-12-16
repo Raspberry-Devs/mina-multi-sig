@@ -8,8 +8,8 @@ use serde::{
 };
 
 use crate::{
-    errors::BluePallasError, transactions::legacy_tx::Transaction, translate::translate_pk,
-    BluePallas, VerifyingKey,
+    errors::BluePallasError, transactions::generic_tx::TransactionEnvelope,
+    translate::translate_pk, BluePallas, VerifyingKey,
 };
 
 pub struct Sig {
@@ -88,7 +88,7 @@ impl Serialize for PubKeySer {
 pub struct TransactionSignature {
     pub publicKey: PubKeySer,
     pub signature: Sig,
-    pub payload: Transaction,
+    pub payload: TransactionEnvelope,
 }
 
 #[cfg(test)]

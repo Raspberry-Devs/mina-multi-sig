@@ -8,7 +8,7 @@ use mina_signer::NetworkId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(tag = "kind", content = "transaction")]
+#[serde(tag = "tag", content = "transaction")]
 pub enum TransactionKind {
     ZkApp(ZKAppCommand),
     Legacy(legacy_tx::Transaction),
@@ -24,7 +24,7 @@ impl TransactionKind {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TransactionEnvelope {
     network_id: NetworkIdSerde,
     kind: TransactionKind,
@@ -47,13 +47,13 @@ impl TransactionEnvelope {
     }
 
     /// Serialize the TransactionEnvelope to a byte vector using postcard.
-    pub fn serialize(&self) -> Result<Vec<u8>, postcard::Error> {
-        postcard::to_allocvec(self)
+    pub fn serialize(&self) -> Result<Vec<u8>, serde_json::Error> {
+        serde_json::to_vec(self)
     }
 
     /// Deserialize a TransactionEnvelope from a byte slice using postcard.
-    pub fn deserialize(bytes: &[u8]) -> Result<Self, postcard::Error> {
-        postcard::from_bytes(bytes)
+    pub fn deserialize(bytes: &[u8]) -> Result<Self, serde_json::Error> {
+        serde_json::from_slice(bytes)
     }
 
     pub fn network_id(&self) -> NetworkId {
@@ -86,19 +86,22 @@ impl Hashable for TransactionEnvelope {
 
 #[cfg(test)]
 mod tests {
+    use mina_signer::Keypair;
+
+    use crate::errors::BluePallasError;
+
     use super::*;
 
     #[test]
     fn test_transaction_envelope_serialization_roundtrip() {
+        let private_key_hex = "35dcca7620128d240cc3319c83dc6402ad439038361ba853af538a4cea3ddabc";
+        let mina_keypair = Keypair::from_hex(private_key_hex)
+            .map_err(|_| BluePallasError::InvalidSignature("Failed to parse keypair".into()))
+            .unwrap();
+
         let legacy_tx = legacy_tx::Transaction::new_payment(
-            mina_signer::PubKey::from_hex(
-                "B62qj9Y5Z5bY3N6G6u8g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D",
-            )
-            .unwrap(),
-            mina_signer::PubKey::from_hex(
-                "B62qkL1M2N3O4P5Q6R7S8T9U0V1W2X3Y4Z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p",
-            )
-            .unwrap(),
+            mina_keypair.public.clone(),
+            mina_keypair.public.clone(),
             1000,
             1,
             0,
