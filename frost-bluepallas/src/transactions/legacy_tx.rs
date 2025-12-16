@@ -10,7 +10,7 @@ use serde::{
 
 use crate::{
     errors::BluePallasError,
-    transactions::{MEMO_BYTES, MEMO_HEADER_BYTES}
+    transactions::{MEMO_BYTES, MEMO_HEADER_BYTES},
 };
 
 /// Copied from https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs

@@ -5,7 +5,10 @@ use crate::{
 use eyre::Context;
 use eyre::OptionExt;
 use frost_bluepallas::{
-    BluePallas, errors::BluePallasError, signature::{PubKeySer, Sig, TransactionSignature}, transactions::generic_tx::TransactionEnvelope
+    errors::BluePallasError,
+    signature::{PubKeySer, Sig, TransactionSignature},
+    transactions::generic_tx::TransactionEnvelope,
+    BluePallas,
 };
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};
 use reqwest::Url;
@@ -19,7 +22,6 @@ use std::{
 
 use super::args::Command;
 use super::config::Config as ConfigFile;
-use crate::mina_network::Network;
 
 /// This is the BluePallas/BluePallas specific run command for the coordinator which will save the output
 /// of the signing session into a Mina-specific transaction.
@@ -55,7 +57,6 @@ pub(crate) async fn run(
         signers,
         message,
         signature: _,
-        network,
     } = (*args).clone()
     else {
         panic!("invalid Command");
@@ -79,7 +80,6 @@ pub(crate) async fn run(
         message_path: message,
         output: &mut output,
         input: &mut input,
-        network,
     };
 
     let coordinator_config =
@@ -178,7 +178,6 @@ struct CoordinatorSetupParams<'a, C: Ciphersuite> {
     message_path: String,
     output: &'a mut dyn Write,
     input: &'a mut dyn BufRead,
-    network: Network,
 }
 
 /// Setup coordinator configuration for signing
@@ -238,7 +237,6 @@ fn setup_coordinator_config<C: Ciphersuite>(
                 .pubkey
                 .clone(),
         ),
-        network: params.network,
     };
 
     Ok(coordinator_config)

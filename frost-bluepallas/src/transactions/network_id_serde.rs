@@ -40,7 +40,10 @@ impl From<NetworkId> for NetworkIdSerde {
 
 impl PartialEq for NetworkIdSerde {
     fn eq(&self, other: &Self) -> bool {
-        matches!((&self.0, &other.0), (NetworkId::TESTNET, NetworkId::TESTNET) | (NetworkId::MAINNET, NetworkId::MAINNET))
+        matches!(
+            (&self.0, &other.0),
+            (NetworkId::TESTNET, NetworkId::TESTNET) | (NetworkId::MAINNET, NetworkId::MAINNET)
+        )
     }
 }
 

@@ -2,10 +2,9 @@ pub mod http;
 
 use async_trait::async_trait;
 use eyre::eyre;
-use frost_bluepallas::{transactions::legacy_tx::Transaction, translate::Translatable};
+use frost_bluepallas::transactions::generic_tx::TransactionEnvelope;
 
 use crate::api::SendSigningPackageArgs;
-use crate::mina_network::Network;
 use frost_core::{self as frost, Ciphersuite};
 
 use std::{
@@ -65,7 +64,6 @@ pub trait Comms<C: Ciphersuite> {
         if yes {
             return Ok(());
         }
-        let network = Network::try_from(signing_package.network_id)?;
 
         let transaction_bytes = signing_package
             .signing_package
@@ -73,11 +71,11 @@ pub trait Comms<C: Ciphersuite> {
             .ok_or_else(|| eyre!("No signing package found"))?
             .message();
 
-        let transaction = Transaction::from_bytes(transaction_bytes)?;
+        let transaction = TransactionEnvelope::deserialize(transaction_bytes)?;
         writeln!(
             output,
-            "Network: {}\nMessage to be signed (json):\n{}\nDo you want to sign it? (y/n)\n",
-            network, transaction
+            "Message to be signed (json):\n{}\nDo you want to sign it? (y/n)\n",
+            transaction
         )?;
 
         let mut sign_it = String::new();

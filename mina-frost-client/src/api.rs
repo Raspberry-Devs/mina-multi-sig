@@ -117,8 +117,6 @@ pub struct CloseSessionArgs {
 #[serde(bound = "C: Ciphersuite")]
 pub struct SendSigningPackageArgs<C: Ciphersuite> {
     pub signing_package: Vec<SigningPackage<C>>,
-    /// Network id as integer: 0 for TESTNET, 1 for MAINNET.
-    pub network_id: u8,
     #[serde(
         serialize_with = "serdect::slice::serialize_hex_lower_or_bin",
         deserialize_with = "serdect::slice::deserialize_hex_or_bin_vec"

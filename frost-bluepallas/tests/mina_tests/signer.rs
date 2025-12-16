@@ -41,7 +41,8 @@ fn signer_test_raw() {
     );
 
     // Generate FROST signature using the private key
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let msg = tx_env.serialize().unwrap();
     let fr_sk =
         translate_minask(&kp).expect("failed to translate mina keypair to frost signing key");
 
@@ -103,7 +104,8 @@ fn sign_mina_tx() {
     .unwrap();
 
     // Generate FROST signature
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let msg = tx_env.serialize().unwrap();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -117,7 +119,7 @@ fn sign_mina_tx() {
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
     let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
     let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx);
+    let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx_env);
 
     assert!(is_valid, "Mina signature verification failed");
     assert!(is_valid_tx, "Mina transaction verification failed");
@@ -156,7 +158,8 @@ fn sign_mina_tx_mainnet() {
     .unwrap();
 
     // Generate FROST signature
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let msg = tx_env.serialize().unwrap();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -215,7 +218,8 @@ fn transaction_json_deser_with_mina_sign() {
         serde_json::from_str(&tx_json).expect("Failed to deserialize transaction from JSON");
 
     // Now sign the deserialized transaction
-    let msg = deserialized_tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
+    let msg = tx_env.serialize().unwrap();
 
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
@@ -228,7 +232,7 @@ fn transaction_json_deser_with_mina_sign() {
 
     // Verify the signature using Mina Signer with TESTNET
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx);
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx_env);
 
     let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
     let is_valid2 = ctx2.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
@@ -270,7 +274,8 @@ fn sign_mina_delegation_tx() {
     .unwrap();
 
     // Generate FROST signature
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
+    let msg = tx_env.serialize().unwrap();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -330,7 +335,8 @@ fn delegation_json_deser_with_mina_sign() {
         serde_json::from_str(&tx_json).expect("Failed to deserialize delegation tx from JSON");
 
     // Now sign the deserialized transaction
-    let msg = deserialized_tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
+    let msg = tx_env.serialize().unwrap();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
