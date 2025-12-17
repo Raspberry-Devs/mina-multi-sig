@@ -24,7 +24,19 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
     let network_id = NetworkId::TESTNET;
 
     let rng = rand_chacha::ChaChaRng::seed_from_u64(100);
-    let fr_msg = b"Test message for FROST and Mina compatibility".to_vec();
+    let tx = TransactionEnvelope::new_legacy(
+        network_id.clone(),
+        Transaction::new_payment(
+            PubKey::from_address("B62qqM5PCrqATE21oWhkY4UkrzT9XpUjsdgMk5MBbEmuAjPBdjN91mZ")
+                .expect("invalid address"),
+            PubKey::from_address("B62qqM5PCrqATE21oWhkY4UkrzT9XpUjsdgMk5MBbEmuAjPBdjN91mZ")
+                .expect("invalid address"),
+            1000000,
+            20000,
+            16,
+        ),
+    );
+    let fr_msg = tx.serialize()?;
 
     let (fr_sig, fr_pk) = generate_signature_random(&fr_msg, rng)?;
 
@@ -44,7 +56,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
     let mina_pk = translate_pk(&fr_pk)?;
     let mina_sig = translate_sig(&fr_sig)?;
-    let mina_msg = PallasMessage::new(fr_msg.clone());
+    let mina_msg = PallasMessage::new(tx.to_roinput().serialize());
 
     assert_eq!(
         mina_sig.rx,
@@ -57,7 +69,8 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         "Generator point must match"
     );
 
-    let mina_chall = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id.clone())?;
+    let mina_chall =
+        message_hash::<PallasMessage>(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id.clone())?;
     let chall = frost_bluepallas::BluePallas::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
 
     // As of now this should be trivially true because the implementations are the same
