@@ -37,7 +37,6 @@ use crate::{
     hasher::{hash_to_array, hash_to_scalar, message_hash, PallasMessage},
     negate::NegateY,
     round1::SigningNonces,
-    transactions::generic_tx::TransactionEnvelope,
     translate::translate_pk,
 };
 
@@ -194,24 +193,11 @@ impl Ciphersuite for BluePallas {
             translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let rx = R.into_affine().x;
 
-        // Deserialize the message with TransactionEnvelope
-        // This will recover the original transaction, including the network_id
-        if let Ok(mina_msg) = TransactionEnvelope::deserialize(message) {
-            let network_id = mina_msg.network_id();
+        // Attempt to derive the message as a TransactionEnvelope first, if that fails treat it as raw bytes
+        let msg = PallasMessage::new(message.to_vec());
+        let network_id = msg.network_id.clone();
 
-            let scalar = message_hash::<TransactionEnvelope>(&mina_pk, rx, mina_msg, network_id)
-                .map_err(|_| frost_core::FieldError::MalformedScalar)?;
-
-            return Ok(frost_core::Challenge::from_scalar(scalar));
-        }
-
-        // Fallback: if the message is not a valid TransctionEnvelope, we treat as raw bytes/ROInput
-        let raw_msg = PallasMessage::new(message.to_vec());
-
-        // We use TESTNET as default network id for raw messages, as this is not a transaction it doesn't matter
-        // which network id we use here
-        use mina_signer::NetworkId;
-        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, raw_msg, NetworkId::TESTNET)
+        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, msg, network_id)
             .map_err(|_| frost_core::FieldError::MalformedScalar)?;
         Ok(frost_core::Challenge::from_scalar(scalar))
     }

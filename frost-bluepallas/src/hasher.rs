@@ -3,7 +3,9 @@ use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
 use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
-use crate::{errors::BluePallasError, PallasScalarField};
+use crate::{
+    errors::BluePallasError, transactions::generic_tx::TransactionEnvelope, PallasScalarField,
+};
 
 /// This is a Hashable interface for an array of bytes
 /// This allows us to provide a easy-to-read interface for hashing FROST elements in H1, H3, H4, H5
@@ -63,25 +65,30 @@ where
 
 /// This is an adaptor for the Mina Hashable type and allows us to
 /// have compatiblility between the Mina and FROST implementations
-/// The adaptor will attempt to serialize the input as a ROInput first, if that fails then it will
+/// The adaptor will attempt to serialize the input as a TransctionEnvelope first, if that fails then it will
 /// treat the input as raw bytes
-///
-/// NOTE: This is mostly for backwards compatibility with existing code that
-/// uses raw byte arrays for messages
 #[derive(Clone, Debug)]
 pub struct PallasMessage {
     input: ROInput,
+    pub network_id: NetworkId,
 }
 
 impl PallasMessage {
     pub fn new(input: Vec<u8>) -> Self {
         // Try to deserialize as ROInput first
-        match ROInput::deserialize(&input) {
-            Ok(roi) => PallasMessage { input: roi },
+        match TransactionEnvelope::deserialize(&input) {
+            Ok(roi) => PallasMessage {
+                input: roi.to_roinput(),
+                network_id: roi.network_id().clone(),
+            },
             Err(_) => {
                 // If deserialization fails, treat input as raw bytes
                 let roi = ROInput::new().append_bytes(&input);
-                PallasMessage { input: roi }
+                // Default to TESTNET if we can't determine network ID
+                PallasMessage {
+                    input: roi,
+                    network_id: NetworkId::TESTNET,
+                }
             }
         }
     }
