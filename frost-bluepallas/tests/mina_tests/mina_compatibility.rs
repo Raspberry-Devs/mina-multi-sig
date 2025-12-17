@@ -56,7 +56,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
     let mina_pk = translate_pk(&fr_pk)?;
     let mina_sig = translate_sig(&fr_sig)?;
-    let mina_msg = PallasMessage::new(tx.to_roinput().serialize());
+    let mina_msg = PallasMessage::new(tx.serialize().unwrap());
 
     assert_eq!(
         mina_sig.rx,
@@ -143,7 +143,9 @@ fn roi_mina_tx() {
     .set_memo_str("Hello Mina!")
     .unwrap();
 
-    let msg = PallasMessage::new(tx.to_roinput().serialize());
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
+
+    let msg = PallasMessage::new(tx_env.serialize().unwrap());
     assert_eq!(
         msg.to_roinput(),
         tx.to_roinput(),
