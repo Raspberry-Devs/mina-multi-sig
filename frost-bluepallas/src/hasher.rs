@@ -64,8 +64,8 @@ where
 }
 
 /// This is an adaptor for the Mina Hashable type and allows us to
-/// have compatiblility between the Mina and FROST implementations
-/// The adaptor will attempt to serialize the input as a TransctionEnvelope first, if that fails then it will
+/// have compatibility between the Mina and FROST implementations
+/// The adaptor will attempt to serialize the input as a TransactionEnvelope first, if that fails then it will
 /// treat the input as raw bytes
 #[derive(Clone, Debug)]
 pub struct PallasMessage {

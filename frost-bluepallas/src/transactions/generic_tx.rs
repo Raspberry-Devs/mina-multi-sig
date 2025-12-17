@@ -56,12 +56,12 @@ impl TransactionEnvelope {
         Self::new(network_id, TransactionKind::new_legacy(tx))
     }
 
-    /// Serialize the TransactionEnvelope to a byte vector using postcard.
+    /// Serialize the TransactionEnvelope to a byte vector using serde.
     pub fn serialize(&self) -> Result<Vec<u8>, serde_json::Error> {
         serde_json::to_vec(self)
     }
 
-    /// Deserialize a TransactionEnvelope from a byte slice using postcard.
+    /// Deserialize a TransactionEnvelope from a byte slice using serde.
     pub fn deserialize(bytes: &[u8]) -> Result<Self, serde_json::Error> {
         serde_json::from_slice(bytes)
     }
