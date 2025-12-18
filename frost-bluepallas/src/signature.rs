@@ -1,3 +1,8 @@
+//! This file represents output signatures from the FROST signing process and their corresponding transactions
+//! Note, that currently the FROST signature outputs the signature, public key, and transaction separately which is compatible with legacy payments
+//! However, ZKApp transactions may include signatures within account updates and fee payer information. For that reason, ZKApp transactions may contain several
+//! different signatures which correspond to different signers and so on. However, as FROST signing is expensive, we only sign once over the entire transaction
+//! rather than signing several times over different account updates like o1js does. This means frost-bluepallas only supports full commitment ZKApp transactions (as opposed to partial commitment)
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInt, PrimeField};
 use frost_core::Signature;
@@ -83,6 +88,8 @@ impl Serialize for PubKeySer {
     }
 }
 
+/// Note that this structure is only correct for legacy payments
+/// ZKApp transactions may include signature payloads within account updates and fee payer
 #[allow(non_snake_case)]
 #[derive(Serialize)]
 pub struct TransactionSignature {
