@@ -145,7 +145,7 @@ fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
 /// Validates call depths and authorization kinds before computing the commitment.
 /// Returns two Fp elements, representing the accountUpdates commitment and the overall commitment respectively.
 /// Overall commitment includes memo, fee payer, and account updates commitments.
-pub(crate) fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResult<(Fp, Fp)> {
+pub(crate) fn zk_commit(tx: &ZKAppCommand, network: &NetworkId) -> BluePallasResult<(Fp, Fp)> {
     if !is_call_depth_valid(tx) {
         return Err(Box::new(BluePallasError::InvalidZkAppCommand(
             "Call depths are not valid".to_string(),
@@ -155,12 +155,11 @@ pub(crate) fn zk_commit(tx: &ZKAppCommand, network: NetworkId) -> BluePallasResu
     let forest = zkapp_command_to_call_forest(tx);
 
     // Compute the account-updates commitment using the call forest hashing routine.
-    let account_updates_commitment = call_forest_hash(&forest, &network)?;
+    let account_updates_commitment = call_forest_hash(&forest, network)?;
 
     let memo_hash = memo_hash(tx)?;
 
-    let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone(), &network)?;
-
+    let fee_payer_hash = fee_payer_hash(tx.fee_payer.clone(), network)?;
     let full_commit = hash_with_prefix(
         constants::PREFIX_ACCOUNT_UPDATE_CONS,
         &[memo_hash, fee_payer_hash, account_updates_commitment],
@@ -429,14 +428,12 @@ mod tests {
 
         for test_vector in test_vectors {
             let (computed_account_updates_commitment, computed_full_commitment) =
-                zk_commit(&test_vector.zkapp_command, test_vector.network.clone()).unwrap_or_else(
-                    |_| {
-                        panic!(
-                            "Failed to compute commitment for test: {}",
-                            test_vector.name
-                        )
-                    },
-                );
+                zk_commit(&test_vector.zkapp_command, &test_vector.network).unwrap_or_else(|_| {
+                    panic!(
+                        "Failed to compute commitment for test: {}",
+                        test_vector.name
+                    )
+                });
 
             let expected_account_updates_commitment =
                 parse_expected_hash(test_vector.expected_account_updates_commitment);

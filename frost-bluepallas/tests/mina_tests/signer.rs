@@ -1,10 +1,10 @@
 #![allow(clippy::needless_borrows_for_generic_args)]
 
 use frost_bluepallas::{
-    hasher::{set_network_id, PallasMessage},
+    hasher::PallasMessage,
     helper,
-    transactions::legacy_tx::Transaction,
-    translate::{translate_minask, translate_pk, Translatable},
+    transactions::{generic_tx::TransactionEnvelope, legacy_tx::Transaction},
+    translate::{translate_minask, translate_pk},
 };
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, NetworkId, PubKey, Signer};
@@ -12,7 +12,7 @@ use mina_signer::{Keypair, NetworkId, PubKey, Signer};
 #[cfg(test)]
 #[test]
 fn signer_test_raw() {
-    set_network_id(NetworkId::TESTNET).expect("Failed to set network ID");
+    let network_id = NetworkId::TESTNET;
 
     let kp = Keypair::from_hex("164244176fddb5d769b7de2027469d027ad428fadcc0c02396e6280142efb718")
         .expect("failed to create keypair");
@@ -39,7 +39,8 @@ fn signer_test_raw() {
     );
 
     // Generate FROST signature using the private key
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let msg = tx_env.serialize().unwrap();
     let fr_sk =
         translate_minask(&kp).expect("failed to translate mina keypair to frost signing key");
 
@@ -63,8 +64,8 @@ fn signer_test_raw() {
     );
 
     // Create ctx signer and verify the signature
-    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+    let mut ctx = mina_signer::create_legacy(network_id.clone());
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx_env);
 
     assert!(is_valid, "Mina signature verification failed");
 }
@@ -101,7 +102,8 @@ fn sign_mina_tx() {
     .unwrap();
 
     // Generate FROST signature
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let msg = tx_env.serialize().unwrap();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -113,9 +115,9 @@ fn sign_mina_tx() {
 
     // Verify the signature using Mina Signer
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx_env);
     let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx);
+    let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx_env);
 
     assert!(is_valid, "Mina signature verification failed");
     assert!(is_valid_tx, "Mina transaction verification failed");
@@ -126,7 +128,7 @@ fn sign_mina_tx_mainnet() {
     let mut rng = rand_core::OsRng;
 
     // Set network id to Mainnet
-    set_network_id(NetworkId::MAINNET).expect("Failed to set network ID");
+    let network_id = NetworkId::MAINNET;
 
     // Use trusted dealer to setup public and packages
     let max_signers = 3;
@@ -154,7 +156,8 @@ fn sign_mina_tx_mainnet() {
     .unwrap();
 
     // Generate FROST signature
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(network_id.clone(), tx);
+    let msg = tx_env.serialize().unwrap();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -168,8 +171,12 @@ fn sign_mina_tx_mainnet() {
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with MAINNET
-    let mut ctx = mina_signer::create_legacy(NetworkId::MAINNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+    let mut ctx = mina_signer::create_legacy(network_id);
+    let is_valid = ctx.verify(
+        &mina_sig,
+        &mina_vk,
+        &TransactionEnvelope::deserialize(&msg).unwrap(),
+    );
 
     assert!(is_valid, "Mina signature verification failed on MAINNET");
 }
@@ -213,7 +220,8 @@ fn transaction_json_deser_with_mina_sign() {
         serde_json::from_str(&tx_json).expect("Failed to deserialize transaction from JSON");
 
     // Now sign the deserialized transaction
-    let msg = deserialized_tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
+    let msg = tx_env.serialize().unwrap();
 
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
@@ -226,7 +234,7 @@ fn transaction_json_deser_with_mina_sign() {
 
     // Verify the signature using Mina Signer with TESTNET
     let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
-    let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx);
+    let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx_env);
 
     let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
     let is_valid2 = ctx2.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
@@ -268,7 +276,8 @@ fn sign_mina_delegation_tx() {
     .unwrap();
 
     // Generate FROST signature
-    let msg = tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
+    let msg = tx_env.serialize().unwrap();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
@@ -328,7 +337,8 @@ fn delegation_json_deser_with_mina_sign() {
         serde_json::from_str(&tx_json).expect("Failed to deserialize delegation tx from JSON");
 
     // Now sign the deserialized transaction
-    let msg = deserialized_tx.translate_msg();
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
+    let msg = tx_env.serialize().unwrap();
     let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 

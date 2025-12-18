@@ -4,7 +4,6 @@ use super::comms::http::HTTPComms;
 
 use super::comms::Comms;
 
-use crate::mina_network::Network;
 use frost_bluepallas::BluePallas;
 use rand::thread_rng;
 use std::io::{BufRead, Write};
@@ -39,9 +38,6 @@ pub async fn sign(
     comms
         .confirm_message(input, logger, &round_2_config, yes)
         .await?;
-
-    // Set the internal NetworkID based on the configuration
-    Network::try_from(round_2_config.network_id)?.configure_hasher()?;
 
     let signing_package = round_2_config.signing_package.first().unwrap();
 

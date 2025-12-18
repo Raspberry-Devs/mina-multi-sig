@@ -26,7 +26,6 @@ pub async fn coordinate_signing(
     reader: &mut impl BufRead,
     logger: &mut impl Write,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    config.network.configure_hasher()?;
     let mut comms: Box<dyn Comms<BluePallas>> = Box::new(HTTPComms::new(config)?);
 
     // Round 1 - Get commitments

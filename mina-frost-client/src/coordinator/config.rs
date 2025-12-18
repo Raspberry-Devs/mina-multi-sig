@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::cipher::{PrivateKey, PublicKey};
-use crate::mina_network::Network;
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Identifier};
 
 #[derive(Clone)]
@@ -31,7 +30,4 @@ pub struct Config<C: Ciphersuite> {
 
     /// The coordinator's communication public key for HTTP mode.
     pub comm_pubkey: Option<PublicKey>,
-
-    /// Network to use for signing.
-    pub network: Network,
 }

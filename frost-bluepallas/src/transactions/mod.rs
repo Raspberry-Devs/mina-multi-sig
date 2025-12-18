@@ -1,4 +1,6 @@
+pub mod generic_tx;
 pub mod legacy_tx;
+mod network_id_serde;
 pub mod zkapp_tx;
 
 const MEMO_BYTES: usize = 34;
