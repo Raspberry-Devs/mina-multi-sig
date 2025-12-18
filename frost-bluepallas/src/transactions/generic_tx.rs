@@ -99,7 +99,7 @@ mod tests {
     use mina_signer::Keypair;
 
     use crate::{
-        errors::BluePallasError, transactions::zkapp_tx::test_vectors::get_zkapp_test_vectors,
+        errors::BluePallasError, transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors,
     };
 
     use super::*;

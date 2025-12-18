@@ -8,15 +8,12 @@ use mina_hasher::Fp;
 use mina_signer::{CompressedPubKey, NetworkId};
 use std::str::FromStr;
 
-use crate::transactions::zkapp_tx::{
-    ActionState, AuthRequired, Authorization, MayUseToken, Permissions, SetVerificationKey,
-    TimingData, TokenId, TokenSymbol, VerificationKeyData, ZkappUri,
-};
-
 use super::{
-    AccountPreconditions, AccountUpdate, AccountUpdateBody, Actions, AuthorizationKind,
-    BalanceChange, EpochData, EpochLedger, Events, FeePayer, FeePayerBody, Field,
-    NetworkPreconditions, Preconditions, PublicKey, RangeCondition, Update, ZKAppCommand,
+    AccountPreconditions, AccountUpdate, AccountUpdateBody, ActionState, Actions, AuthRequired,
+    Authorization, AuthorizationKind, BalanceChange, EpochData, EpochLedger, Events, FeePayer,
+    FeePayerBody, Field, MayUseToken, NetworkPreconditions, Permissions, Preconditions, PublicKey,
+    RangeCondition, SetVerificationKey, TimingData, TokenId, TokenSymbol, Update,
+    VerificationKeyData, ZKAppCommand, ZkappUri,
 };
 
 /// Comprehensive test vector containing all data needed for commitment function tests
