@@ -8,6 +8,8 @@ use mina_hasher::Fp;
 use mina_signer::{CompressedPubKey, NetworkId};
 use std::str::FromStr;
 
+use crate::transactions::generic_tx::TransactionEnvelope;
+
 use super::{
     AccountPreconditions, AccountUpdate, AccountUpdateBody, ActionState, Actions, AuthRequired,
     Authorization, AuthorizationKind, BalanceChange, EpochData, EpochLedger, Events, FeePayer,
@@ -33,6 +35,12 @@ pub struct ZkAppTestVector {
     pub expected_account_updates_commitment: &'static str,
     /// Expected full commitment from zk_commit
     pub expected_full_commitment: &'static str,
+}
+
+impl From<ZkAppTestVector> for TransactionEnvelope {
+    fn from(vector: ZkAppTestVector) -> TransactionEnvelope {
+        TransactionEnvelope::new_zkapp(vector.network, vector.zkapp_command)
+    }
 }
 
 /// Additional test vectors specifically for hash_with_prefix function
