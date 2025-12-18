@@ -6,9 +6,8 @@
 //! agrees with the group public key according to the `mina-signer` crate
 
 use ark_ff::BigInt;
-use frost_bluepallas::transactions::legacy_tx::Transaction;
+use frost_bluepallas::transactions::generic_tx::TransactionEnvelope;
 use lazy_static::lazy_static;
-use mina_signer::NetworkId;
 use mina_signer::PubKey;
 use mina_signer::Signature;
 use mina_signer::Signer;
@@ -244,7 +243,7 @@ fn sign(pids: &[Pid], group_pk: &str, threshold: usize) -> Result<()> {
 fn parse_and_verify(pk_str: &str) {
     let msg_json = fs::read_to_string(message_path.clone()).unwrap();
 
-    let msg: Transaction =
+    let msg: TransactionEnvelope =
         serde_json::from_str(msg_json.trim()).expect("Failed to parse transaction from JSON");
     let pk = PubKey::from_address(pk_str).unwrap();
 
@@ -268,7 +267,7 @@ fn parse_and_verify(pk_str: &str) {
         rx: field.into(),
     };
 
-    let mut ctx = mina_signer::create_legacy::<Transaction>(NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy::<TransactionEnvelope>(msg.network_id());
     assert!(ctx.verify(&mina_sig, &pk, &msg));
 }
 
