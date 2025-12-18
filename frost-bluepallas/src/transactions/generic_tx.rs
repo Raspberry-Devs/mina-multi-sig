@@ -129,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction_envelop_zkapp_roundtrip() {
+    fn test_transaction_envelope_zkapp_roundtrip() {
         // Iterate through each test vector in test_vectors
         let test_vectors = get_zkapp_test_vectors();
 

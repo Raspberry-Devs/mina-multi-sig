@@ -316,7 +316,7 @@ fn cross_package_test(threshold: usize, max_signers: usize) -> Result<()> {
     let mut message_paths = vec![message_path.to_str().unwrap().to_string()];
     message_paths.extend(zkapp_message_paths);
 
-    // Iterate through each transction message path, sign+verify
+    // Iterate through each transaction message path, sign+verify
     for msg in message_paths.iter() {
         sign(&pids, &group_pk_hex, threshold, msg)?;
         parse_and_verify(&group_pk_mina, msg);
