@@ -14,7 +14,7 @@ pub mod zkapp_packable;
 pub mod zkapp_serde;
 
 #[cfg(test)]
-mod test_vectors;
+pub(crate) mod test_vectors;
 
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates
