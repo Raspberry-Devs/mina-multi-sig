@@ -1038,6 +1038,7 @@ dependencies = [
  "ark-serialize",
  "bitvec",
  "bs58",
+ "frost-bluepallas",
  "frost-core",
  "hex",
  "insta",

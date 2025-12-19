@@ -308,12 +308,11 @@ fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResul
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[cfg(test)]
-    use super::super::test_vectors::{
+    use crate::transactions::zkapp_tx::zkapp_test_vectors::{
         get_hash_with_prefix_test_vectors, get_zkapp_test_vectors, parse_expected_hash,
     };
+
+    use super::*;
 
     #[test]
     fn test_pack_to_fields() {

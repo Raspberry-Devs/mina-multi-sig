@@ -13,8 +13,9 @@ pub mod zkapp_hashable;
 pub mod zkapp_packable;
 pub mod zkapp_serde;
 
-#[cfg(test)]
-mod test_vectors;
+// Allow any test-only code to access this module
+#[cfg(any(test, feature = "test-utils"))]
+pub mod zkapp_test_vectors;
 
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates

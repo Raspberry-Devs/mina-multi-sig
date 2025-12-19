@@ -30,6 +30,9 @@ insta.workspace = true
 hex.workspace = true
 rand_chacha = "0.3"
 bs58 = "0.5.1"
+# Use test-utils feature as dev dependency, this enables sharing test vectors
+# across unit tests and integration tests
+frost-bluepallas = { path = ".", features = ["test-utils"] }
 
 [features]
 default = ["serialization", "cheater-detection"]
@@ -42,3 +45,4 @@ serde = ["frost-core/serde"]
 serialization = ["serde", "frost-core/serialization"]
 ## Enable cheater detection
 cheater-detection = ["frost-core/cheater-detection"]
+test-utils = []

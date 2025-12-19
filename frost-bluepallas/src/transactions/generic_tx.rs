@@ -98,7 +98,9 @@ impl Hashable for TransactionEnvelope {
 mod tests {
     use mina_signer::Keypair;
 
-    use crate::errors::BluePallasError;
+    use crate::{
+        errors::BluePallasError, transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors,
+    };
 
     use super::*;
 
@@ -124,5 +126,28 @@ mod tests {
             TransactionEnvelope::deserialize(&serialized).expect("Deserialization failed");
 
         assert_eq!(deserialized, envelope);
+    }
+
+    #[test]
+    fn test_transaction_envelope_zkapp_roundtrip() {
+        // Iterate through each test vector in test_vectors
+        let test_vectors = get_zkapp_test_vectors();
+
+        for tv in test_vectors {
+            let network_id = tv.network;
+            let zkapp_tx = tv.zkapp_command;
+
+            let envelope = TransactionEnvelope::new_zkapp(network_id, zkapp_tx.clone());
+
+            let serialized = envelope.serialize().expect("Serialization failed");
+            let deserialized =
+                TransactionEnvelope::deserialize(&serialized).expect("Deserialization failed");
+
+            assert_eq!(
+                deserialized, envelope,
+                "ZkApp TransactionEnvelope roundtrip failed for test vector {}",
+                tv.name
+            );
+        }
     }
 }

@@ -1,4 +1,5 @@
 #![allow(clippy::needless_borrows_for_generic_args)]
+#![cfg(test)]
 
 use frost_bluepallas::{
     hasher::PallasMessage,
@@ -9,7 +10,6 @@ use frost_bluepallas::{
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, NetworkId, PubKey, Signer};
 
-#[cfg(test)]
 #[test]
 fn signer_test_raw() {
     let network_id = NetworkId::TESTNET;
@@ -363,4 +363,115 @@ fn delegation_json_deser_with_mina_sign() {
         is_valid_msg,
         "Mina signature verification (message) failed on TESTNET"
     );
+}
+
+#[test]
+fn test_zkapp_tx_mina_signer_compatibility() {
+    use frost_bluepallas::transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors;
+
+    let mut rng = rand_core::OsRng;
+    let test_vectors = get_zkapp_test_vectors();
+
+    // Skip test if no vectors provided
+    if test_vectors.is_empty() {
+        println!("Warning: No test vectors provided for ZkApp transaction signing");
+        return;
+    }
+
+    for test_vector in test_vectors {
+        println!("Testing ZkApp transaction: {}", test_vector.name);
+
+        // Use trusted dealer to setup public and packages
+        let max_signers = 5;
+        let min_signers = 3;
+        let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
+            max_signers,
+            min_signers,
+            frost_bluepallas::keys::IdentifierList::Default,
+            &mut rng,
+        )
+        .unwrap_or_else(|_| {
+            panic!(
+                "Failed to generate key shares for test: {}",
+                test_vector.name
+            )
+        });
+
+        // Create transaction envelope with the ZkApp command
+        let tx_env = TransactionEnvelope::new_zkapp(
+            test_vector.network.clone(),
+            test_vector.zkapp_command.clone(),
+        );
+        let msg = tx_env.serialize().unwrap_or_else(|_| {
+            panic!(
+                "Failed to serialize transaction envelope for test: {}",
+                test_vector.name
+            )
+        });
+
+        // Generate FROST signature
+        let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Failed to sign message with FROST for test: {}",
+                    test_vector.name
+                )
+            });
+
+        // Convert signature to Mina format
+        let mina_sig = frost_bluepallas::translate::translate_sig(&sig).unwrap_or_else(|_| {
+            panic!(
+                "Failed to translate FROST signature to Mina signature for test: {}",
+                test_vector.name
+            )
+        });
+
+        // Convert verifying key to Mina format
+        let mina_vk = frost_bluepallas::translate::translate_pk(&vk).unwrap_or_else(|_| {
+            panic!(
+                "Failed to translate FROST verifying key to Mina public key for test: {}",
+                test_vector.name
+            )
+        });
+
+        // Verify the signature using Mina Signer
+        let mut ctx = mina_signer::create_legacy(test_vector.network.clone());
+        let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx_env);
+
+        assert!(
+            is_valid,
+            "Mina signature verification failed for test: {}",
+            test_vector.name
+        );
+
+        // Also verify against the deserialized transaction envelope
+        let mut ctx2 = mina_signer::create_legacy(test_vector.network.clone());
+        let deserialized_tx_env = TransactionEnvelope::deserialize(&msg).unwrap_or_else(|_| {
+            panic!(
+                "Failed to deserialize transaction envelope for test: {}",
+                test_vector.name
+            )
+        });
+        let is_valid2 = ctx2.verify(&mina_sig, &mina_vk, &deserialized_tx_env);
+
+        assert!(
+            is_valid2,
+            "Mina signature verification (deserialized) failed for test: {}",
+            test_vector.name
+        );
+
+        // Verify against the raw message
+        let mut ctx3 = mina_signer::create_legacy(test_vector.network);
+        let is_valid3 = ctx3.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
+
+        assert!(
+            is_valid3,
+            "Mina signature verification (raw message) failed for test: {}",
+            test_vector.name
+        );
+
+        println!("✓ Test passed: {}", test_vector.name);
+    }
+
+    println!("All ZkApp transaction signing tests passed!");
 }
