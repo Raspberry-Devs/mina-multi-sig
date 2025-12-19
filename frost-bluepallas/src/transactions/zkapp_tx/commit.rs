@@ -478,7 +478,7 @@ mod tests {
         let test_vectors = get_zkapp_test_vectors();
 
         if test_vectors.is_empty() {
-            return;
+            panic!("No test vectors provided for call forest hash tests");
         }
 
         for test_vector in test_vectors {
