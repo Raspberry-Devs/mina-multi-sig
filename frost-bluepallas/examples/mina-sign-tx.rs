@@ -1,8 +1,7 @@
 use ark_ff::{BigInt, PrimeField};
 use frost_bluepallas::{
     signature::{PubKeySer, Sig, TransactionSignature},
-    transactions::legacy_tx::Transaction,
-    translate::Translatable,
+    transactions::{generic_tx::TransactionEnvelope, legacy_tx::Transaction},
     Error,
 };
 use frost_core::Ciphersuite;
@@ -28,8 +27,10 @@ fn main() -> Result<(), Error> {
         1000000000,
         1,
     )
-    .set_memo_str("Hello Mina x FROST from the Raspberry Devs!")
+    .set_memo_str("Hello Mina x FROST from the Rasp")
     .unwrap();
+
+    let tx = TransactionEnvelope::new_legacy(mina_signer::NetworkId::TESTNET, tx);
 
     println!(
         "Unsigned Transaction: {}",
@@ -40,7 +41,7 @@ fn main() -> Result<(), Error> {
     let signing_key = frost_bluepallas::translate::translate_minask(&mina_keypair)
         .map_err(|_| Error::DeserializationError)?;
 
-    let msg = tx.translate_msg();
+    let msg = tx.serialize().map_err(|_| Error::DeserializationError)?;
 
     // Sign the transaction with FROST
     let (sig, vk) =

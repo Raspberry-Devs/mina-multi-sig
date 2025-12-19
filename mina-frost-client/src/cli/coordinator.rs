@@ -7,8 +7,7 @@ use eyre::OptionExt;
 use frost_bluepallas::{
     errors::BluePallasError,
     signature::{PubKeySer, Sig, TransactionSignature},
-    transactions::legacy_tx::Transaction,
-    translate::Translatable,
+    transactions::generic_tx::TransactionEnvelope,
     BluePallas,
 };
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};
@@ -23,7 +22,6 @@ use std::{
 
 use super::args::Command;
 use super::config::Config as ConfigFile;
-use crate::mina_network::Network;
 
 /// This is the BluePallas/BluePallas specific run command for the coordinator which will save the output
 /// of the signing session into a Mina-specific transaction.
@@ -59,7 +57,6 @@ pub(crate) async fn run(
         signers,
         message,
         signature: _,
-        network,
     } = (*args).clone()
     else {
         panic!("invalid Command");
@@ -83,7 +80,6 @@ pub(crate) async fn run(
         message_path: message,
         output: &mut output,
         input: &mut input,
-        network,
     };
 
     let coordinator_config =
@@ -116,7 +112,7 @@ pub fn read_message(
         eprintln!("Reading message from {}...", &message_path);
         load_transaction_from_json(message_path)?
     };
-    let message = loaded_message.translate_msg();
+    let message = loaded_message.serialize()?;
 
     Ok(message)
 }
@@ -182,7 +178,6 @@ struct CoordinatorSetupParams<'a, C: Ciphersuite> {
     message_path: String,
     output: &'a mut dyn Write,
     input: &'a mut dyn BufRead,
-    network: Network,
 }
 
 /// Setup coordinator configuration for signing
@@ -242,7 +237,6 @@ fn setup_coordinator_config<C: Ciphersuite>(
                 .pubkey
                 .clone(),
         ),
-        network: params.network,
     };
 
     Ok(coordinator_config)
@@ -259,7 +253,7 @@ pub fn save_signature(
     // Read signature from bytes
     let signature: Sig = Signature::<BluePallas>::deserialize(&signature_bytes)?.try_into()?;
 
-    let tx = Transaction::from_bytes(message)?;
+    let tx = TransactionEnvelope::deserialize(message)?;
 
     let pubkey: PubKeySer = vk.try_into()?;
 
@@ -284,7 +278,7 @@ pub fn save_signature(
 
 fn load_transaction_from_json<P: AsRef<Path>>(
     path: P,
-) -> Result<Transaction, Box<dyn std::error::Error>> {
+) -> Result<TransactionEnvelope, Box<dyn std::error::Error>> {
     let json_content = fs::read_to_string(path)?;
 
     load_transaction_from_str(&json_content)
@@ -292,7 +286,7 @@ fn load_transaction_from_json<P: AsRef<Path>>(
 
 fn load_transaction_from_stdin(
     input: &mut dyn BufRead,
-) -> Result<Transaction, Box<dyn std::error::Error>> {
+) -> Result<TransactionEnvelope, Box<dyn std::error::Error>> {
     let mut json_content = String::new();
     input.read_to_string(&mut json_content)?;
 
@@ -301,8 +295,8 @@ fn load_transaction_from_stdin(
 
 fn load_transaction_from_str(
     transaction_str: &str,
-) -> Result<Transaction, Box<dyn std::error::Error>> {
-    let transaction: Transaction = serde_json::from_str(transaction_str.trim())
+) -> Result<TransactionEnvelope, Box<dyn std::error::Error>> {
+    let transaction: TransactionEnvelope = serde_json::from_str(transaction_str.trim())
         .map_err(|e| eyre::eyre!("Failed to parse transaction from JSON: {}", e))?;
     Ok(transaction)
 }

@@ -161,7 +161,6 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             .expect("cipher must have been set before");
         let send_signing_package_config = SendSigningPackageArgs {
             signing_package: vec![signing_package.clone()],
-            network_id: self.config.network.into(),
             aux_msg: Default::default(),
         };
 

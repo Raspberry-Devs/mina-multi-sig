@@ -193,11 +193,12 @@ impl Ciphersuite for BluePallas {
             translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let rx = R.into_affine().x;
 
-        let mina_msg = PallasMessage::new(message.to_vec());
+        // Attempt to derive the message as a TransactionEnvelope first, if that fails treat it as raw bytes
+        let msg = PallasMessage::new(message.to_vec());
+        let network_id = msg.network_id.clone();
 
-        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, mina_msg)
+        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, msg, network_id)
             .map_err(|_| frost_core::FieldError::MalformedScalar)?;
-
         Ok(frost_core::Challenge::from_scalar(scalar))
     }
 }

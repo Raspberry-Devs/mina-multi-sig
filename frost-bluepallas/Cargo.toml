@@ -18,17 +18,21 @@ num-bigint = "0.4.6"
 num-traits.workspace = true
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
 lazy_static.workspace = true
 bs58 = "0.5.1"
 
 [dev-dependencies]
-frost-core = { version = "2.1.0", features = ["test-impl", "internals"] }
+frost-core = { version = "2.2.0", features = ["test-impl", "internals"] }
 lazy_static.workspace = true
 serde_json.workspace = true
 insta.workspace = true
 hex.workspace = true
 rand_chacha = "0.3"
 bs58 = "0.5.1"
+# Use test-utils feature as dev dependency, this enables sharing test vectors
+# across unit tests and integration tests
+frost-bluepallas = { path = ".", features = ["test-utils"] }
 
 [features]
 default = ["serialization", "cheater-detection"]
@@ -41,3 +45,4 @@ serde = ["frost-core/serde"]
 serialization = ["serde", "frost-core/serialization"]
 ## Enable cheater detection
 cheater-detection = ["frost-core/cheater-detection"]
+test-utils = []

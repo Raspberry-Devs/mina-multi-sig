@@ -1,10 +1,8 @@
 use crate::{errors::BluePallasResult, BluePallas, SigningKey};
-use alloc::vec::Vec;
 use ark_ec::CurveGroup;
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
-use mina_hasher::Hashable;
 // Fr for frost
-use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, NetworkId};
+use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig};
 
 // Note
 // CurvePoint = Affine<PallasParameters>                                        mina side
@@ -26,14 +24,6 @@ pub fn translate_sig(fr_sig: &FrSig<BluePallas>) -> BluePallasResult<MinaSig> {
     Ok(MinaSig { rx, s: z })
 }
 
-/// Trait for types that can be translated to a Mina message
-pub trait Translatable: Hashable<D = NetworkId> {
-    fn translate_msg(&self) -> Vec<u8>;
-    fn from_bytes(bytes: &[u8]) -> BluePallasResult<Self>
-    where
-        Self: Sized;
-}
-
 pub fn translate_minask(msg: &mina_signer::Keypair) -> BluePallasResult<SigningKey> {
     // Convert mina SecKey to FROST SigningKey
     let scalar = msg.secret.scalar();
@@ -42,13 +32,12 @@ pub fn translate_minask(msg: &mina_signer::Keypair) -> BluePallasResult<SigningK
 
 #[cfg(test)]
 mod tests {
-    use crate::hasher::PallasMessage;
 
     use super::*;
     use ark_ff::fields::models::fp::{Fp, MontBackend};
     use frost_core::SigningKey;
     use mina_curves::pasta::fields::fq::FrConfig;
-    use mina_signer::{seckey::SecKey, NetworkId};
+    use mina_signer::seckey::SecKey;
 
     #[test]
     fn test_translate_pk() -> BluePallasResult<()> {
@@ -69,13 +58,6 @@ mod tests {
         let fr_pk: VerifyingKey<BluePallas> = fr_sk.into();
 
         assert_eq!(translate_pk(&fr_pk)?, mina_pk);
-        Ok(())
-    }
-
-    #[test]
-    fn check_hashable_impl() -> BluePallasResult<()> {
-        // panics if prefix.len() > MAX_DOMAIN_STRING_LEN
-        mina_signer::create_legacy::<PallasMessage>(NetworkId::TESTNET);
         Ok(())
     }
 }

@@ -1,3 +1,8 @@
+//! This file represents output signatures from the FROST signing process and their corresponding transactions
+//! Note, that currently the FROST signature outputs the signature, public key, and transaction separately which is compatible with legacy payments
+//! However, ZKApp transactions may include signatures within account updates and fee payer information. For that reason, ZKApp transactions may contain several
+//! different signatures which correspond to different signers and so on. However, as FROST signing is expensive, we only sign once over the entire transaction
+//! rather than signing several times over different account updates like o1js does. This means frost-bluepallas only supports full commitment ZKApp transactions (as opposed to partial commitment)
 use alloc::string::ToString;
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInt, PrimeField};
@@ -9,8 +14,8 @@ use serde::{
 };
 
 use crate::{
-    errors::BluePallasError, transactions::legacy_tx::Transaction, translate::translate_pk,
-    BluePallas, VerifyingKey,
+    errors::BluePallasError, transactions::generic_tx::TransactionEnvelope,
+    translate::translate_pk, BluePallas, VerifyingKey,
 };
 
 pub struct Sig {
@@ -84,18 +89,24 @@ impl Serialize for PubKeySer {
     }
 }
 
+/// Note that this structure is only correct for legacy payments
+/// ZKApp transactions may include signature payloads within account updates and fee payer
 #[allow(non_snake_case)]
 #[derive(Serialize)]
 pub struct TransactionSignature {
     pub publicKey: PubKeySer,
     pub signature: Sig,
-    pub payload: Transaction,
+    pub payload: TransactionEnvelope,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{helper, translate};
+    use crate::{
+        helper,
+        transactions::{generic_tx::TransactionEnvelope, legacy_tx},
+        translate,
+    };
     use core::convert::TryInto;
     use mina_signer::Keypair;
 
@@ -110,13 +121,20 @@ mod tests {
             .map_err(|_| BluePallasError::InvalidSignature("Failed to translate keypair".into()))?;
 
         // Create a test message
-        let test_msg = b"test message for signature conversion";
+        let test_msg = legacy_tx::Transaction::new_payment(
+            mina_keypair.public.clone(),
+            mina_keypair.public.clone(),
+            1000,
+            1,
+            0,
+        );
+        let test_msg = TransactionEnvelope::new_legacy(mina_signer::NetworkId::MAINNET, test_msg)
+            .serialize()
+            .unwrap();
 
         // Generate FROST signature
         let (frost_sig, _vk) =
-            helper::generate_signature_from_sk(test_msg, &signing_key, rand_core::OsRng).map_err(
-                |_| BluePallasError::InvalidSignature("Failed to generate signature".into()),
-            )?;
+            helper::generate_signature_from_sk(&test_msg, &signing_key, rand_core::OsRng).unwrap();
 
         // Method 1: Existing translation approach
         let mina_sig = translate::translate_sig(&frost_sig).map_err(|_| {
