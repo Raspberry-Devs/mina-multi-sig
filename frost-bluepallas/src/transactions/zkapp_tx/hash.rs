@@ -1,4 +1,6 @@
 //! Low-level poseidon hash utilities for ZkApp transactions
+
+use alloc::{string::ToString, vec::Vec};
 use ark_ec::AdditiveGroup;
 use ark_ff::BigInt;
 use ark_ff::Field;

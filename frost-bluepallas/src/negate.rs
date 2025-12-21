@@ -89,12 +89,12 @@ mod tests {
     use crate::PallasScalarField;
 
     use super::*;
+    use alloc::collections::BTreeMap;
     use ark_ff::UniformRand;
     use frost_core::round1::{Nonce, NonceCommitment};
     use frost_core::Group;
     use mina_curves::pasta::ProjectivePallas;
     use rand_core::OsRng;
-    use std::collections::BTreeMap;
 
     /// Helpers to extract the underlying `PallasGroup` from a `NonceCommitment<BluePallas>`.
     fn commit_to_group(c: &NonceCommitment<BluePallas>) -> ProjectivePallas {

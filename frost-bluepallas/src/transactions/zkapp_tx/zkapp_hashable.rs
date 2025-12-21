@@ -1,3 +1,4 @@
+use alloc::string::{String, ToString};
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::NetworkId;
 

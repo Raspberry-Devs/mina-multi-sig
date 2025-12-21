@@ -13,12 +13,12 @@
 //! verify it with the `signer`'s verify method. We do not use `signer` at all in our
 //! implementation. We do use `hasher` which provides the hash functions used by `signer` and our
 //! implementation of `frost-core`.
+#![no_std]
 
+#[macro_use]
 extern crate alloc;
 
-use std::borrow::Cow;
-
-use alloc::collections::BTreeMap;
+use alloc::{borrow::Cow, collections::BTreeMap};
 
 use ark_ec::{models::CurveConfig, CurveGroup, PrimeGroup};
 
@@ -262,8 +262,8 @@ pub(crate) fn pre_commitment_sign<'a>(
 
     if commit.to_element().into_affine().y.into_bigint().is_even() {
         return Ok((
-            std::borrow::Cow::Borrowed(signing_package),
-            std::borrow::Cow::Borrowed(signing_nonces),
+            Cow::Borrowed(signing_package),
+            Cow::Borrowed(signing_nonces),
         ));
     }
 
@@ -271,10 +271,7 @@ pub(crate) fn pre_commitment_sign<'a>(
     let negated_nonce = signing_nonces.negate_y();
     let negated_commitments = signing_package.negate_y();
 
-    Ok((
-        std::borrow::Cow::Owned(negated_commitments),
-        std::borrow::Cow::Owned(negated_nonce),
-    ))
+    Ok((Cow::Owned(negated_commitments), Cow::Owned(negated_nonce)))
 }
 
 /// This performs the same functionality as [`pre_commitment_sign`], but instead only negates commitments because the coordinator is not able to receive any nonces
@@ -288,12 +285,12 @@ pub(crate) fn pre_commitment_aggregate<'a>(
     let commit = compute_group_commitment(signing_package, binding_factor_list)?;
 
     if commit.to_element().into_affine().y.into_bigint().is_even() {
-        return Ok(std::borrow::Cow::Borrowed(signing_package));
+        return Ok(Cow::Borrowed(signing_package));
     }
 
     // Otherwise negate the nonce that we know and all the commitments
     let negated_commitments = signing_package.negate_y();
-    Ok(std::borrow::Cow::Owned(negated_commitments))
+    Ok(Cow::Owned(negated_commitments))
 }
 
 /// FROST(Pallas, Posiedon) Round 2 functionality and types, for signature share generation.

@@ -1,5 +1,5 @@
+use alloc::string::{String, ToString};
 use core::fmt;
-
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::{CompressedPubKey, NetworkId, PubKey};
 

@@ -486,10 +486,11 @@ impl<T: Packable, const N: usize> Packable for [T; N] {
 
 #[cfg(test)]
 mod test {
-    use super::{Packable, ROInput};
+    use super::*;
+    use alloc::{string::String, vec::Vec};
+    use core::str::FromStr;
     use mina_hasher::Fp;
     use mina_signer::CompressedPubKey;
-    use std::str::FromStr;
 
     #[derive(Clone)]
     enum ROValue {

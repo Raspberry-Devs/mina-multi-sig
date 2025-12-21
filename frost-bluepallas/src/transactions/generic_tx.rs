@@ -3,6 +3,10 @@ use crate::transactions::{
     network_id_serde::NetworkIdSerde,
     zkapp_tx::{zkapp_hashable::ZKAppCommandHashable, ZKAppCommand},
 };
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use mina_hasher::Hashable;
 use mina_signer::NetworkId;
 use serde::{Deserialize, Serialize};
@@ -30,8 +34,8 @@ pub struct TransactionEnvelope {
     kind: TransactionKind,
 }
 
-impl std::fmt::Display for TransactionEnvelope {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for TransactionEnvelope {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "TransactionEnvelope(network_id: {:?}, kind: {:?})",

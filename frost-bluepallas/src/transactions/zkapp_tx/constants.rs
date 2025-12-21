@@ -1,4 +1,5 @@
-use std::str::FromStr;
+use alloc::string::ToString;
+use core::str::FromStr;
 
 use ark_ff::{AdditiveGroup, BigInt, PrimeField};
 use lazy_static::lazy_static;

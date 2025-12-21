@@ -1,3 +1,7 @@
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use ark_ff::Field as ArkField;
 use mina_signer::CompressedPubKey;
 use serde::{Deserialize, Serialize};
@@ -317,7 +321,7 @@ impl TokenSymbol {
     }
 }
 
-impl std::str::FromStr for TokenSymbol {
+impl core::str::FromStr for TokenSymbol {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() <= 6 {
@@ -333,7 +337,7 @@ impl std::str::FromStr for TokenSymbol {
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct ZkappUri(pub Vec<u8>);
 
-impl std::str::FromStr for ZkappUri {
+impl core::str::FromStr for ZkappUri {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() <= 32 {

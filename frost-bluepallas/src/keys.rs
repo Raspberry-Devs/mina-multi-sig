@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use alloc::collections::BTreeMap;
 
 use frost_core::{self as frost};
 use rand_core::{CryptoRng, RngCore};

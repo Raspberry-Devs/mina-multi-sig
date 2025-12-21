@@ -3,10 +3,11 @@
 //! This module contains shared test data used across different commitment function tests.
 //! All test vectors use empty/default data structures - populate with actual test data as needed.
 
+use alloc::{string::ToString, vec::Vec};
 use bs58;
+use core::str::FromStr;
 use mina_hasher::Fp;
 use mina_signer::{CompressedPubKey, NetworkId};
-use std::str::FromStr;
 
 use crate::transactions::generic_tx::TransactionEnvelope;
 
