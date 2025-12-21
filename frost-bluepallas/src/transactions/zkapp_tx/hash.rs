@@ -6,7 +6,7 @@ use ark_ff::BigInt;
 use ark_ff::Field;
 use mina_hasher::Fp;
 
-use crate::{errors::BluePallasError, transactions::zkapp_tx::zkapp_packable::ROInput};
+use crate::{errors::BluePallasError, transactions::zkapp_tx::zkapp_packable::PackedInput};
 
 fn param_to_field_impl(param: &str, default: &[u8; 32]) -> Result<Fp, BluePallasError> {
     let param_bytes = param.as_bytes();
@@ -32,12 +32,12 @@ pub fn param_to_field(param: &str) -> Result<Fp, BluePallasError> {
     param_to_field_impl(param, DEFAULT)
 }
 
-pub(crate) fn pack_to_fields(roi: ROInput) -> ROInput {
+pub(crate) fn pack_to_fields(roi: PackedInput) -> PackedInput {
     let fields = roi.fields;
     let bits = roi.bits;
 
     if bits.is_empty() {
-        return ROInput { bits, fields };
+        return PackedInput { bits, fields };
     }
 
     let mut packed_bits = Vec::new();
@@ -58,7 +58,7 @@ pub(crate) fn pack_to_fields(roi: ROInput) -> ROInput {
         }
     }
     packed_bits.push(current_packed_field);
-    ROInput {
+    PackedInput {
         bits: vec![],
         fields: [fields, packed_bits].concat(),
     }
