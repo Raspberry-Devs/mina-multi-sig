@@ -3,23 +3,58 @@ use alloc::{
     vec::Vec,
 };
 use ark_ff::Field as ArkField;
-use mina_signer::CompressedPubKey;
+use mina_hasher::{Hashable, ROInput};
+use mina_signer::{CompressedPubKey, NetworkId};
 use serde::{Deserialize, Serialize};
 
-use crate::transactions::{zkapp_tx::constants::APP_STATE_LENGTH, MEMO_BYTES};
+use crate::transactions::{
+    zkapp_tx::{commit::zk_commit, constants::APP_STATE_LENGTH},
+    MEMO_BYTES,
+};
 
 mod commit;
 mod constants;
 mod hash;
+pub mod packing;
 pub mod zkapp_display;
-pub mod zkapp_emptiable;
-pub mod zkapp_hashable;
-pub mod zkapp_packable;
 pub mod zkapp_serde;
 
 // Allow any test-only code to access this module
 #[cfg(any(test, feature = "test-utils"))]
 pub mod zkapp_test_vectors;
+
+// The Hashable representation of a ZKAppCommand for signing purposes
+#[derive(Clone, Debug)]
+pub struct ZKAppCommandHashable<'a> {
+    pub tx: &'a ZKAppCommand,
+    pub network: NetworkId,
+}
+
+impl<'a> ZKAppCommandHashable<'a> {
+    pub fn new(tx: &'a ZKAppCommand, network: NetworkId) -> Self {
+        Self { tx, network }
+    }
+}
+
+impl<'a> Hashable for ZKAppCommandHashable<'a> {
+    type D = NetworkId;
+
+    fn domain_string(domain_param: Self::D) -> Option<String> {
+        match domain_param {
+            NetworkId::MAINNET => "MinaSignatureMainnet",
+            NetworkId::TESTNET => "CodaSignature",
+        }
+        .to_string()
+        .into()
+    }
+
+    fn to_roinput(&self) -> mina_hasher::ROInput {
+        // Convert the ZKAppCommand into a field element by hashing, return single-field ROInput
+        // This code follows O1JS logic, where ZKAppCommand is hashed before being passed to the signature
+        let (_, commit) = zk_commit(self.tx, &self.network).unwrap();
+        ROInput::new().append_field(commit)
+    }
+}
 
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates

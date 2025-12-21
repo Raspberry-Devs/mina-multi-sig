@@ -17,7 +17,7 @@ use crate::{
     transactions::zkapp_tx::{
         constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
         hash::{pack_to_fields, param_to_field},
-        zkapp_packable::Packable,
+        packing::Packable,
         AccountUpdate, Authorization, AuthorizationKind, BalanceChange, FeePayer, RangeCondition,
         ZKAppCommand,
     },

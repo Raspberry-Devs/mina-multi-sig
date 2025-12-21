@@ -1,10 +1,11 @@
 /* The Emptiable trait is used when implementing Packable for an Option<T> */
 
-use super::zkapp_packable::{Packable, PackedInput};
 use crate::transactions::zkapp_tx::{
-    commit::hash_noinput, constants::ZK_ACTION_STATE_EMPTY, ActionState, Field, Permissions,
-    PublicKey, RangeCondition, SetVerificationKey, TimingData, TokenSymbol, UInt32, UInt64,
-    VerificationKeyData, ZkappUri,
+    commit::hash_noinput,
+    constants::ZK_ACTION_STATE_EMPTY,
+    packing::{Packable, PackedInput},
+    ActionState, Field, Permissions, PublicKey, RangeCondition, SetVerificationKey, TimingData,
+    TokenSymbol, UInt32, UInt64, VerificationKeyData, ZkappUri,
 };
 use mina_signer::CompressedPubKey;
 

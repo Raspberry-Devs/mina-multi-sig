@@ -6,7 +6,7 @@ use ark_ff::BigInt;
 use ark_ff::Field;
 use mina_hasher::Fp;
 
-use crate::{errors::BluePallasError, transactions::zkapp_tx::zkapp_packable::PackedInput};
+use crate::{errors::BluePallasError, transactions::zkapp_tx::packing::PackedInput};
 
 fn param_to_field_impl(param: &str, default: &[u8; 32]) -> Result<Fp, BluePallasError> {
     let param_bytes = param.as_bytes();

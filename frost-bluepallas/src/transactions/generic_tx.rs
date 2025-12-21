@@ -1,7 +1,7 @@
 use crate::transactions::{
     legacy_tx,
     network_id_serde::NetworkIdSerde,
-    zkapp_tx::{zkapp_hashable::ZKAppCommandHashable, ZKAppCommand},
+    zkapp_tx::{ZKAppCommand, ZKAppCommandHashable},
 };
 use alloc::{
     string::{String, ToString},
