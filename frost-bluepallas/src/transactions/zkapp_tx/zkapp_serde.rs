@@ -1,3 +1,6 @@
+//! This module provides serde implementations for some structs used in ZkApp transactions
+//! for which custom serialization is required.
+
 use crate::transactions::{
     zkapp_tx::{Field, PublicKey},
     MEMO_BYTES,

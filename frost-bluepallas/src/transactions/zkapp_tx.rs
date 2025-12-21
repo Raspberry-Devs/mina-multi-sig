@@ -1,3 +1,4 @@
+//! Module defining the ZKApp transaction structure, serde, hashing/commitment logic, and related types.
 use alloc::{
     string::{String, ToString},
     vec::Vec,
@@ -8,13 +9,15 @@ use mina_signer::{CompressedPubKey, NetworkId};
 use serde::{Deserialize, Serialize};
 
 use crate::transactions::{
-    zkapp_tx::{commit::zk_commit, constants::APP_STATE_LENGTH},
+    zkapp_tx::{
+        commit::zk_commit,
+        constants::{APP_STATE_LENGTH, DUMMY_HASH},
+    },
     MEMO_BYTES,
 };
 
 mod commit;
 mod constants;
-mod hash;
 pub mod packing;
 pub mod zkapp_display;
 pub mod zkapp_serde;
@@ -22,6 +25,10 @@ pub mod zkapp_serde;
 // Allow any test-only code to access this module
 #[cfg(any(test, feature = "test-utils"))]
 pub mod zkapp_test_vectors;
+
+// -------------------------------------------------------------------------------------------------
+// ------------------------------------ Hashing Logic ----------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 // The Hashable representation of a ZKAppCommand for signing purposes
 #[derive(Clone, Debug)]
@@ -55,6 +62,10 @@ impl<'a> Hashable for ZKAppCommandHashable<'a> {
         ROInput::new().append_field(commit)
     }
 }
+
+// -------------------------------------------------------------------------------------------------
+// ----------------------------- ZKApp Transaction Structs -----------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 // The final transaction structure for a ZkApp transaction
 // FeePayer is a field which may be signed by the same key as in the account updates
@@ -101,6 +112,58 @@ pub struct FeePayerBody {
 pub struct AccountUpdate {
     pub body: AccountUpdateBody,
     pub authorization: Authorization,
+}
+
+impl From<FeePayer> for AccountUpdate {
+    fn from(fee_payer: FeePayer) -> Self {
+        // Unpack fee payer pieces
+        let FeePayer {
+            body,
+            authorization,
+        } = fee_payer;
+        let public_key = body.public_key;
+        let fee_magnitude = body.fee;
+        let nonce = body.nonce;
+        let vaild_until = body.valid_until.unwrap_or(u32::MAX);
+
+        let account_update = AccountUpdate::default();
+        let mut body = account_update.body;
+
+        body.public_key = public_key;
+        body.balance_change = BalanceChange {
+            magnitude: fee_magnitude,
+            sgn: -1,
+        };
+        body.increment_nonce = true;
+
+        body.preconditions.network.global_slot_since_genesis = {
+            Some(RangeCondition {
+                lower: 0,
+                upper: vaild_until,
+            })
+        };
+        body.preconditions.account.nonce = {
+            Some(RangeCondition {
+                lower: nonce,
+                upper: nonce,
+            })
+        };
+        body.use_full_commitment = true;
+        body.implicit_account_creation_fee = true;
+        body.authorization_kind = AuthorizationKind {
+            is_proved: false,
+            is_signed: true,
+            verification_key_hash: *DUMMY_HASH,
+        };
+
+        AccountUpdate {
+            body,
+            authorization: Authorization {
+                proof: None,
+                signature: Some(authorization),
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]

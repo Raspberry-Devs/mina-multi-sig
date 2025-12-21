@@ -14,8 +14,8 @@ use serde::{
 };
 
 use crate::{
-    errors::BluePallasError, transactions::generic_tx::TransactionEnvelope,
-    translate::translate_pk, BluePallas, VerifyingKey,
+    errors::BluePallasError, transactions::TransactionEnvelope, translate::translate_pk,
+    BluePallas, VerifyingKey,
 };
 
 pub struct Sig {
@@ -104,7 +104,7 @@ mod tests {
     use super::*;
     use crate::{
         helper,
-        transactions::{generic_tx::TransactionEnvelope, legacy_tx},
+        transactions::{legacy_tx, TransactionEnvelope},
         translate,
     };
     use core::convert::TryInto;

@@ -1,7 +1,7 @@
 use ark_ff::{BigInt, PrimeField};
 use frost_bluepallas::{
     signature::{PubKeySer, Sig, TransactionSignature},
-    transactions::{generic_tx::TransactionEnvelope, legacy_tx::Transaction},
+    transactions::{legacy_tx::Transaction, TransactionEnvelope},
     Error,
 };
 use frost_core::Ciphersuite;

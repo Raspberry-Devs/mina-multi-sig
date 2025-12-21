@@ -1,15 +1,264 @@
-//! ZKApp Packable trait implementations
-use crate::transactions::zkapp_tx::commit::{hash_noinput, hash_with_prefix};
-use crate::transactions::zkapp_tx::constants::{
-    MINA_ZKAPP_URI, ZK_APP_ACTIONS_EMPTY, ZK_APP_ACTIONS_PREFIX, ZK_APP_EVENTS_EMPTY,
-    ZK_APP_EVENTS_PREFIX, ZK_APP_EVENT_PREFIX,
-};
-use crate::transactions::zkapp_tx::hash::pack_to_fields;
-use crate::transactions::zkapp_tx::packing::emptiable::Emptiable;
-use crate::transactions::zkapp_tx::packing::{Packable, PackedInput};
-use crate::transactions::zkapp_tx::AccountUpdate;
-use crate::transactions::zkapp_tx::*;
+// ! Module for packing zkApp transaction structures into a format suitable for hashing.
+use alloc::vec::Vec;
+use ark_ff::{AdditiveGroup, BigInt};
 use mina_hasher::Fp;
+
+use crate::transactions::zkapp_tx::{
+    commit::{hash_noinput, hash_with_prefix},
+    constants::{
+        MINA_ZKAPP_URI, ZK_ACTION_STATE_EMPTY, ZK_APP_ACTIONS_EMPTY, ZK_APP_ACTIONS_PREFIX,
+        ZK_APP_EVENTS_EMPTY, ZK_APP_EVENTS_PREFIX, ZK_APP_EVENT_PREFIX,
+    },
+    *,
+};
+
+// ------------------------------------------------------------------------------------------------
+// -----------------------------STRUCTS -----------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+// Represents a random oracle input (ROInput) from mina-hasher but with a different structure
+// that is easier to debug and work with
+#[derive(Default)]
+pub struct PackedInput {
+    pub bits: Vec<BitData>,
+    pub fields: Vec<Fp>,
+}
+
+// Represents bits as tuples simillarly as o1js in Typescript
+// Similar structure exists in mina-haher but it is very restrictive and we prefer to have our own
+impl PackedInput {
+    /// Create a new empty random oracle input
+    pub fn new() -> Self {
+        PackedInput {
+            fields: vec![],
+            bits: Vec::new(),
+        }
+    }
+
+    pub fn append_packedinput(mut self, mut roi: PackedInput) -> Self {
+        self.fields.append(&mut roi.fields);
+        self.bits.extend(roi.bits);
+        self
+    }
+
+    pub fn append_field(mut self, f: Fp) -> Self {
+        self.fields.push(f);
+        self
+    }
+
+    pub fn append_bool(mut self, b: bool) -> Self {
+        self.bits.push(BitData::BOOL { val: b });
+        self
+    }
+
+    pub fn append_u32(mut self, x: u32) -> Self {
+        self.bits.push(BitData::U32 { val: x });
+        self
+    }
+
+    pub fn append_u64(mut self, x: u64) -> Self {
+        self.bits.push(BitData::U64 { val: x });
+        self
+    }
+
+    pub fn append_bytes(mut self, bytes: &[u8]) -> Self {
+        self.bits.push(BitData::BYTES {
+            val: bytes.to_vec(),
+        });
+        self
+    }
+
+    pub fn pack_to_fields(self) -> PackedInput {
+        let fields = self.fields;
+        let bits = self.bits;
+
+        if bits.is_empty() {
+            return PackedInput { bits, fields };
+        }
+
+        let mut packed_bits = Vec::new();
+        let mut current_packed_field = Fp::ZERO;
+        let mut current_size = 0;
+        for bit_data in bits {
+            let size = bit_data.bit_data_size();
+            let field = bit_data.to_field();
+
+            current_size += size;
+            if current_size < 255 {
+                current_packed_field =
+                    current_packed_field * Fp::from(BigInt::from(1u64) << size as u32) + field;
+            } else {
+                packed_bits.push(current_packed_field);
+                current_size = size;
+                current_packed_field = field;
+            }
+        }
+        packed_bits.push(current_packed_field);
+        PackedInput {
+            bits: vec![],
+            fields: [fields, packed_bits].concat(),
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+pub enum BitData {
+    U32 { val: u32 },
+    U64 { val: u64 },
+    BOOL { val: bool },
+    BYTES { val: Vec<u8> },
+}
+
+impl BitData {
+    pub fn bit_data_size(&self) -> usize {
+        match self {
+            BitData::U32 { .. } => 32,
+            BitData::U64 { .. } => 64,
+            BitData::BOOL { .. } => 1,
+            BitData::BYTES { val } => val.len() * 8,
+        }
+    }
+
+    pub fn to_field(&self) -> Fp {
+        match self {
+            BitData::U32 { val } => Fp::from(*val as u64),
+            BitData::U64 { val } => Fp::from(*val),
+            BitData::BOOL { val } => {
+                if *val {
+                    Fp::ONE
+                } else {
+                    Fp::ZERO
+                }
+            }
+            BitData::BYTES { val } => {
+                let mut bytes = [0u8; 32];
+                let len = val.len().min(32);
+                bytes[..len].copy_from_slice(&val[..len]);
+                Fp::from_random_bytes(&bytes).expect("Failed to convert bytes to field")
+            }
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// ----------------------------- TRAITS -----------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+// This trait is implemented for all structures in zkApp_tx - specifically ZkAppCommand and its substructures
+pub trait Packable {
+    fn pack(&self) -> PackedInput;
+}
+
+// Used for packing empty values for Option<T>
+pub trait Emptiable {
+    fn empty_roi() -> PackedInput;
+}
+
+// ------------------------------------------------------------------------------------------------
+// ----------------------------- PACKABLE IMPLEMENTATIONS FOR BASIC TYPES -------------------------
+// ------------------------------------------------------------------------------------------------
+
+impl Packable for PublicKey {
+    fn pack(&self) -> PackedInput {
+        // PublicKey wraps CompressedPubKey which exposes x and is_odd via conversion
+        let pk: mina_signer::CompressedPubKey = self.clone().into();
+        PackedInput::new().append_field(pk.x).append_bool(pk.is_odd)
+    }
+}
+
+impl Packable for Field {
+    fn pack(&self) -> PackedInput {
+        PackedInput::new().append_field(self.0)
+    }
+}
+
+impl Packable for ActionState {
+    fn pack(&self) -> PackedInput {
+        PackedInput::new().append_field(self.0 .0)
+    }
+}
+
+impl Packable for RangeCondition<UInt32> {
+    fn pack(&self) -> PackedInput {
+        PackedInput::new()
+            .append_u32(self.lower)
+            .append_u32(self.upper)
+    }
+}
+
+impl Packable for RangeCondition<UInt64> {
+    fn pack(&self) -> PackedInput {
+        PackedInput::new()
+            .append_u64(self.lower)
+            .append_u64(self.upper)
+    }
+}
+
+impl<T> Packable for RangeCondition<T>
+where
+    T: Packable,
+{
+    fn pack(&self) -> PackedInput {
+        PackedInput::new()
+            .append_packedinput(self.lower.pack())
+            .append_packedinput(self.upper.pack())
+    }
+}
+
+impl<T> Packable for Option<T>
+where
+    T: Packable + Emptiable,
+{
+    fn pack(&self) -> PackedInput {
+        let mut roi = PackedInput::new();
+        roi = roi.append_bool(self.is_some());
+        if self.is_some() {
+            roi = roi.append_packedinput(self.as_ref().unwrap().pack());
+        } else {
+            roi = roi.append_packedinput(T::empty_roi());
+        }
+        roi
+    }
+}
+
+impl Packable for Bool {
+    fn pack(&self) -> PackedInput {
+        PackedInput::new().append_bool(*self)
+    }
+}
+
+impl Packable for Option<Bool> {
+    fn pack(&self) -> PackedInput {
+        let mut roi = PackedInput::new();
+        roi = roi.append_bool(self.is_some());
+        if self.is_some() {
+            roi = roi.append_bool(self.unwrap());
+        } else {
+            roi = roi.append_bool(false);
+        }
+        roi
+    }
+}
+
+impl<T: Packable> Packable for Vec<T> {
+    fn pack(&self) -> PackedInput {
+        let mut roi = PackedInput::new();
+        for item in self {
+            roi = roi.append_packedinput(item.pack());
+        }
+        roi
+    }
+}
+
+impl<T: Packable, const N: usize> Packable for [T; N] {
+    fn pack(&self) -> PackedInput {
+        let mut roi = PackedInput::new();
+        for item in self {
+            roi = roi.append_packedinput(item.pack());
+        }
+        roi
+    }
+}
 
 // ------------------------------------------------------------------------------------------------
 // ----------------------------- PACKABLE FOR COMPOSITE TYPES -------------------------------------
@@ -250,115 +499,116 @@ impl Packable for ZkappUri {
             }
         }
         field_inputs = field_inputs.append_bool(true);
-        let fields = pack_to_fields(field_inputs).fields;
+        let fields = field_inputs.pack_to_fields().fields;
         let hash = hash_with_prefix(MINA_ZKAPP_URI, &fields).unwrap();
         PackedInput::new().append_field(hash)
     }
 }
 
 // ------------------------------------------------------------------------------------------------
-// ----------------------------- PACKABLE IMPLEMENTATIONS FOR BASIC TYPES -------------------------
+// ----------------------------- EMPTIABLE IMPLEMENTATIONS ----------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-impl Packable for PublicKey {
-    fn pack(&self) -> PackedInput {
-        // PublicKey wraps CompressedPubKey which exposes x and is_odd via conversion
-        let pk: mina_signer::CompressedPubKey = self.clone().into();
-        PackedInput::new().append_field(pk.x).append_bool(pk.is_odd)
+impl Emptiable for Field {
+    fn empty_roi() -> PackedInput {
+        Self(mina_hasher::Fp::from(0)).pack()
     }
 }
 
-impl Packable for Field {
-    fn pack(&self) -> PackedInput {
-        PackedInput::new().append_field(self.0)
+impl Emptiable for ActionState {
+    fn empty_roi() -> PackedInput {
+        let field = hash_noinput(ZK_ACTION_STATE_EMPTY).unwrap();
+
+        PackedInput::new().append_field(field)
     }
 }
 
-impl Packable for ActionState {
-    fn pack(&self) -> PackedInput {
-        PackedInput::new().append_field(self.0 .0)
+impl Emptiable for VerificationKeyData {
+    fn empty_roi() -> PackedInput {
+        Field::empty_roi()
     }
 }
 
-impl Packable for RangeCondition<UInt32> {
-    fn pack(&self) -> PackedInput {
-        PackedInput::new()
-            .append_u32(self.lower)
-            .append_u32(self.upper)
+impl Emptiable for PublicKey {
+    fn empty_roi() -> PackedInput {
+        PublicKey(CompressedPubKey::empty()).pack()
     }
 }
 
-impl Packable for RangeCondition<UInt64> {
-    fn pack(&self) -> PackedInput {
-        PackedInput::new()
-            .append_u64(self.lower)
-            .append_u64(self.upper)
-    }
-}
-
-impl<T> Packable for RangeCondition<T>
-where
-    T: Packable,
-{
-    fn pack(&self) -> PackedInput {
-        PackedInput::new()
-            .append_packedinput(self.lower.pack())
-            .append_packedinput(self.upper.pack())
-    }
-}
-
-impl<T> Packable for Option<T>
-where
-    T: Packable + Emptiable,
-{
-    fn pack(&self) -> PackedInput {
-        let mut roi = PackedInput::new();
-        roi = roi.append_bool(self.is_some());
-        if self.is_some() {
-            roi = roi.append_packedinput(self.as_ref().unwrap().pack());
-        } else {
-            roi = roi.append_packedinput(T::empty_roi());
+impl Emptiable for Permissions {
+    fn empty_roi() -> PackedInput {
+        use crate::transactions::zkapp_tx::constants::TXN_VERSION_CURRENT;
+        use crate::transactions::zkapp_tx::AuthRequired::*;
+        Self {
+            edit_state: None,
+            send: None,
+            receive: None,
+            access: None,
+            set_delegate: None,
+            set_permissions: None,
+            set_verification_key: SetVerificationKey {
+                auth: None,
+                txn_version: TXN_VERSION_CURRENT,
+            },
+            set_zkapp_uri: None,
+            edit_action_state: None,
+            set_token_symbol: None,
+            increment_nonce: None,
+            set_voting_for: None,
+            set_timing: None,
         }
+        .pack()
+    }
+}
+
+impl Emptiable for TokenSymbol {
+    fn empty_roi() -> PackedInput {
+        let mut roi = PackedInput::new();
+        roi = roi.append_packedinput(TokenSymbol::default().pack());
         roi
     }
 }
 
-impl Packable for Bool {
-    fn pack(&self) -> PackedInput {
-        PackedInput::new().append_bool(*self)
+impl Emptiable for TimingData {
+    fn empty_roi() -> PackedInput {
+        Self {
+            initial_minimum_balance: 0,
+            cliff_time: 0,
+            cliff_amount: 0,
+            vesting_period: 0,
+            vesting_increment: 0,
+        }
+        .pack()
     }
 }
 
-impl Packable for Option<Bool> {
-    fn pack(&self) -> PackedInput {
-        let mut roi = PackedInput::new();
-        roi = roi.append_bool(self.is_some());
-        if self.is_some() {
-            roi = roi.append_bool(self.unwrap());
-        } else {
-            roi = roi.append_bool(false);
+impl Emptiable for RangeCondition<UInt32> {
+    fn empty_roi() -> PackedInput {
+        Self {
+            lower: UInt32::MIN,
+            upper: UInt32::MAX,
         }
-        roi
+        .pack()
     }
 }
 
-impl<T: Packable> Packable for Vec<T> {
-    fn pack(&self) -> PackedInput {
-        let mut roi = PackedInput::new();
-        for item in self {
-            roi = roi.append_packedinput(item.pack());
+impl Emptiable for RangeCondition<UInt64> {
+    fn empty_roi() -> PackedInput {
+        Self {
+            lower: UInt64::MIN,
+            upper: UInt64::MAX,
         }
-        roi
+        .pack()
     }
 }
 
-impl<T: Packable, const N: usize> Packable for [T; N] {
-    fn pack(&self) -> PackedInput {
-        let mut roi = PackedInput::new();
-        for item in self {
-            roi = roi.append_packedinput(item.pack());
-        }
-        roi
+impl Emptiable for ZkappUri {
+    fn empty_roi() -> PackedInput {
+        let mut roi = mina_hasher::ROInput::new();
+        roi = roi.append_field(Fp::ZERO);
+        roi = roi.append_field(Fp::ZERO);
+        let hash = hash_with_prefix(MINA_ZKAPP_URI, &roi.to_fields()).unwrap();
+        PackedInput::new().append_field(hash)
     }
 }
 
@@ -435,7 +685,7 @@ mod test {
     }
 
     #[test]
-    fn test_pub_key() {
+    fn test_pub_key_packing() {
         let pk = get_test_public_key();
         let roi = super::PublicKey(pk).pack();
 
@@ -451,7 +701,7 @@ mod test {
     }
 
     #[test]
-    fn test_auth_required() {
+    fn test_auth_required_packing() {
         let auth = super::AuthRequired::Either;
         let roi = auth.pack();
         let expected_roi = build_roi(vec![
@@ -464,7 +714,7 @@ mod test {
     }
 
     #[test]
-    fn test_balance_change_positive() {
+    fn test_balance_change_positive_packing() {
         // Amount: +1 MINA (1000000000 nanomina)
         let balance_change = super::BalanceChange {
             magnitude: 1000000000,
@@ -478,7 +728,7 @@ mod test {
     }
 
     #[test]
-    fn test_balance_change_negative() {
+    fn test_balance_change_negative_packing() {
         // Amount: -0.5 MINA (500000000 nanomina)
         // Negative sign is represented as -1 in sgn field
         let balance_change = super::BalanceChange {
@@ -493,7 +743,7 @@ mod test {
     }
 
     #[test]
-    fn test_may_use_token() {
+    fn test_may_use_token_packing() {
         // Configuration: parentsOwnToken=false, inheritFromParent=true
         let may_use_token = super::MayUseToken {
             parents_own_token: false,
@@ -506,7 +756,7 @@ mod test {
     }
 
     #[test]
-    fn test_token_symbol_data() {
+    fn test_token_symbol_packing() {
         // Symbol: "MINA"
         // toInput should only contain packed field value (48 bits), not the symbol bytes
         let token_symbol = super::TokenSymbol::from_str("MINA").unwrap();

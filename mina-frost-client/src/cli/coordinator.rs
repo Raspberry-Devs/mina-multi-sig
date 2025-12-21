@@ -7,7 +7,7 @@ use eyre::OptionExt;
 use frost_bluepallas::{
     errors::BluePallasError,
     signature::{PubKeySer, Sig, TransactionSignature},
-    transactions::generic_tx::TransactionEnvelope,
+    transactions::TransactionEnvelope,
     BluePallas,
 };
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};

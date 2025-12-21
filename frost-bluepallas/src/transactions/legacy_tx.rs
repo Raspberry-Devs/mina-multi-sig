@@ -1,3 +1,5 @@
+//! This module defines the legacy transaction structure and related functionality (mainly serde and hashing/commitment).
+
 use alloc::string::{String, ToString};
 use core::fmt;
 use mina_hasher::{Hashable, ROInput};

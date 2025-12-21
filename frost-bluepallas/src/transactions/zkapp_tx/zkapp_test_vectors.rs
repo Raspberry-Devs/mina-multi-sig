@@ -9,7 +9,7 @@ use core::str::FromStr;
 use mina_hasher::Fp;
 use mina_signer::{CompressedPubKey, NetworkId};
 
-use crate::transactions::generic_tx::TransactionEnvelope;
+use crate::transactions::TransactionEnvelope;
 
 use super::{
     AccountPreconditions, AccountUpdate, AccountUpdateBody, ActionState, Actions, AuthRequired,

@@ -4,7 +4,7 @@
 use frost_bluepallas::{
     hasher::PallasMessage,
     helper,
-    transactions::{generic_tx::TransactionEnvelope, legacy_tx::Transaction},
+    transactions::{legacy_tx::Transaction, TransactionEnvelope},
     translate::{translate_minask, translate_pk},
 };
 use frost_core::Ciphersuite;

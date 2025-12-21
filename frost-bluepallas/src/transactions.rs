@@ -1,6 +1,8 @@
+//! This file defines the generic TransactionEnvelope structure that encapsulates all kinds of transactions that Mina supports. It is the structure that we sign using FROST.
+
 use crate::transactions::{
-    legacy_tx,
-    network_id_serde::NetworkIdSerde,
+    legacy_tx::Transaction as LegacyTransaction,
+    network_id::NetworkIdEnvelope,
     zkapp_tx::{ZKAppCommand, ZKAppCommandHashable},
 };
 use alloc::{
@@ -11,11 +13,19 @@ use mina_hasher::Hashable;
 use mina_signer::NetworkId;
 use serde::{Deserialize, Serialize};
 
+pub mod legacy_tx;
+pub mod zkapp_tx;
+mod network_id;
+
+const MEMO_BYTES: usize = 34;
+const MEMO_HEADER_BYTES: usize = 2; // 0x01 + length byte
+
+// Enum distinguishing between legacy and zkApp transactions
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "tag", content = "transaction")]
 pub enum TransactionKind {
     ZkApp(ZKAppCommand),
-    Legacy(legacy_tx::Transaction),
+    Legacy(LegacyTransaction),
 }
 
 impl TransactionKind {
@@ -23,14 +33,16 @@ impl TransactionKind {
         TransactionKind::ZkApp(tx)
     }
 
-    pub fn new_legacy(tx: legacy_tx::Transaction) -> Self {
+    pub fn new_legacy(tx: LegacyTransaction) -> Self {
         TransactionKind::Legacy(tx)
     }
 }
 
+// The TransactionEnvelope encapsulates either a legacy transaction or a zkApp transaction along with the network ID.
+// Should be the only structure necessary to access when signing transactions.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TransactionEnvelope {
-    network_id: NetworkIdSerde,
+    network_id: NetworkIdEnvelope,
     kind: TransactionKind,
 }
 
@@ -56,7 +68,7 @@ impl TransactionEnvelope {
         Self::new(network_id, TransactionKind::new_zkapp(tx))
     }
 
-    pub fn new_legacy(network_id: NetworkId, tx: legacy_tx::Transaction) -> Self {
+    pub fn new_legacy(network_id: NetworkId, tx: LegacyTransaction) -> Self {
         Self::new(network_id, TransactionKind::new_legacy(tx))
     }
 
@@ -115,7 +127,7 @@ mod tests {
             .map_err(|_| BluePallasError::InvalidSignature("Failed to parse keypair".into()))
             .unwrap();
 
-        let legacy_tx = legacy_tx::Transaction::new_payment(
+        let legacy_tx = LegacyTransaction::new_payment(
             mina_keypair.public.clone(),
             mina_keypair.public.clone(),
             1000,

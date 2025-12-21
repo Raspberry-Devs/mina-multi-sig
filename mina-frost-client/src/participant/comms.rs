@@ -2,7 +2,7 @@ pub mod http;
 
 use async_trait::async_trait;
 use eyre::eyre;
-use frost_bluepallas::transactions::generic_tx::TransactionEnvelope;
+use frost_bluepallas::transactions::TransactionEnvelope;
 
 use crate::api::SendSigningPackageArgs;
 use frost_core::{self as frost, Ciphersuite};
