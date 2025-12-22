@@ -21,7 +21,7 @@ const PAYMENT_TX_TAG: [bool; TAG_BITS] = [false, false, false];
 const DELEGATION_TX_TAG: [bool; TAG_BITS] = [false, false, true];
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Transaction {
+pub struct LegacyTransaction {
     // Common
     pub fee: u64,
     pub fee_token: u64,
@@ -38,12 +38,12 @@ pub struct Transaction {
     pub token_locked: bool,
 }
 
-impl Serialize for Transaction {
+impl Serialize for LegacyTransaction {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("Transaction", 7)?;
+        let mut state = serializer.serialize_struct("LegacyTransaction", 7)?;
         state.serialize_field("to", &self.receiver_pk.into_address())?;
         state.serialize_field("from", &self.source_pk.into_address())?;
         state.serialize_field("fee", &self.fee.to_string())?;
@@ -67,7 +67,7 @@ impl Serialize for Transaction {
     }
 }
 
-impl<'de> Deserialize<'de> for Transaction {
+impl<'de> Deserialize<'de> for LegacyTransaction {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -101,7 +101,7 @@ impl<'de> Deserialize<'de> for Transaction {
                     "Missing amount for payment transaction",
                 ))?;
                 let amount = ser_amount.parse().map_err(serde::de::Error::custom)?;
-                Transaction::new_payment(from, to, amount, fee, nonce)
+                LegacyTransaction::new_payment(from, to, amount, fee, nonce)
                     .set_memo_str(&data.memo)
                     .map_err(serde::de::Error::custom)?
                     .set_valid_until(valid_until)
@@ -112,7 +112,7 @@ impl<'de> Deserialize<'de> for Transaction {
                         "Unexpected amount for delegation transaction",
                     ));
                 }
-                Transaction::new_delegation(from, to, fee, nonce)
+                LegacyTransaction::new_delegation(from, to, fee, nonce)
                     .set_memo_str(&data.memo)
                     .map_err(serde::de::Error::custom)?
                     .set_valid_until(valid_until)
@@ -124,7 +124,7 @@ impl<'de> Deserialize<'de> for Transaction {
     }
 }
 
-impl Hashable for Transaction {
+impl Hashable for LegacyTransaction {
     type D = NetworkId;
 
     fn to_roinput(&self) -> ROInput {
@@ -161,7 +161,7 @@ impl Hashable for Transaction {
     }
 }
 
-impl fmt::Display for Transaction {
+impl fmt::Display for LegacyTransaction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let memo_str = match self.memo.len() {
             len if len < MEMO_HEADER_BYTES => String::new(),
@@ -200,9 +200,9 @@ impl fmt::Display for Transaction {
     }
 }
 
-impl Transaction {
+impl LegacyTransaction {
     pub fn new_payment(from: PubKey, to: PubKey, amount: u64, fee: u64, nonce: u32) -> Self {
-        Transaction {
+        LegacyTransaction {
             fee,
             fee_token: 1,
             fee_payer_pk: from.into_compressed(),
@@ -219,7 +219,7 @@ impl Transaction {
     }
 
     pub fn new_delegation(from: PubKey, to: PubKey, fee: u64, nonce: u32) -> Self {
-        Transaction {
+        LegacyTransaction {
             fee,
             fee_token: 1,
             fee_payer_pk: from.into_compressed(),
@@ -281,13 +281,13 @@ mod tests {
     fn test_payment_serialization_roundtrip() {
         let from = create_test_pubkey([1; 32]);
         let to = create_test_pubkey([2; 32]);
-        let original = Transaction::new_payment(from, to, 1000000, 10000, 42)
+        let original = LegacyTransaction::new_payment(from, to, 1000000, 10000, 42)
             .set_memo_str("test memo")
             .unwrap()
             .set_valid_until(12345);
 
         let json = serde_json::to_string(&original).unwrap();
-        let deserialized: Transaction = serde_json::from_str(&json).unwrap();
+        let deserialized: LegacyTransaction = serde_json::from_str(&json).unwrap();
 
         // Compare key fields
         assert_eq!(original.source_pk.x, deserialized.source_pk.x);
@@ -304,10 +304,11 @@ mod tests {
     fn test_delegation_serialization_roundtrip() {
         let from = create_test_pubkey([3; 32]);
         let to = create_test_pubkey([4; 32]);
-        let original = Transaction::new_delegation(from, to, 5000, 100).set_valid_until(54321);
+        let original =
+            LegacyTransaction::new_delegation(from, to, 5000, 100).set_valid_until(54321);
 
         let json = serde_json::to_string(&original).unwrap();
-        let deserialized: Transaction = serde_json::from_str(&json).unwrap();
+        let deserialized: LegacyTransaction = serde_json::from_str(&json).unwrap();
 
         assert_eq!(original.source_pk.x, deserialized.source_pk.x);
         assert_eq!(original.receiver_pk.x, deserialized.receiver_pk.x);
@@ -325,15 +326,15 @@ mod tests {
     fn test_bytes_roundtrip_payment() {
         let from = create_test_pubkey([5; 32]);
         let to = create_test_pubkey([6; 32]);
-        let original = Transaction::new_payment(from, to, 2500000, 15000, 123)
+        let original = LegacyTransaction::new_payment(from, to, 2500000, 15000, 123)
             .set_memo_str("roundtrip test")
             .unwrap()
             .set_valid_until(98765);
 
         // Convert to bytes and back
         let bytes = serde_json::to_vec(&original).expect("Should serialize successfully");
-        let reconstructed =
-            serde_json::from_slice::<Transaction>(&bytes).expect("Should reconstruct successfully");
+        let reconstructed = serde_json::from_slice::<LegacyTransaction>(&bytes)
+            .expect("Should reconstruct successfully");
 
         // Verify all fields are identical
         assert_eq!(original.fee, reconstructed.fee);
@@ -365,15 +366,15 @@ mod tests {
     fn test_bytes_roundtrip_delegation() {
         let from = create_test_pubkey([7; 32]);
         let to = create_test_pubkey([8; 32]);
-        let original = Transaction::new_delegation(from, to, 8000, 456)
+        let original = LegacyTransaction::new_delegation(from, to, 8000, 456)
             .set_memo_str("delegation test")
             .unwrap()
             .set_valid_until(11111);
 
         // Convert to bytes and back
         let bytes = serde_json::to_vec(&original).expect("Should serialize successfully");
-        let reconstructed =
-            serde_json::from_slice::<Transaction>(&bytes).expect("Should reconstruct successfully");
+        let reconstructed = serde_json::from_slice::<LegacyTransaction>(&bytes)
+            .expect("Should reconstruct successfully");
 
         // Verify all fields are identical
         assert_eq!(original.fee, reconstructed.fee);
@@ -419,7 +420,7 @@ mod tests {
                 ]
         }"#;
 
-        let result: Result<Transaction, _> = serde_json::from_str(json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
@@ -440,7 +441,7 @@ mod tests {
                 ]
         }"#;
 
-        let result: Result<Transaction, _> = serde_json::from_str(json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
@@ -460,7 +461,7 @@ mod tests {
                 ]
         }"#;
 
-        let result: Result<Transaction, _> = serde_json::from_str(json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(json);
         assert!(result.is_ok());
     }
 
@@ -481,7 +482,7 @@ mod tests {
                 ]
         }"#;
 
-        let result: Result<Transaction, _> = serde_json::from_str(json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
@@ -502,7 +503,7 @@ mod tests {
                 ]
         }"#;
 
-        let result: Result<Transaction, _> = serde_json::from_str(json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
@@ -523,7 +524,7 @@ mod tests {
                 ]
         }"#;
 
-        let result: Result<Transaction, _> = serde_json::from_str(json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
@@ -544,7 +545,7 @@ mod tests {
                 ]
         }"#;
 
-        let result: Result<Transaction, _> = serde_json::from_str(json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
@@ -559,7 +560,7 @@ mod tests {
             "valid_until": "12345"
         }"#;
 
-        let result: Result<Transaction, _> = serde_json::from_str(json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(json);
         assert!(result.is_err());
     }
 
@@ -570,7 +571,7 @@ mod tests {
         let from = create_test_pubkey([15; 32]);
         let to = create_test_pubkey([16; 32]);
 
-        let mut tx = Transaction::new_payment(from, to, 1000000, 10000, 42);
+        let mut tx = LegacyTransaction::new_payment(from, to, 1000000, 10000, 42);
 
         // Set memo with length=5 but put more data after those 5 bytes
         tx.memo[0] = 0x01; // Format marker
@@ -595,7 +596,7 @@ mod tests {
         assert!(!json.contains("junk"));
 
         // Roundtrip test
-        let deserialized: Transaction = serde_json::from_str(&json).unwrap();
+        let deserialized: LegacyTransaction = serde_json::from_str(&json).unwrap();
         assert_ne!(tx.memo, deserialized.memo);
     }
 
@@ -617,7 +618,7 @@ mod tests {
         }}"#
         );
 
-        let result: Result<Transaction, _> = serde_json::from_str(&json);
+        let result: Result<LegacyTransaction, _> = serde_json::from_str(&json);
         assert!(
             result.is_err(),
             "Deserialization should fail for too-long memo"
@@ -628,7 +629,7 @@ mod tests {
     fn test_set_memo_str_rejects_too_long() {
         let from = create_test_pubkey([21; 32]);
         let to = create_test_pubkey([22; 32]);
-        let base = Transaction::new_payment(from, to, 1_000_000, 1_000, 1);
+        let base = LegacyTransaction::new_payment(from, to, 1_000_000, 1_000, 1);
 
         let long_memo = "B".repeat(33);
         let res = base.set_memo_str(&long_memo);

@@ -4,7 +4,7 @@
 use frost_bluepallas::{
     hasher::PallasMessage,
     helper,
-    transactions::{legacy_tx::Transaction, TransactionEnvelope},
+    transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
     translate::{translate_minask, translate_pk},
 };
 use frost_core::Ciphersuite;
@@ -16,7 +16,7 @@ fn signer_test_raw() {
 
     let kp = Keypair::from_hex("164244176fddb5d769b7de2027469d027ad428fadcc0c02396e6280142efb718")
         .expect("failed to create keypair");
-    let tx = Transaction::new_payment(
+    let tx = LegacyTransaction::new_payment(
         kp.public.clone(),
         PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
             .expect("invalid address"),
@@ -88,7 +88,7 @@ fn sign_mina_tx() {
     // Convert pubkey package to Mina format
 
     // Create a transaction
-    let tx = Transaction::new_payment(
+    let tx = LegacyTransaction::new_payment(
         translate_pk(pubkey_package.verifying_key())
             .expect("failed to translate verifying key to Mina public key"),
         PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
@@ -142,7 +142,7 @@ fn sign_mina_tx_mainnet() {
     .expect("Failed to generate key shares");
 
     // Create a transaction for mainnet
-    let tx = Transaction::new_payment(
+    let tx = LegacyTransaction::new_payment(
         translate_pk(pubkey_package.verifying_key())
             .expect("failed to translate verifying key to Mina public key"),
         PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
@@ -199,7 +199,7 @@ fn transaction_json_deser_with_mina_sign() {
     // Convert pubkey package to Mina format
 
     // Create a transaction
-    let tx = Transaction::new_payment(
+    let tx = LegacyTransaction::new_payment(
         translate_pk(pubkey_package.verifying_key())
             .expect("failed to translate verifying key to Mina public key"),
         PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
@@ -216,7 +216,7 @@ fn transaction_json_deser_with_mina_sign() {
     let tx_json = serde_json::to_string(&tx).expect("Failed to serialize transaction to JSON");
 
     // Deserialize the transaction from JSON
-    let deserialized_tx: Transaction =
+    let deserialized_tx: LegacyTransaction =
         serde_json::from_str(&tx_json).expect("Failed to deserialize transaction from JSON");
 
     // Now sign the deserialized transaction
@@ -263,7 +263,7 @@ fn sign_mina_delegation_tx() {
     .expect("Failed to generate key shares");
 
     // Create a delegation transaction
-    let tx = Transaction::new_delegation(
+    let tx = LegacyTransaction::new_delegation(
         translate_pk(pubkey_package.verifying_key())
             .expect("failed to translate verifying key to Mina public key"),
         PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
@@ -317,7 +317,7 @@ fn delegation_json_deser_with_mina_sign() {
     .expect("Failed to generate key shares");
 
     // Create a delegation transaction
-    let tx = Transaction::new_delegation(
+    let tx = LegacyTransaction::new_delegation(
         translate_pk(pubkey_package.verifying_key())
             .expect("failed to translate verifying key to Mina public key"),
         PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
@@ -333,7 +333,7 @@ fn delegation_json_deser_with_mina_sign() {
     let tx_json = serde_json::to_string(&tx).expect("Failed to serialize delegation tx to JSON");
 
     // Deserialize the transaction from JSON
-    let deserialized_tx: Transaction =
+    let deserialized_tx: LegacyTransaction =
         serde_json::from_str(&tx_json).expect("Failed to deserialize delegation tx from JSON");
 
     // Now sign the deserialized transaction
