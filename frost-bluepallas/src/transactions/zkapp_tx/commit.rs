@@ -2,8 +2,7 @@
 //! This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use alloc::{boxed::Box, collections::VecDeque, string::ToString, vec::Vec};
 
-use ark_ff::{Field, PrimeField};
-use bitvec::{order::Lsb0, vec::BitVec};
+use ark_ff::Field;
 use mina_hasher::Fp;
 use mina_poseidon::{
     constants::PlonkSpongeConstantsKimchi,
@@ -16,12 +15,10 @@ use crate::{
     errors::{BluePallasError, BluePallasResult},
     transactions::zkapp_tx::{
         constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
-        packing::Packable,
+        packing::{Packable, PackedInput},
         AccountUpdate, FeePayer, ZKAppCommand,
     },
 };
-
-const FIELDS_PER_PACKED_MEMO: usize = 254;
 
 // -------------------------------------------------------------------------------------------------
 // ------------------------------------ Commitment Logic -------------------------------------------
@@ -146,7 +143,7 @@ fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
         .collect();
 
     // Pack bits into fields (254 bits per field for Fp)
-    let packed_fields = pack_to_field_bool(&bits);
+    let packed_fields = PackedInput::pack_bool_to_field_legacy(&bits);
 
     hash_with_prefix(constants::ZK_APP_MEMO, &packed_fields)
 }
@@ -257,26 +254,6 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     true
 }
 
-/// Packs a slice of bits into field elements, taking chunks of 254 bits at a time.
-/// This matches the o1js `packToFieldsLegacy` behavior for bit packing.
-fn pack_to_field_bool(bits: &[bool]) -> Vec<Fp> {
-    let mut packed_fields = Vec::new();
-    let mut remaining_bits = bits;
-
-    while !remaining_bits.is_empty() {
-        let chunk_size = core::cmp::min(remaining_bits.len(), FIELDS_PER_PACKED_MEMO);
-        let field_bits = &remaining_bits[..chunk_size];
-        remaining_bits = &remaining_bits[chunk_size..];
-
-        // Convert bits to BigInt using BitVec with LSB order
-        let bitvec: BitVec<u8, Lsb0> = BitVec::from_iter(field_bits);
-        let field = Fp::from_le_bytes_mod_order(&bitvec.into_vec());
-        packed_fields.push(field);
-    }
-
-    packed_fields
-}
-
 pub(crate) fn param_to_field(param: &str) -> Result<Fp, BluePallasError> {
     const DEFAULT: [u8; 32] = *b"********************\0\0\0\0\0\0\0\0\0\0\0\0";
 
@@ -284,9 +261,10 @@ pub(crate) fn param_to_field(param: &str) -> Result<Fp, BluePallasError> {
     let len = param_bytes.len();
 
     if len > DEFAULT.len() {
-        return Err(BluePallasError::InvalidZkAppCommand(
-            "must be 20 byte maximum".to_string(),
-        ));
+        return Err(BluePallasError::InvalidZkAppCommand(format!(
+            "must be {} byte maximum",
+            DEFAULT.len()
+        )));
     }
 
     let mut fp = DEFAULT;
@@ -308,49 +286,6 @@ mod tests {
     };
 
     use super::*;
-
-    #[test]
-    fn test_pack_to_fields_bool() {
-        let mut bits = vec![true];
-        bits.extend(vec![false; 271]);
-
-        let packed_fields = pack_to_field_bool(&bits);
-        assert_eq!(packed_fields.len(), 2);
-        assert_eq!(packed_fields[0], Fp::from(1u64));
-        assert_eq!(packed_fields[1], Fp::from(0u64));
-
-        let bits = vec![
-            true, false, false, false, false, false, false, false, false, true, false, false,
-            false, false, false, false, false, true, false, false, false, false, true, true, true,
-            false, true, false, true, true, false, true, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false,
-        ];
-        assert_eq!(bits.len(), 272);
-
-        let packed_fields = pack_to_field_bool(&bits);
-        assert_eq!(packed_fields.len(), 2);
-        assert_eq!(packed_fields[0], Fp::from(3049390593u64));
-        assert_eq!(packed_fields[1], Fp::from(0u64));
-    }
 
     #[test]
     fn test_hash_with_prefix_vectors() {
@@ -477,7 +412,7 @@ mod tests {
         }
 
         for test_vector in test_vectors {
-            let call_forest = CallForest::from(test_vector.zkapp_command.clone());
+            let call_forest = CallForest::from(test_vector.zkapp_command);
             let computed_hash = call_forest_hash(&call_forest, &test_vector.network)
                 .unwrap_or_else(|_| {
                     panic!(

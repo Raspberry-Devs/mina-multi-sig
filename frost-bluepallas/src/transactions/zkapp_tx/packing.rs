@@ -68,12 +68,41 @@ impl PackedInput {
         self
     }
 
+    // Translate PackedInput into mina-hasher ROInput
+    pub fn to_roi(self) -> mina_hasher::ROInput {
+        let mut roi = mina_hasher::ROInput::new();
+        for field in self.fields {
+            roi = roi.append_field(field);
+        }
+        for bit_data in self.bits {
+            match bit_data {
+                BitData::U32 { val } => {
+                    roi = roi.append_u32(val);
+                }
+                BitData::U64 { val } => {
+                    roi = roi.append_u64(val);
+                }
+                BitData::BOOL { val } => {
+                    roi = roi.append_bool(val);
+                }
+                BitData::BYTES { val } => {
+                    roi = roi.append_bytes(&val);
+                }
+            }
+        }
+        roi
+    }
+
+    // New version of packToFields that matches o1js behavior (non-legacy packing)
     pub fn pack_to_fields(self) -> PackedInput {
         let fields = self.fields;
         let bits = self.bits;
 
         if bits.is_empty() {
-            return PackedInput { bits, fields };
+            return PackedInput {
+                bits: vec![],
+                fields,
+            };
         }
 
         let mut packed_bits = Vec::new();
@@ -98,6 +127,14 @@ impl PackedInput {
             bits: vec![],
             fields: [fields, packed_bits].concat(),
         }
+    }
+
+    /// Static function that packs a slice of bits into field elements, taking chunks of 254 bits at a time.
+    /// This matches the o1js `packToFieldsLegacy` behavior for bit packing.
+    pub fn pack_bool_to_field_legacy(bits: &[bool]) -> Vec<Fp> {
+        bits.iter()
+            .fold(ROInput::new(), |acc, b| acc.append_bool(*b))
+            .to_fields()
     }
 }
 
@@ -144,7 +181,7 @@ impl BitData {
 // ----------------------------- TRAITS -----------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
-// This trait is implemented for all structures in zkApp_tx - specifically ZkAppCommand and its substructures
+// This trait is implemented for all structures in zkApp_tx. Specifically ZkAppCommand and its substructures
 pub trait Packable {
     fn pack(&self) -> PackedInput;
 }
@@ -768,5 +805,65 @@ mod test {
         ]))]);
 
         assert_roi_equal(roi, expected_roi);
+    }
+
+    #[test]
+    fn test_to_roi() {
+        let packed_input = PackedInput::new()
+            .append_field(Fp::from(42u64))
+            .append_bool(true)
+            .append_u32(123456);
+
+        let roi = packed_input.to_roi();
+
+        let expected_roi = mina_hasher::ROInput::new()
+            .append_field(Fp::from(42u64))
+            .append_bool(true)
+            .append_u32(123456);
+
+        assert_eq!(roi.to_fields(), expected_roi.to_fields());
+    }
+
+    #[test]
+    fn test_pack_to_fields_bool() {
+        let mut bits = vec![true];
+        bits.extend(vec![false; 271]);
+
+        let packed_fields = PackedInput::pack_bool_to_field_legacy(&bits);
+        assert_eq!(packed_fields.len(), 2);
+        assert_eq!(packed_fields[0], Fp::from(1u64));
+        assert_eq!(packed_fields[1], Fp::from(0u64));
+
+        let bits = vec![
+            true, false, false, false, false, false, false, false, false, true, false, false,
+            false, false, false, false, false, true, false, false, false, false, true, true, true,
+            false, true, false, true, true, false, true, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false, false, false, false, false, false,
+        ];
+        assert_eq!(bits.len(), 272);
+
+        let packed_fields = PackedInput::pack_bool_to_field_legacy(&bits);
+        assert_eq!(packed_fields.len(), 2);
+        assert_eq!(packed_fields[0], Fp::from(3049390593u64));
+        assert_eq!(packed_fields[1], Fp::from(0u64));
     }
 }
