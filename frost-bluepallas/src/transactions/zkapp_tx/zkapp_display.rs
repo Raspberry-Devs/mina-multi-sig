@@ -1,3 +1,4 @@
+//! This module provides Display implementations for ZkApp transaction structs
 use crate::transactions::MEMO_HEADER_BYTES;
 
 use super::*;

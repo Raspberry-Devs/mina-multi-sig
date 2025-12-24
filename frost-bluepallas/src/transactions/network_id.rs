@@ -1,10 +1,11 @@
+//! This module provides serde implementations for the NetworkIdEnvelope enum used in transactions.
 use mina_signer::NetworkId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone)]
-pub(crate) struct NetworkIdSerde(pub NetworkId);
+pub(crate) struct NetworkIdEnvelope(pub NetworkId);
 
-impl Serialize for NetworkIdSerde {
+impl Serialize for NetworkIdEnvelope {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -15,15 +16,15 @@ impl Serialize for NetworkIdSerde {
     }
 }
 
-impl<'de> Deserialize<'de> for NetworkIdSerde {
+impl<'de> Deserialize<'de> for NetworkIdEnvelope {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let value = u8::deserialize(deserializer)?;
         match value {
-            0 => Ok(NetworkIdSerde(NetworkId::TESTNET)),
-            1 => Ok(NetworkIdSerde(NetworkId::MAINNET)),
+            0 => Ok(NetworkIdEnvelope(NetworkId::TESTNET)),
+            1 => Ok(NetworkIdEnvelope(NetworkId::MAINNET)),
             _ => Err(serde::de::Error::custom(format!(
                 "invalid NetworkId: expected 0 or 1, got {}",
                 value
@@ -32,13 +33,13 @@ impl<'de> Deserialize<'de> for NetworkIdSerde {
     }
 }
 
-impl From<NetworkId> for NetworkIdSerde {
+impl From<NetworkId> for NetworkIdEnvelope {
     fn from(id: NetworkId) -> Self {
-        NetworkIdSerde(id)
+        NetworkIdEnvelope(id)
     }
 }
 
-impl PartialEq for NetworkIdSerde {
+impl PartialEq for NetworkIdEnvelope {
     fn eq(&self, other: &Self) -> bool {
         matches!(
             (&self.0, &other.0),
@@ -47,7 +48,7 @@ impl PartialEq for NetworkIdSerde {
     }
 }
 
-impl Eq for NetworkIdSerde {}
+impl Eq for NetworkIdEnvelope {}
 
 #[cfg(test)]
 mod tests {
@@ -56,41 +57,44 @@ mod tests {
 
     #[test]
     fn test_testnet_serialization() {
-        let testnet = NetworkIdSerde(NetworkId::TESTNET);
+        let testnet = NetworkIdEnvelope(NetworkId::TESTNET);
         let serialized = serde_json::to_string(&testnet).expect("should serialize");
         assert_eq!(serialized, "0");
     }
 
     #[test]
     fn test_mainnet_serialization() {
-        let mainnet = NetworkIdSerde(NetworkId::MAINNET);
+        let mainnet = NetworkIdEnvelope(NetworkId::MAINNET);
         let serialized = serde_json::to_string(&mainnet).expect("should serialize");
         assert_eq!(serialized, "1");
     }
 
     #[test]
     fn test_testnet_deserialization() {
-        let deserialized: NetworkIdSerde = serde_json::from_str("0").expect("should deserialize");
+        let deserialized: NetworkIdEnvelope =
+            serde_json::from_str("0").expect("should deserialize");
         assert_eq!(deserialized.0 as u8, 0);
     }
 
     #[test]
     fn test_mainnet_deserialization() {
-        let deserialized: NetworkIdSerde = serde_json::from_str("1").expect("should deserialize");
+        let deserialized: NetworkIdEnvelope =
+            serde_json::from_str("1").expect("should deserialize");
         assert_eq!(deserialized.0 as u8, 1);
     }
 
     #[test]
     fn test_invalid_network_id() {
-        let result: Result<NetworkIdSerde, _> = serde_json::from_str("2");
+        let result: Result<NetworkIdEnvelope, _> = serde_json::from_str("2");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_roundtrip() {
-        let original = NetworkIdSerde(NetworkId::TESTNET);
+        let original = NetworkIdEnvelope(NetworkId::TESTNET);
         let json = serde_json::to_string(&original).expect("should serialize");
-        let deserialized: NetworkIdSerde = serde_json::from_str(&json).expect("should deserialize");
+        let deserialized: NetworkIdEnvelope =
+            serde_json::from_str(&json).expect("should deserialize");
         assert_eq!(original, deserialized);
     }
 }

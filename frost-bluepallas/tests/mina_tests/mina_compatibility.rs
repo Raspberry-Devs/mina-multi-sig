@@ -3,7 +3,7 @@ use ark_ff::fields::PrimeField;
 use ark_ff::BigInteger;
 use frost_bluepallas::{
     hasher::{message_hash, PallasMessage},
-    transactions::{generic_tx::TransactionEnvelope, legacy_tx::Transaction},
+    transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
     translate::{translate_pk, translate_sig},
     PallasGroup,
 };
@@ -26,7 +26,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(100);
     let tx = TransactionEnvelope::new_legacy(
         network_id.clone(),
-        Transaction::new_payment(
+        LegacyTransaction::new_payment(
             PubKey::from_address("B62qqM5PCrqATE21oWhkY4UkrzT9XpUjsdgMk5MBbEmuAjPBdjN91mZ")
                 .expect("invalid address"),
             PubKey::from_address("B62qqM5PCrqATE21oWhkY4UkrzT9XpUjsdgMk5MBbEmuAjPBdjN91mZ")
@@ -130,7 +130,7 @@ fn roi_mina_tx() {
     )
     .expect("Failed to generate key shares");
 
-    let tx = Transaction::new_payment(
+    let tx = LegacyTransaction::new_payment(
         translate_pk(pubkey_package.verifying_key())
             .expect("failed to translate verifying key to Mina public key"),
         PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")
@@ -192,7 +192,7 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
         ]
     }"#;
     // We want to now deserialize into a transaction
-    let tx: Transaction = serde_json::from_str(json).unwrap();
+    let tx: LegacyTransaction = serde_json::from_str(json).unwrap();
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
     let msg = tx_env.serialize().unwrap();
 

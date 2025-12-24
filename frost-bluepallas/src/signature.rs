@@ -14,8 +14,8 @@ use serde::{
 };
 
 use crate::{
-    errors::BluePallasError, transactions::generic_tx::TransactionEnvelope,
-    translate::translate_pk, BluePallas, VerifyingKey,
+    errors::BluePallasError, transactions::TransactionEnvelope, translate::translate_pk,
+    BluePallas, VerifyingKey,
 };
 
 pub struct Sig {
@@ -104,7 +104,7 @@ mod tests {
     use super::*;
     use crate::{
         helper,
-        transactions::{generic_tx::TransactionEnvelope, legacy_tx},
+        transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
         translate,
     };
     use core::convert::TryInto;
@@ -121,7 +121,7 @@ mod tests {
             .map_err(|_| BluePallasError::InvalidSignature("Failed to translate keypair".into()))?;
 
         // Create a test message
-        let test_msg = legacy_tx::Transaction::new_payment(
+        let test_msg = LegacyTransaction::new_payment(
             mina_keypair.public.clone(),
             mina_keypair.public.clone(),
             1000,

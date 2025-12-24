@@ -1,7 +1,7 @@
 use ark_ff::{BigInt, PrimeField};
 use frost_bluepallas::{
     signature::{PubKeySer, Sig, TransactionSignature},
-    transactions::{generic_tx::TransactionEnvelope, legacy_tx::Transaction},
+    transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
     Error,
 };
 use frost_core::Ciphersuite;
@@ -20,7 +20,7 @@ fn main() -> Result<(), Error> {
             .map_err(|_| Error::DeserializationError)?;
 
     // Generate tx
-    let tx = Transaction::new_payment(
+    let tx = LegacyTransaction::new_payment(
         mina_keypair.public.clone(),
         recipient_pubkey,
         1000000000,

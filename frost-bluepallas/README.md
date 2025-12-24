@@ -76,18 +76,22 @@ let (signature, verifying_key) = frost::helper::sign_from_packages(
 ### Signing Mina Transactions
 
 ```rust
-use frost_bluepallas::{transactions::Transaction, translate::translate_msg};
-use mina_signer::PubKey;
+use frost_bluepallas::{transactions::LegacyTransaction, translate::translate_msg};
+use mina_signer::{PubKey, NetworkId::TESTNET};
 
 // Create a Mina transaction
-let tx = Transaction::new_payment(
-    sender_pubkey,
-    PubKey::from_address("B62qicipYxyEHu7QjUqS7QvBipTs5CzgkYZZZkPoKVYBu6tnDUcE9Zt")?,
-    1000000000, // amount in nanomina
-    2000000000, // fee in nanomina
-    1,          // nonce
+// Generate tx
+let tx = LegacyTransaction::new_payment(
+    mina_keypair.public.clone(),
+    recipient_pubkey,
+    1000000000,
+    1000000000,
+    1,
 )
-.set_memo_str("FROST payment");
+.set_memo_str("Hello Mina x FROST from the Rasp")
+.unwrap();
+let tx = TransactionEnvelope::new_legacy(TESTNET, tx);
+
 
 // Convert transaction to signable message
 let message = tx.translate_msg();

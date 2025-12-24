@@ -1,3 +1,5 @@
+//! Module containint various constants used by ZkApp transactions (both for packing and hashing)
+
 use alloc::string::ToString;
 use core::str::FromStr;
 
@@ -42,6 +44,8 @@ pub const ZK_APP_ACTIONS_PREFIX: &str = "MinaZkappSeqEvents";
 
 pub const ZK_ACTION_STATE_EMPTY: &str = "MinaZkappActionStateEmptyElt";
 
+pub const MINA_ZKAPP_URI: &str = "MinaZkappUri";
+
 pub(crate) const APP_STATE_LENGTH: usize = 8;
 
 // Enum to represent the prefix used for hashing zkapp body based on network
@@ -66,15 +70,4 @@ impl From<ZkAppBodyPrefix> for &'static str {
             ZkAppBodyPrefix::Testnet => ZK_APP_BODY_TESTNET,
         }
     }
-}
-
-// zkapp uri dfault hash
-// TODO: Test it is the same as in mina-rust
-pub const MINA_ZKAPP_URI: &str = "MinaZkappUri";
-pub(crate) fn default_zkapp_uri_hash() -> Fp {
-    use crate::transactions::zkapp_tx::commit::hash_with_prefix;
-    let mut roi = mina_hasher::ROInput::new();
-    roi = roi.append_field(Fp::ZERO);
-    roi = roi.append_field(Fp::ZERO);
-    hash_with_prefix(MINA_ZKAPP_URI, &roi.to_fields()).unwrap()
 }
