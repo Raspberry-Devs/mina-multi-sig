@@ -72,7 +72,8 @@ where
 #[derive(Clone, Debug)]
 pub struct PallasMessage {
     input: ROInput,
-    pub network_id: NetworkId,
+    network_id: NetworkId,
+    is_legacy: bool,
 }
 
 impl PallasMessage {
@@ -82,17 +83,27 @@ impl PallasMessage {
             Ok(roi) => PallasMessage {
                 input: roi.to_roinput(),
                 network_id: roi.network_id().clone(),
+                is_legacy: roi.is_legacy(),
             },
             Err(_) => {
                 // If deserialization fails, treat input as raw bytes
                 let roi = ROInput::new().append_bytes(&input);
-                // Default to TESTNET if we can't determine network ID
+                // Default to TESTNET and legacy hashing if we can't determine network ID
                 PallasMessage {
                     input: roi,
                     network_id: NetworkId::TESTNET,
+                    is_legacy: true,
                 }
             }
         }
+    }
+
+    pub fn is_legacy(&self) -> bool {
+        self.is_legacy
+    }
+
+    pub fn network_id(&self) -> NetworkId {
+        self.network_id.clone()
     }
 }
 
@@ -118,20 +129,18 @@ impl Hashable for PallasMessage {
 }
 
 /// Hashes the message using the Mina hasher, given a hashable message and a NetworkId
-/// Currently, the FROST Ciphersuite implementation only allows for static function calls
-/// This means that any context related information must be passed either through global variables or thread-local values
-/// As we ONLY expect FROST to be single-threaded, we opt to use thread-local storage to pass in the NetworkID
+/// Uses either the legacy or kimchi hasher based on the is_legacy flag
+/// Legacy transaction use the legacy hasher, while ZKApp transactions use the kimchi hasher
 pub fn message_hash<H>(
     pub_key: &PubKey,
     rx: BaseField,
     input: H,
     network_id: NetworkId,
+    is_legacy: bool,
 ) -> Result<ScalarField, BluePallasError>
 where
     H: Hashable<D = NetworkId>,
 {
-    let mut hasher = mina_hasher::create_legacy::<Message<H>>(network_id);
-
     let schnorr_input = Message::<H> {
         input,
         pub_key_x: pub_key.point().x,
@@ -139,10 +148,21 @@ where
         rx,
     };
 
+    let scalar_output = match is_legacy {
+        true => {
+            let mut hasher = create_legacy::<Message<H>>(network_id);
+            hasher.hash(&schnorr_input)
+        }
+        false => {
+            let mut hasher = mina_hasher::create_kimchi::<Message<H>>(network_id);
+            hasher.hash(&schnorr_input)
+        }
+    };
+
     // Squeeze and convert from base field element to scalar field element
     // Since the difference in modulus between the two fields is < 2^125, w.h.p., a
     // random value from one field will fit in the other field.
-    Ok(ScalarField::from(hasher.hash(&schnorr_input).into_bigint()))
+    Ok(ScalarField::from(scalar_output.into_bigint()))
 }
 
 type Fq = <PallasScalarField as Field>::Scalar;
@@ -167,7 +187,39 @@ pub fn hash_to_array(input: &[&[u8]]) -> <PallasScalarField as frost_core::Field
 
 #[cfg(test)]
 mod tests {
+    use mina_hasher::Fp;
+
     use super::*;
+
+    /// A wrapper around `ROInput` that implements `Hashable`.
+    /// Useful for hashing pre-constructed `ROInput` values directly.
+    #[derive(Clone)]
+    pub struct ROInputWrapper {
+        pub inner: ROInput,
+    }
+
+    impl ROInputWrapper {
+        pub fn new(inner: ROInput) -> Self {
+            Self { inner }
+        }
+    }
+
+    impl Hashable for ROInputWrapper {
+        type D = NetworkId;
+
+        fn to_roinput(&self) -> ROInput {
+            self.inner.clone()
+        }
+
+        fn domain_string(network_id: NetworkId) -> Option<String> {
+            match network_id {
+                NetworkId::MAINNET => "MinaSignatureMainnet",
+                NetworkId::TESTNET => "CodaSignature",
+            }
+            .to_string()
+            .into()
+        }
+    }
 
     #[test]
     fn test_hash_to_scalar_is_deterministic_and_differs() {
@@ -186,5 +238,33 @@ mod tests {
         let arr = hash_to_array(&[&b"hello"[..]]);
         // Serialization for PallasScalarField is 32 bytes
         assert_eq!(arr.len(), 32);
+    }
+
+    #[test]
+    fn test_hash_pallas_message_kimchi() {
+        use std::str::FromStr;
+        let field = "11846000834259235905958753603813777773459101710265500737400417221141603138177";
+        let fp = Fp::from_str(field).unwrap();
+        let msg = ROInput::new().append_field(fp);
+
+        // Wrap ROInput in ROInputWrapper
+        let wrapper = ROInputWrapper::new(msg);
+
+        let output = message_hash(
+            &PubKey::from_address("B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA")
+                .unwrap(),
+            BaseField::from_str(
+                "6455615646068099396871307223841815355688864790843622831931071323550014187712",
+            )
+            .unwrap(),
+            wrapper,
+            NetworkId::TESTNET,
+            false,
+        );
+
+        assert_eq!(
+            output.unwrap().to_string(),
+            "28034153875204620953456376624553972171235671073234199167504854061926717353316"
+        );
     }
 }

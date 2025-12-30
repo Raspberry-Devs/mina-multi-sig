@@ -15,39 +15,14 @@ use serde::{
     ser::{SerializeStruct, Serializer},
     Serialize,
 };
-use sha2::{Digest, Sha256};
 
 use crate::{
-    errors::BluePallasError, transactions::TransactionEnvelope, translate::translate_pk,
+    base58::{to_base58_check, SIGNATURE_VERSION_BYTE, SIGNATURE_VERSION_NUMBER},
+    errors::BluePallasError,
+    transactions::TransactionEnvelope,
+    translate::translate_pk,
     BluePallas, VerifyingKey,
 };
-
-/// Version byte for Mina signatures in base58check encoding
-const SIGNATURE_VERSION_BYTE: u8 = 154;
-
-/// Version number prepended to signature bytes before base58check encoding
-const SIGNATURE_VERSION_NUMBER: u8 = 1;
-
-/// Compute a checksum for base58check encoding (double SHA256, first 4 bytes)
-fn compute_checksum(input: &[u8]) -> [u8; 4] {
-    let hash1 = Sha256::digest(input);
-    let hash2 = Sha256::digest(hash1);
-    let mut checksum = [0u8; 4];
-    checksum.copy_from_slice(&hash2[..4]);
-    checksum
-}
-
-/// Convert bytes to base58check encoding with a version byte
-fn to_base58_check(input: &[u8], version_byte: u8) -> String {
-    let mut with_version = Vec::with_capacity(1 + input.len() + 4);
-    with_version.push(version_byte);
-    with_version.extend_from_slice(input);
-
-    let checksum = compute_checksum(&with_version);
-    with_version.extend_from_slice(&checksum);
-
-    bs58::encode(with_version).into_string()
-}
 
 pub struct Sig {
     pub field: BigInt<4>,
@@ -111,6 +86,7 @@ impl Serialize for Sig {
         let mut state = serializer.serialize_struct("signature", 2)?;
         state.serialize_field("field", &self.field.to_string())?;
         state.serialize_field("scalar", &self.scalar.to_string())?;
+        state.serialize_field("base58", self.to_base58().as_str())?;
         state.end()
     }
 }

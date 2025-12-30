@@ -13,12 +13,12 @@
 //! verify it with the `signer`'s verify method. We do not use `signer` at all in our
 //! implementation. We do use `hasher` which provides the hash functions used by `signer` and our
 //! implementation of `frost-core`.
-#![no_std]
+// #![no_std]
 
 #[macro_use]
 extern crate alloc;
 
-use alloc::{borrow::Cow, collections::BTreeMap};
+use alloc::{borrow::Cow, collections::BTreeMap, string::ToString};
 
 use ark_ec::{models::CurveConfig, CurveGroup, PrimeGroup};
 
@@ -40,6 +40,7 @@ use crate::{
     translate::translate_pk,
 };
 
+mod base58;
 pub mod errors;
 pub mod hasher;
 pub mod helper;
@@ -195,10 +196,14 @@ impl Ciphersuite for BluePallas {
 
         // Attempt to derive the message as a TransactionEnvelope first, if that fails treat it as raw bytes
         let msg = PallasMessage::new(message.to_vec());
-        let network_id = msg.network_id.clone();
+        let network_id = msg.network_id();
+        let is_legacy = msg.is_legacy();
 
-        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, msg, network_id)
+        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, msg, network_id, is_legacy)
             .map_err(|_| frost_core::FieldError::MalformedScalar)?;
+
+        let scalar_str = scalar.to_string();
+        println!("Derived challenge scalar: {}", scalar_str);
         Ok(frost_core::Challenge::from_scalar(scalar))
     }
 }

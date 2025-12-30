@@ -36,6 +36,12 @@ impl TransactionKind {
     pub fn new_legacy(tx: LegacyTransaction) -> Self {
         TransactionKind::Legacy(tx)
     }
+    pub fn is_legacy(&self) -> bool {
+        match self {
+            TransactionKind::Legacy(_) => true,
+            TransactionKind::ZkApp(_) => false,
+        }
+    }
 }
 
 // The TransactionEnvelope encapsulates either a legacy transaction or a zkApp transaction along with the network ID.
@@ -84,6 +90,10 @@ impl TransactionEnvelope {
 
     pub fn network_id(&self) -> NetworkId {
         self.network_id.0.clone()
+    }
+
+    pub fn is_legacy(&self) -> bool {
+        self.kind.is_legacy()
     }
 }
 
