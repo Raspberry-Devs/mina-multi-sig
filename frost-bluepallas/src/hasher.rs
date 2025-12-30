@@ -130,7 +130,7 @@ impl Hashable for PallasMessage {
 
 /// Hashes the message using the Mina hasher, given a hashable message and a NetworkId
 /// Uses either the legacy or kimchi hasher based on the is_legacy flag
-/// Legacy transaction use the legacy hasher, while ZKApp transactions use the kimchi hasher
+/// Legacy transactions use the legacy hasher, while ZKApp transactions use the kimchi hasher
 pub fn message_hash<H>(
     pub_key: &PubKey,
     rx: BaseField,
