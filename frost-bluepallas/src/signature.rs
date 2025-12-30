@@ -221,4 +221,61 @@ mod tests {
 
         Ok(())
     }
+
+    /// Helper to convert a decimal string to BigInt<4>
+    fn bigint_from_decimal(s: &str) -> BigInt<4> {
+        use num_bigint::BigUint;
+        use num_traits::Num;
+
+        let big = BigUint::from_str_radix(s, 10).expect("Invalid decimal string");
+        let bytes = big.to_bytes_le();
+
+        let mut limbs = [0u64; 4];
+        for (i, chunk) in bytes.chunks(8).enumerate() {
+            if i >= 4 {
+                break;
+            }
+            let mut arr = [0u8; 8];
+            arr[..chunk.len()].copy_from_slice(chunk);
+            limbs[i] = u64::from_le_bytes(arr);
+        }
+        BigInt(limbs)
+    }
+
+    #[test]
+    fn test_sig_to_base58_known_vectors() {
+        // Test vectors: (r, s, expected_base58)
+        let test_vectors = [
+            (
+                "19534033587754221641582716832950022068620678142901839096898943635476986378719",
+                "8239128679179126998396192873114684363951100539025183879566224754754874407061",
+                "7mXTsNMuxi8cq83xMjJ52HqP8B16gZ2rYw2om57LUDSekuCxB9GNnVypr1YFNHtgkDhMKFpdHm1GNqAtrw3DJsVNPRT93pdX",
+            ),
+            (
+                "24149846232426282936003668868539013969893921711406495075111854298659928975942",
+                "14034827642885705526232744953870469114156457789480445652119376762475291375772",
+                "7mX7qxs1u5ZunuXReJcq4qKq84gWRyBCaA2UzApJp2Gb4txp1MMHxZzjCjknE991SxBFU9WJ46ityWtv6ZmJMVcRdErriJEW",
+            ),
+            (
+                "11761945902000965807519434876351280549901415788925705581704314097235572750862",
+                "20979239827320446710763939068170686000494489127481282268035737744590947267921",
+                "7mWzZQNC4fRtZARbTAju3VL2K4Nd9EnDFnmVAVc2vHJnG86rtZpGAmPtmYMi2K4bhSXh54c7ujUpdF2JmUEzLqoLCndEjG4M",
+            ),
+        ];
+
+        for (i, (r_str, s_str, expected_base58)) in test_vectors.iter().enumerate() {
+            let sig = Sig {
+                field: bigint_from_decimal(r_str),
+                scalar: bigint_from_decimal(s_str),
+            };
+
+            let actual_base58 = sig.to_base58();
+
+            assert_eq!(
+                actual_base58, *expected_base58,
+                "Test vector {} failed:\n  r: {}\n  s: {}\n  expected: {}\n  actual: {}",
+                i, r_str, s_str, expected_base58, actual_base58
+            );
+        }
+    }
 }
