@@ -148,7 +148,7 @@ where
         rx,
     };
 
-    // Use the correct hasher depending on which
+    // Use the correct hasher depending on whether we have a legacy transaction or not
     let scalar_output = match is_legacy {
         true => {
             let mut hasher = create_legacy::<Message<H>>(network_id);
