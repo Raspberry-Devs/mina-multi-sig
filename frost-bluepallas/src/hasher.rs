@@ -148,6 +148,7 @@ where
         rx,
     };
 
+    // Use the correct hasher depending on which
     let scalar_output = match is_legacy {
         true => {
             let mut hasher = create_legacy::<Message<H>>(network_id);
@@ -242,7 +243,7 @@ mod tests {
 
     #[test]
     fn test_hash_pallas_message_kimchi() {
-        use std::str::FromStr;
+        use alloc::str::FromStr;
         let field = "11846000834259235905958753603813777773459101710265500737400417221141603138177";
         let fp = Fp::from_str(field).unwrap();
         let msg = ROInput::new().append_field(fp);

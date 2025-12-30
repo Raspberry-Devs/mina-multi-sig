@@ -123,6 +123,13 @@ mod tests {
     }
 
     #[test]
+    fn test_arbitrary_message() {
+        let msg = "Hello from FROST x Rasp Devs";
+        let output = to_base58_check(msg.as_bytes(), MEMO_VERSION_BYTE);
+        assert_eq!(output, "72TwU3VwfWQ4a1ncZjWruEJqrUvPP5wnLrZmaauUGtwtv");
+    }
+
+    #[test]
     fn test_base58_check_roundtrip() {
         let payload = b"hello world";
         let version_byte = 42u8;

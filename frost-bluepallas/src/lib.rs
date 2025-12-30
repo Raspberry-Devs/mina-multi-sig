@@ -13,12 +13,12 @@
 //! verify it with the `signer`'s verify method. We do not use `signer` at all in our
 //! implementation. We do use `hasher` which provides the hash functions used by `signer` and our
 //! implementation of `frost-core`.
-// #![no_std]
+#![no_std]
 
 #[macro_use]
 extern crate alloc;
 
-use alloc::{borrow::Cow, collections::BTreeMap, string::ToString};
+use alloc::{borrow::Cow, collections::BTreeMap};
 
 use ark_ec::{models::CurveConfig, CurveGroup, PrimeGroup};
 
@@ -202,8 +202,6 @@ impl Ciphersuite for BluePallas {
         let scalar = message_hash::<PallasMessage>(&mina_pk, rx, msg, network_id, is_legacy)
             .map_err(|_| frost_core::FieldError::MalformedScalar)?;
 
-        let scalar_str = scalar.to_string();
-        println!("Derived challenge scalar: {}", scalar_str);
         Ok(frost_core::Challenge::from_scalar(scalar))
     }
 }
