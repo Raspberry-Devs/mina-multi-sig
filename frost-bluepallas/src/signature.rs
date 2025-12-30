@@ -3,7 +3,10 @@
 //! However, ZKApp transactions may include signatures within account updates and fee payer information. For that reason, ZKApp transactions may contain several
 //! different signatures which correspond to different signers and so on. However, as FROST signing is expensive, we only sign once over the entire transaction
 //! rather than signing several times over different account updates like o1js does. This means frost-bluepallas only supports full commitment ZKApp transactions (as opposed to partial commitment)
-use alloc::string::ToString;
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInt, PrimeField};
 use frost_core::Signature;
@@ -12,15 +15,71 @@ use serde::{
     ser::{SerializeStruct, Serializer},
     Serialize,
 };
+use sha2::{Digest, Sha256};
 
 use crate::{
     errors::BluePallasError, transactions::TransactionEnvelope, translate::translate_pk,
     BluePallas, VerifyingKey,
 };
 
+/// Version byte for Mina signatures in base58check encoding
+const SIGNATURE_VERSION_BYTE: u8 = 154;
+
+/// Version number prepended to signature bytes before base58check encoding
+const SIGNATURE_VERSION_NUMBER: u8 = 1;
+
+/// Compute a checksum for base58check encoding (double SHA256, first 4 bytes)
+fn compute_checksum(input: &[u8]) -> [u8; 4] {
+    let hash1 = Sha256::digest(input);
+    let hash2 = Sha256::digest(hash1);
+    let mut checksum = [0u8; 4];
+    checksum.copy_from_slice(&hash2[..4]);
+    checksum
+}
+
+/// Convert bytes to base58check encoding with a version byte
+fn to_base58_check(input: &[u8], version_byte: u8) -> String {
+    let mut with_version = Vec::with_capacity(1 + input.len() + 4);
+    with_version.push(version_byte);
+    with_version.extend_from_slice(input);
+
+    let checksum = compute_checksum(&with_version);
+    with_version.extend_from_slice(&checksum);
+
+    bs58::encode(with_version).into_string()
+}
+
 pub struct Sig {
     pub field: BigInt<4>,
     pub scalar: BigInt<4>,
+}
+
+impl Sig {
+    /// Convert a BigInt<4> to 32 bytes in little-endian format
+    fn bigint_to_bytes(value: &BigInt<4>) -> [u8; 32] {
+        let mut bytes = [0u8; 32];
+        for (i, limb) in value.0.iter().enumerate() {
+            let limb_bytes = limb.to_le_bytes();
+            bytes[i * 8..(i + 1) * 8].copy_from_slice(&limb_bytes);
+        }
+        bytes
+    }
+
+    /// Convert the signature to bytes in the format expected by Mina
+    /// Format: version_number (1 byte) + r (32 bytes LE) + s (32 bytes LE)
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(65);
+        bytes.push(SIGNATURE_VERSION_NUMBER);
+        bytes.extend_from_slice(&Self::bigint_to_bytes(&self.field));
+        bytes.extend_from_slice(&Self::bigint_to_bytes(&self.scalar));
+        bytes
+    }
+
+    /// Convert the signature to a base58check encoded string compatible with Mina
+    pub fn to_base58(&self) -> String {
+        let bytes = self.to_bytes();
+        to_base58_check(&bytes, SIGNATURE_VERSION_BYTE)
+    }
 }
 
 impl TryInto<Sig> for Signature<BluePallas> {
