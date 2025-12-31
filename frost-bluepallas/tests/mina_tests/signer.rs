@@ -2,10 +2,9 @@
 #![cfg(test)]
 
 use frost_bluepallas::{
-    hasher::PallasMessage,
+    mina_compat::{translate_minask, translate_pk, PallasMessage},
     signing_utilities,
     transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
-    translate::{translate_minask, translate_pk},
 };
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, NetworkId, PubKey, Signer};
@@ -48,11 +47,11 @@ fn signer_test_raw() {
         .expect("failed to generate FROST signature");
 
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+    let mina_sig = frost_bluepallas::mina_compat::translate_sig(&sig)
         .expect("failed to translate FROST signature to Mina signature");
 
     // Convert verifying key to Mina format
-    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+    let mina_vk = frost_bluepallas::mina_compat::translate_pk(&vk)
         .expect("failed to translate FROST verifying key to Mina public key");
 
     // Verify that vk from FROST and Mina matches
@@ -108,9 +107,9 @@ fn sign_mina_tx() {
         .expect("Failed to sign message with FROST");
 
     // Verify the signature
-    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+    let mina_sig = frost_bluepallas::mina_compat::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+    let mina_vk = frost_bluepallas::mina_compat::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer
@@ -165,9 +164,9 @@ fn sign_mina_tx_mainnet() {
         .expect("Expect challenge to calculate");
 
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+    let mina_sig = frost_bluepallas::mina_compat::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+    let mina_vk = frost_bluepallas::mina_compat::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with MAINNET
@@ -227,9 +226,9 @@ fn transaction_json_deser_with_mina_sign() {
         .expect("Failed to sign message with FROST");
 
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+    let mina_sig = frost_bluepallas::mina_compat::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+    let mina_vk = frost_bluepallas::mina_compat::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with TESTNET
@@ -282,9 +281,9 @@ fn sign_mina_delegation_tx() {
         .expect("Failed to sign message with FROST");
 
     // Verify the signature
-    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+    let mina_sig = frost_bluepallas::mina_compat::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+    let mina_vk = frost_bluepallas::mina_compat::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer
@@ -343,9 +342,9 @@ fn delegation_json_deser_with_mina_sign() {
         .expect("Failed to sign message with FROST");
 
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+    let mina_sig = frost_bluepallas::mina_compat::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::translate::translate_pk(&vk)
+    let mina_vk = frost_bluepallas::mina_compat::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with TESTNET
@@ -420,7 +419,7 @@ fn test_zkapp_tx_mina_signer_compatibility() {
                 });
 
         // Convert signature to Mina format
-        let mina_sig = frost_bluepallas::translate::translate_sig(&sig).unwrap_or_else(|_| {
+        let mina_sig = frost_bluepallas::mina_compat::translate_sig(&sig).unwrap_or_else(|_| {
             panic!(
                 "Failed to translate FROST signature to Mina signature for test: {}",
                 test_vector.name
@@ -428,7 +427,7 @@ fn test_zkapp_tx_mina_signer_compatibility() {
         });
 
         // Convert verifying key to Mina format
-        let mina_vk = frost_bluepallas::translate::translate_pk(&vk).unwrap_or_else(|_| {
+        let mina_vk = frost_bluepallas::mina_compat::translate_pk(&vk).unwrap_or_else(|_| {
             panic!(
                 "Failed to translate FROST verifying key to Mina public key for test: {}",
                 test_vector.name

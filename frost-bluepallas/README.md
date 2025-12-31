@@ -78,7 +78,7 @@ let (signature, verifying_key) = frost::signing_utilities::sign_from_packages(
 ### Signing Mina Transactions
 
 ```rust
-use frost_bluepallas::{transactions::LegacyTransaction, translate::translate_msg};
+use frost_bluepallas::transactions::LegacyTransaction;
 use mina_signer::{PubKey, NetworkId::TESTNET};
 
 // Create a Mina transaction
@@ -107,8 +107,8 @@ let (frost_sig, frost_vk) = frost::signing_utilities::sign_from_packages(
 )?;
 
 // Convert to Mina format for verification
-let mina_sig = frost_bluepallas::translate::translate_sig(&frost_sig)?;
-let mina_vk = frost_bluepallas::translate::translate_pk(&frost_vk)?;
+let mina_sig = frost_bluepallas::mina_compat::translate_sig(&frost_sig)?;
+let mina_vk = frost_bluepallas::mina_compat::translate_pk(&frost_vk)?;
 
 // Verify with Mina signer
 let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);

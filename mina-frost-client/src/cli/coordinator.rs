@@ -6,7 +6,7 @@ use eyre::Context;
 use eyre::OptionExt;
 use frost_bluepallas::{
     errors::BluePallasError,
-    signature::{PubKeySer, Sig, TransactionSignature},
+    mina_compat::{PubKeySer, Sig, TransactionSignature},
     transactions::TransactionEnvelope,
     BluePallas,
 };

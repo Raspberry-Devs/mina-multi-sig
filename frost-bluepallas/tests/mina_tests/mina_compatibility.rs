@@ -2,9 +2,9 @@ use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::fields::PrimeField;
 use ark_ff::BigInteger;
 use frost_bluepallas::{
-    hasher::{message_hash, PallasMessage},
+    hasher::message_hash,
+    mina_compat::{translate_pk, translate_sig, PallasMessage},
     transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
-    translate::{translate_pk, translate_sig},
     PallasGroup,
 };
 use frost_core::{Ciphersuite, Group};

@@ -5,8 +5,7 @@
 pub mod samples;
 
 use frost_bluepallas::{
-    hasher::PallasMessage,
-    translate::{translate_pk, translate_sig},
+    mina_compat::{translate_pk, translate_sig, PallasMessage},
     BluePallas,
 };
 use mina_signer::{NetworkId, Signer};

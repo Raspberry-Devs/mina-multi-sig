@@ -1,13 +1,10 @@
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::string::{String, ToString};
 use ark_ff::PrimeField;
 use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
 use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
-use crate::{errors::BluePallasError, transactions::TransactionEnvelope, PallasScalarField};
+use crate::{errors::BluePallasError, mina_compat::PallasMessage, PallasScalarField};
 
 /// This is a Hashable interface for an array of bytes
 /// This allows us to provide a easy-to-read interface for hashing FROST elements in H1, H3, H4, H5
@@ -65,49 +62,9 @@ where
     }
 }
 
-/// This is an adaptor for the Mina Hashable type and allows us to
-/// have compatibility between the Mina and FROST implementations
-/// The adaptor will attempt to serialize the input as a TransactionEnvelope first, if that fails then it will
-/// treat the input as raw bytes
-#[derive(Clone, Debug)]
-pub struct PallasMessage {
-    input: ROInput,
-    network_id: NetworkId,
-    is_legacy: bool,
-}
-
-impl PallasMessage {
-    pub fn new(input: Vec<u8>) -> Self {
-        // Try to deserialize as ROInput first
-        match TransactionEnvelope::deserialize(&input) {
-            Ok(roi) => PallasMessage {
-                input: roi.to_roinput(),
-                network_id: roi.network_id().clone(),
-                is_legacy: roi.is_legacy(),
-            },
-            Err(_) => {
-                // If deserialization fails, treat input as raw bytes
-                let roi = ROInput::new().append_bytes(&input);
-                // Default to TESTNET and legacy hashing if we can't determine network ID
-                PallasMessage {
-                    input: roi,
-                    network_id: NetworkId::TESTNET,
-                    is_legacy: true,
-                }
-            }
-        }
-    }
-
-    pub fn is_legacy(&self) -> bool {
-        self.is_legacy
-    }
-
-    pub fn network_id(&self) -> NetworkId {
-        self.network_id.clone()
-    }
-}
-
-// Implement a hashable trait for a u8 slice
+/// Hashable implementation for PallasMessage.
+///
+/// This allows PallasMessage to be hashed using Mina's Poseidon-based hasher.
 impl Hashable for PallasMessage {
     type D = NetworkId;
 
@@ -115,7 +72,7 @@ impl Hashable for PallasMessage {
         self.input.clone()
     }
 
-    // copied from
+    // Domain string specification from:
     // https://github.com/o1-labs/proof-systems/blob/0.1.0/signer/tests/transaction.rs#L53-L61
     fn domain_string(network_id: NetworkId) -> Option<String> {
         // Domain strings must have length <= 20
