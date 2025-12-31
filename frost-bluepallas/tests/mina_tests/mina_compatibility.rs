@@ -15,7 +15,7 @@ use rand_core::SeedableRng;
 
 use std::ops::{Add, Neg};
 
-use frost_bluepallas::helper::generate_signature_random;
+use frost_bluepallas::signing_utilities::generate_signature_random;
 
 #[test]
 fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {

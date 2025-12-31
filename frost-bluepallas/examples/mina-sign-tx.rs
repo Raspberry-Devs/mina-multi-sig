@@ -44,9 +44,12 @@ fn main() -> Result<(), Error> {
     let msg = tx.serialize().map_err(|_| Error::DeserializationError)?;
 
     // Sign the transaction with FROST
-    let (sig, vk) =
-        frost_bluepallas::helper::generate_signature_from_sk(&msg, &signing_key, rand_core::OsRng)
-            .map_err(|_| Error::MalformedSignature)?;
+    let (sig, vk) = frost_bluepallas::signing_utilities::generate_signature_from_sk(
+        &msg,
+        &signing_key,
+        rand_core::OsRng,
+    )
+    .map_err(|_| Error::MalformedSignature)?;
 
     // Print out signature and verifying key
     // Convert signature to Mina format

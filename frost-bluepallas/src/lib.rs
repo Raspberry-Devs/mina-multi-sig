@@ -43,10 +43,10 @@ use crate::{
 mod base58;
 pub mod errors;
 pub mod hasher;
-pub mod helper;
 pub mod keys;
 mod negate;
 pub mod signature;
+pub mod signing_utilities;
 pub mod transactions;
 pub mod translate;
 

@@ -3,7 +3,7 @@
 
 use frost_bluepallas::{
     hasher::PallasMessage,
-    helper,
+    signing_utilities,
     transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
     translate::{translate_minask, translate_pk},
 };
@@ -44,7 +44,7 @@ fn signer_test_raw() {
     let fr_sk =
         translate_minask(&kp).expect("failed to translate mina keypair to frost signing key");
 
-    let (sig, vk) = helper::generate_signature_from_sk(&msg, &fr_sk, rand_core::OsRng)
+    let (sig, vk) = signing_utilities::generate_signature_from_sk(&msg, &fr_sk, rand_core::OsRng)
         .expect("failed to generate FROST signature");
 
     // Convert signature to Mina format
@@ -104,7 +104,7 @@ fn sign_mina_tx() {
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
     let msg = tx_env.serialize().unwrap();
-    let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
     // Verify the signature
@@ -158,7 +158,7 @@ fn sign_mina_tx_mainnet() {
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(network_id.clone(), tx);
     let msg = tx_env.serialize().unwrap();
-    let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
     let _chall = frost_bluepallas::BluePallas::challenge(sig.R(), &vk, &msg)
@@ -223,7 +223,7 @@ fn transaction_json_deser_with_mina_sign() {
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
     let msg = tx_env.serialize().unwrap();
 
-    let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
     // Convert signature to Mina format
@@ -278,7 +278,7 @@ fn sign_mina_delegation_tx() {
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
     let msg = tx_env.serialize().unwrap();
-    let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
     // Verify the signature
@@ -339,7 +339,7 @@ fn delegation_json_deser_with_mina_sign() {
     // Now sign the deserialized transaction
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
     let msg = tx_env.serialize().unwrap();
-    let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
         .expect("Failed to sign message with FROST");
 
     // Convert signature to Mina format
@@ -410,13 +410,14 @@ fn test_zkapp_tx_mina_signer_compatibility() {
         });
 
         // Generate FROST signature
-        let (sig, vk) = helper::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
-            .unwrap_or_else(|_| {
-                panic!(
-                    "Failed to sign message with FROST for test: {}",
-                    test_vector.name
-                )
-            });
+        let (sig, vk) =
+            signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "Failed to sign message with FROST for test: {}",
+                        test_vector.name
+                    )
+                });
 
         // Convert signature to Mina format
         let mina_sig = frost_bluepallas::translate::translate_sig(&sig).unwrap_or_else(|_| {

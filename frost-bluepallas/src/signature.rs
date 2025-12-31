@@ -138,7 +138,7 @@ pub struct TransactionSignature {
 mod tests {
     use super::*;
     use crate::{
-        helper,
+        signing_utilities,
         transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
         translate,
     };
@@ -168,8 +168,12 @@ mod tests {
             .unwrap();
 
         // Generate FROST signature
-        let (frost_sig, _vk) =
-            helper::generate_signature_from_sk(&test_msg, &signing_key, rand_core::OsRng).unwrap();
+        let (frost_sig, _vk) = signing_utilities::generate_signature_from_sk(
+            &test_msg,
+            &signing_key,
+            rand_core::OsRng,
+        )
+        .unwrap();
 
         // Method 1: Existing translation approach
         let mina_sig = translate::translate_sig(&frost_sig).map_err(|_| {
