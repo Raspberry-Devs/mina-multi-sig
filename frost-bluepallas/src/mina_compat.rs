@@ -49,11 +49,11 @@ impl PallasMessage {
             Err(_) => {
                 // If deserialization fails, treat input as raw bytes
                 let roi = ROInput::new().append_bytes(&input);
-                // Default to TESTNET if we can't determine network ID
+                // Default to TESTNET and legacy hashing if we can't determine network ID
                 PallasMessage {
                     input: roi,
                     network_id: NetworkId::TESTNET,
-                    is_legacy: false,
+                    is_legacy: true,
                 }
             }
         }
