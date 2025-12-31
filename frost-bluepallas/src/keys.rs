@@ -1,3 +1,5 @@
+//! This module contains utilities for FROST key management using the BluePallas curve
+
 use alloc::collections::BTreeMap;
 
 use frost_core::{self as frost};

@@ -1,3 +1,5 @@
+//! Mina-compatible hashing utilities for FROST using the Pallas curve.
+
 use alloc::string::{String, ToString};
 use ark_ff::PrimeField;
 use frost_core::Field;
