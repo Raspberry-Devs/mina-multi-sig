@@ -40,6 +40,7 @@ use crate::{
     translate::translate_pk,
 };
 
+mod base58;
 pub mod errors;
 pub mod hasher;
 pub mod helper;
@@ -195,10 +196,12 @@ impl Ciphersuite for BluePallas {
 
         // Attempt to derive the message as a TransactionEnvelope first, if that fails treat it as raw bytes
         let msg = PallasMessage::new(message.to_vec());
-        let network_id = msg.network_id.clone();
+        let network_id = msg.network_id();
+        let is_legacy = msg.is_legacy();
 
-        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, msg, network_id)
+        let scalar = message_hash::<PallasMessage>(&mina_pk, rx, msg, network_id, is_legacy)
             .map_err(|_| frost_core::FieldError::MalformedScalar)?;
+
         Ok(frost_core::Challenge::from_scalar(scalar))
     }
 }

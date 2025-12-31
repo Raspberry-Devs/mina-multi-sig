@@ -962,7 +962,28 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
             expected_fee_payer_hash: "22591001022197211780755176808690376369488425396145396343616148937337644278803",
             expected_account_updates_commitment: "890036752761563610176645072391048796311042767532971976592942060327069338763",
             expected_full_commitment: "7386435648427501000342780996487927693328565178920002003169322679773714537812",
-        }
+        },
+        ZkAppTestVector {
+            name: "empty_account_updates_frost_signing",
+            zkapp_command: ZKAppCommand {
+                fee_payer: FeePayer {
+                    body: FeePayerBody {
+                        public_key: PublicKey(CompressedPubKey::from_address("B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA").unwrap()),
+                        fee: 1000000,
+                        valid_until: Some(4294967295),
+                        nonce: 0,
+                    },
+                    authorization: "7mWxjLYgbJUkZNcGouvhVj5tJ8yu9hoexb9ntvPK8t5LHqzmrL6QJjjKtf5SgmxB4QWkDw7qoMMbbNGtHVpsbJHPyTy2EzRQ".to_string(),
+                },
+                account_updates: vec![],
+                memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
+            },
+            network: NetworkId::TESTNET,
+            expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
+            expected_fee_payer_hash: "16613044925297152030622651327100970331511857730632418522821277052425737998593",
+            expected_account_updates_commitment: "0",
+            expected_full_commitment: "11846000834259235905958753603813777773459101710265500737400417221141603138177",
+        },
 ]
 }
 

@@ -1,9 +1,12 @@
 //! This module provides serde implementations for some structs used in ZkApp transactions
 //! for which custom serialization is required.
 
-use crate::transactions::{
-    zkapp_tx::{Field, PublicKey},
-    MEMO_BYTES,
+use crate::{
+    base58::{from_base58_check, to_base58_check, Base58Error, MEMO_VERSION_BYTE},
+    transactions::{
+        zkapp_tx::{Field, PublicKey},
+        MEMO_BYTES,
+    },
 };
 use alloc::string::{String, ToString};
 use mina_hasher::Fp;
@@ -62,8 +65,8 @@ pub(crate) fn memo_serde<S>(memo: &[u8; MEMO_BYTES], serializer: S) -> Result<S:
 where
     S: serde::Serializer,
 {
-    // Serialize memo as base58 string
-    let encoded = bs58::encode(memo).into_string();
+    // Serialize memo as base58check string with the memo version byte
+    let encoded = to_base58_check(memo, MEMO_VERSION_BYTE);
     serializer.serialize_str(&encoded)
 }
 
@@ -72,9 +75,19 @@ where
     D: serde::Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    let decoded = bs58::decode(&s)
-        .into_vec()
-        .map_err(serde::de::Error::custom)?;
+    let decoded = from_base58_check(&s, MEMO_VERSION_BYTE).map_err(|e| match e {
+        Base58Error::InvalidBase58 => serde::de::Error::custom("Invalid base58 encoding"),
+        Base58Error::TooShort => serde::de::Error::custom("Memo too short for base58check"),
+        Base58Error::InvalidVersionByte { expected, actual } => serde::de::Error::custom(format!(
+            "Invalid memo version byte: expected {}, got {}",
+            expected, actual
+        )),
+        Base58Error::InvalidChecksum => serde::de::Error::custom("Invalid memo checksum"),
+        Base58Error::InvalidLength { expected, actual } => serde::de::Error::custom(format!(
+            "Invalid memo length: expected {}, got {}",
+            expected, actual
+        )),
+    })?;
 
     if decoded.len() != MEMO_BYTES {
         return Err(serde::de::Error::custom(format!(
@@ -97,6 +110,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::base58::{to_base58_check, MEMO_VERSION_BYTE};
     use crate::transactions::zkapp_tx::*;
     use mina_signer::CompressedPubKey;
     use serde_json;
@@ -105,6 +119,11 @@ mod tests {
         0x01, 0x04, b'T', b'e', b's', b't', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     ];
+
+    /// Helper to get the base58check encoded test memo
+    fn test_memo_base58() -> String {
+        to_base58_check(&TEST_MEMO, MEMO_VERSION_BYTE)
+    }
 
     fn create_test_public_key() -> PublicKey {
         let test_address = "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg";
@@ -240,21 +259,25 @@ mod tests {
 
     #[test]
     fn test_deserialize_from_json() {
-        let json_str = r#"{
-            "fee_payer": {
-                "body": {
+        let memo_base58 = test_memo_base58();
+        let json_str = format!(
+            r#"{{
+            "fee_payer": {{
+                "body": {{
                     "public_key": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
                     "fee": 1000000,
                     "valid_until": null,
                     "nonce": 42
-                },
+                }},
                 "authorization": "test_auth"
-            },
+            }},
             "account_updates": [],
-            "memo": "2LLNoLLTNMVDUcSsdkJXnDByvpXjxSmdy6MWWXSW73QkSK"
-        }"#;
+            "memo": "{}"
+        }}"#,
+            memo_base58
+        );
 
-        let result: ZKAppCommand = serde_json::from_str(json_str).unwrap();
+        let result: ZKAppCommand = serde_json::from_str(&json_str).unwrap();
         assert_eq!(result.memo, TEST_MEMO);
         assert_eq!(result.fee_payer.body.fee, 1000000);
         assert_eq!(result.fee_payer.body.valid_until, None);

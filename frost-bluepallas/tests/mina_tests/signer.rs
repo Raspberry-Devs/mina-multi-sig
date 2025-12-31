@@ -435,7 +435,7 @@ fn test_zkapp_tx_mina_signer_compatibility() {
         });
 
         // Verify the signature using Mina Signer
-        let mut ctx = mina_signer::create_legacy(test_vector.network.clone());
+        let mut ctx = mina_signer::create_kimchi(test_vector.network.clone());
         let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx_env);
 
         assert!(
@@ -445,7 +445,7 @@ fn test_zkapp_tx_mina_signer_compatibility() {
         );
 
         // Also verify against the deserialized transaction envelope
-        let mut ctx2 = mina_signer::create_legacy(test_vector.network.clone());
+        let mut ctx2 = mina_signer::create_kimchi(test_vector.network.clone());
         let deserialized_tx_env = TransactionEnvelope::deserialize(&msg).unwrap_or_else(|_| {
             panic!(
                 "Failed to deserialize transaction envelope for test: {}",
@@ -461,7 +461,7 @@ fn test_zkapp_tx_mina_signer_compatibility() {
         );
 
         // Verify against the raw message
-        let mut ctx3 = mina_signer::create_legacy(test_vector.network);
+        let mut ctx3 = mina_signer::create_kimchi(test_vector.network);
         let is_valid3 = ctx3.verify(&mina_sig, &mina_vk, &PallasMessage::new(msg.clone()));
 
         assert!(
