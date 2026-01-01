@@ -1,7 +1,10 @@
 //! Mina compatibility module for FROST signatures.
 //! This module provides methods and structs for conversions between FROST types and Mina types, enabling interoperability.
 
-use alloc::{string::ToString, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInt, PrimeField};
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
@@ -13,6 +16,7 @@ use serde::{
 };
 
 use crate::{
+    base58::{to_base58_check, SIGNATURE_VERSION_BYTE, SIGNATURE_VERSION_NUMBER},
     errors::{BluePallasError, BluePallasResult},
     transactions::TransactionEnvelope,
     BluePallas, SigningKey,
@@ -76,6 +80,34 @@ pub struct Sig {
     pub scalar: BigInt<4>,
 }
 
+impl Sig {
+    /// Convert a BigInt<4> to 32 bytes in little-endian format
+    fn bigint_to_bytes(value: &BigInt<4>) -> [u8; 32] {
+        let mut bytes = [0u8; 32];
+        for (i, limb) in value.0.iter().enumerate() {
+            let limb_bytes = limb.to_le_bytes();
+            bytes[i * 8..(i + 1) * 8].copy_from_slice(&limb_bytes);
+        }
+        bytes
+    }
+
+    /// Convert the signature to bytes in the format expected by Mina
+    /// Format: version_number (1 byte) + r (32 bytes LE) + s (32 bytes LE)
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(65);
+        bytes.push(SIGNATURE_VERSION_NUMBER);
+        bytes.extend_from_slice(&Self::bigint_to_bytes(&self.field));
+        bytes.extend_from_slice(&Self::bigint_to_bytes(&self.scalar));
+        bytes
+    }
+
+    /// Convert the signature to a base58check encoded string compatible with Mina
+    pub fn to_base58(&self) -> String {
+        let bytes = self.to_bytes();
+        to_base58_check(&bytes, SIGNATURE_VERSION_BYTE)
+    }
+}
+
 impl TryInto<Sig> for FrSig<BluePallas> {
     type Error = BluePallasError;
 
@@ -105,6 +137,7 @@ impl Serialize for Sig {
         let mut state = serializer.serialize_struct("signature", 2)?;
         state.serialize_field("field", &self.field.to_string())?;
         state.serialize_field("scalar", &self.scalar.to_string())?;
+        state.serialize_field("base58", self.to_base58().as_str())?;
         state.end()
     }
 }
@@ -271,5 +304,62 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    /// Helper to convert a decimal string to BigInt<4>
+    fn bigint_from_decimal(s: &str) -> BigInt<4> {
+        use num_bigint::BigUint;
+        use num_traits::Num;
+
+        let big = BigUint::from_str_radix(s, 10).expect("Invalid decimal string");
+        let bytes = big.to_bytes_le();
+
+        let mut limbs = [0u64; 4];
+        for (i, chunk) in bytes.chunks(8).enumerate() {
+            if i >= 4 {
+                break;
+            }
+            let mut arr = [0u8; 8];
+            arr[..chunk.len()].copy_from_slice(chunk);
+            limbs[i] = u64::from_le_bytes(arr);
+        }
+        BigInt(limbs)
+    }
+
+    #[test]
+    fn test_sig_to_base58_known_vectors() {
+        // Test vectors: (r, s, expected_base58)
+        let test_vectors = [
+            (
+                "19534033587754221641582716832950022068620678142901839096898943635476986378719",
+                "8239128679179126998396192873114684363951100539025183879566224754754874407061",
+                "7mXTsNMuxi8cq83xMjJ52HqP8B16gZ2rYw2om57LUDSekuCxB9GNnVypr1YFNHtgkDhMKFpdHm1GNqAtrw3DJsVNPRT93pdX",
+            ),
+            (
+                "24149846232426282936003668868539013969893921711406495075111854298659928975942",
+                "14034827642885705526232744953870469114156457789480445652119376762475291375772",
+                "7mX7qxs1u5ZunuXReJcq4qKq84gWRyBCaA2UzApJp2Gb4txp1MMHxZzjCjknE991SxBFU9WJ46ityWtv6ZmJMVcRdErriJEW",
+            ),
+            (
+                "11761945902000965807519434876351280549901415788925705581704314097235572750862",
+                "20979239827320446710763939068170686000494489127481282268035737744590947267921",
+                "7mWzZQNC4fRtZARbTAju3VL2K4Nd9EnDFnmVAVc2vHJnG86rtZpGAmPtmYMi2K4bhSXh54c7ujUpdF2JmUEzLqoLCndEjG4M",
+            ),
+        ];
+
+        for (i, (r_str, s_str, expected_base58)) in test_vectors.iter().enumerate() {
+            let sig = Sig {
+                field: bigint_from_decimal(r_str),
+                scalar: bigint_from_decimal(s_str),
+            };
+
+            let actual_base58 = sig.to_base58();
+
+            assert_eq!(
+                actual_base58, *expected_base58,
+                "Test vector {} failed:\n  r: {}\n  s: {}\n  expected: {}\n  actual: {}",
+                i, r_str, s_str, expected_base58, actual_base58
+            );
+        }
     }
 }
