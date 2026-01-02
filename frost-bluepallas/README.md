@@ -143,7 +143,6 @@ cargo run --example mina-sign-tx
 - `frost::round1::commit()` - Generate signing nonces (Round 1)
 - `frost::round2::sign()` - Generate signature shares (Round 2)
 - `frost::aggregate()` - Combine signature shares into final signature
-f
 ### Utilities
 
 - `frost::signing_utilities::sign_from_packages()` - Complete signing process helper
