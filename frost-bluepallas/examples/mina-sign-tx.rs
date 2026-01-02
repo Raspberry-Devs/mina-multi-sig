@@ -1,6 +1,6 @@
 use ark_ff::{BigInt, PrimeField};
 use frost_bluepallas::{
-    signature::{PubKeySer, Sig, TransactionSignature},
+    mina_compat::{PubKeySer, Sig, TransactionSignature},
     transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
     Error,
 };
@@ -38,19 +38,22 @@ fn main() -> Result<(), Error> {
     );
 
     //let tx = tx.set_memo_str("Hello World!");
-    let signing_key = frost_bluepallas::translate::translate_minask(&mina_keypair)
+    let signing_key = frost_bluepallas::mina_compat::translate_minask(&mina_keypair)
         .map_err(|_| Error::DeserializationError)?;
 
     let msg = tx.serialize().map_err(|_| Error::DeserializationError)?;
 
     // Sign the transaction with FROST
-    let (sig, vk) =
-        frost_bluepallas::helper::generate_signature_from_sk(&msg, &signing_key, rand_core::OsRng)
-            .map_err(|_| Error::MalformedSignature)?;
+    let (sig, vk) = frost_bluepallas::signing_utilities::generate_signature_from_sk(
+        &msg,
+        &signing_key,
+        rand_core::OsRng,
+    )
+    .map_err(|_| Error::MalformedSignature)?;
 
     // Print out signature and verifying key
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::translate::translate_sig(&sig)
+    let mina_sig = frost_bluepallas::mina_compat::translate_sig(&sig)
         .map_err(|_| Error::DeserializationError)?;
     // Print transaction as json
 

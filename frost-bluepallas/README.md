@@ -9,6 +9,7 @@ A FROST (Flexible Round-Optimized Schnorr Threshold Signatures) implementation f
 ## Overview
 
 FROST-BluePallas implements the FROST threshold signature scheme using:
+
 - **Curve**: Pallas (from the Pasta curves family)
 - **Hash Function**: Poseidon
 - **Protocol Compatibility**: Mina Protocol signatures
@@ -27,6 +28,7 @@ This implementation allows multiple parties to collaboratively generate signatur
 ## Mina Protocol Compatibility
 
 This implementation follows the Mina Protocol signature specification and produces signatures that:
+
 - Use the same Pallas curve and Poseidon hash as native Mina signatures
 - Are verifiable by standard Mina signature verification
 - Support both Mainnet and Testnet network domains
@@ -65,7 +67,7 @@ let (shares, pubkey_package) = frost::keys::generate_with_dealer(
 
 // Sign a message
 let message = b"Hello Mina!";
-let (signature, verifying_key) = frost::helper::sign_from_packages(
+let (signature, verifying_key) = frost::signing_utilities::sign_from_packages(
     message,
     shares,
     pubkey_package,
@@ -76,7 +78,7 @@ let (signature, verifying_key) = frost::helper::sign_from_packages(
 ### Signing Mina Transactions
 
 ```rust
-use frost_bluepallas::{transactions::LegacyTransaction, translate::translate_msg};
+use frost_bluepallas::transactions::LegacyTransaction;
 use mina_signer::{PubKey, NetworkId::TESTNET};
 
 // Create a Mina transaction
@@ -97,7 +99,7 @@ let tx = TransactionEnvelope::new_legacy(TESTNET, tx);
 let message = tx.translate_msg();
 
 // Sign with FROST (using existing shares and pubkey_package)
-let (frost_sig, frost_vk) = frost::helper::sign_from_packages(
+let (frost_sig, frost_vk) = frost::signing_utilities::sign_from_packages(
     &message,
     shares,
     pubkey_package,
@@ -105,8 +107,8 @@ let (frost_sig, frost_vk) = frost::helper::sign_from_packages(
 )?;
 
 // Convert to Mina format for verification
-let mina_sig = frost_bluepallas::translate::translate_sig(&frost_sig)?;
-let mina_vk = frost_bluepallas::translate::translate_pk(&frost_vk)?;
+let mina_sig = frost_bluepallas::mina_compat::translate_sig(&frost_sig)?;
+let mina_vk = frost_bluepallas::mina_compat::translate_pk(&frost_vk)?;
 
 // Verify with Mina signer
 let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
@@ -122,6 +124,7 @@ The `examples/` directory contains several usage examples:
 - `mina-gen-pubkey.rs` - Generate Mina-compatible key pairs
 
 Run examples with:
+
 ```bash
 cargo run --example dkg
 cargo run --example mina-sign-tx
@@ -140,12 +143,11 @@ cargo run --example mina-sign-tx
 - `frost::round1::commit()` - Generate signing nonces (Round 1)
 - `frost::round2::sign()` - Generate signature shares (Round 2)
 - `frost::aggregate()` - Combine signature shares into final signature
-
 ### Utilities
 
-- `frost::helper::sign_from_packages()` - Complete signing process helper
-- `frost::translate::translate_sig()` - Convert FROST to Mina signature format
-- `frost::translate::translate_pk()` - Convert FROST to Mina public key format
+- `frost::signing_utilities::sign_from_packages()` - Complete signing process helper
+- `frost::mina_compat::translate_sig()` - Convert FROST to Mina signature format
+- `frost::mina_compat::translate_pk()` - Convert FROST to Mina public key format
 
 ## Network Configuration
 
@@ -172,6 +174,7 @@ cargo test
 ```
 
 The tests include:
+
 - FROST protocol correctness tests
 - Mina signature compatibility tests
 - Cross-verification with Mina signer
@@ -180,6 +183,7 @@ The tests include:
 ## Contributing
 
 This is research software. Contributions are welcome, but please ensure:
+
 - All tests pass
 - New features include comprehensive tests
 - Mina compatibility is maintained

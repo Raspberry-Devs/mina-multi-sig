@@ -1,3 +1,5 @@
+//! Utilities for negating Y coordinates in FROST commitments using the BluePallas curve. This mimics Mina's handling of point negation.
+
 use frost_core::{
     round1::{Nonce, NonceCommitment},
     Group,

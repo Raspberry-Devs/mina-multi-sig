@@ -1,3 +1,5 @@
+//! Convenience functions to generate FROST signatures from various inputs.
+
 use alloc::collections::BTreeMap;
 
 use crate::{self as frost};

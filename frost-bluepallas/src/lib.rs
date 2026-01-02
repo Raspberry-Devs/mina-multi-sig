@@ -34,21 +34,20 @@ use rand_core::{CryptoRng, RngCore};
 pub type Error = frost_core::Error<BluePallas>;
 
 use crate::{
-    hasher::{hash_to_array, hash_to_scalar, message_hash, PallasMessage},
+    hasher::{hash_to_array, hash_to_scalar, message_hash},
+    mina_compat::{translate_pk, PallasMessage},
     negate::NegateY,
     round1::SigningNonces,
-    translate::translate_pk,
 };
 
 mod base58;
 pub mod errors;
 pub mod hasher;
-pub mod helper;
 pub mod keys;
+pub mod mina_compat;
 mod negate;
-pub mod signature;
+pub mod signing_utilities;
 pub mod transactions;
-pub mod translate;
 
 /// PallasScalarField implements the FROST field interface for the Pallas scalar field
 #[derive(Clone, Copy)]
