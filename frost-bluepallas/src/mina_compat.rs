@@ -134,7 +134,7 @@ impl Serialize for Sig {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("signature", 2)?;
+        let mut state = serializer.serialize_struct("signature", 3)?;
         state.serialize_field("field", &self.field.to_string())?;
         state.serialize_field("scalar", &self.scalar.to_string())?;
         state.serialize_field("base58", self.to_base58().as_str())?;
