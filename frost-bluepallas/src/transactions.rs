@@ -3,7 +3,7 @@
 use crate::transactions::{
     legacy_tx::LegacyTransaction,
     network_id::NetworkIdEnvelope,
-    zkapp_tx::{ZKAppCommand, ZKAppCommandHashable},
+    zkapp_tx::{zkapp_display::json_display, ZKAppCommand, ZKAppCommandHashable},
 };
 use alloc::{
     string::{String, ToString},
@@ -54,11 +54,7 @@ pub struct TransactionEnvelope {
 
 impl core::fmt::Display for TransactionEnvelope {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "TransactionEnvelope(network_id: {:?}, kind: {:?})",
-            self.network_id.0, self.kind
-        )
+        json_display(self, f)
     }
 }
 
