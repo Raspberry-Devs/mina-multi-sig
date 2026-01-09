@@ -71,6 +71,7 @@ impl<'a> Hashable for ZKAppCommandHashable<'a> {
 // FeePayer is a field which may be signed by the same key as in the account updates
 // or by a different key
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct ZKAppCommand {
     pub fee_payer: FeePayer,
     pub account_updates: Vec<AccountUpdate>,
