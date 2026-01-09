@@ -47,6 +47,7 @@ impl TransactionKind {
 // The TransactionEnvelope encapsulates either a legacy transaction or a zkApp transaction along with the network ID.
 // Should be the only structure necessary to access when signing transactions.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionEnvelope {
     network_id: NetworkIdEnvelope,
     kind: TransactionKind,
