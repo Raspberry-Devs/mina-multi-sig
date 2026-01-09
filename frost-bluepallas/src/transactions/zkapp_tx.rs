@@ -369,7 +369,7 @@ pub type UInt32 = u32;
 pub type Sign = i8; // -1 or 1
 
 // Wrapper structs
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TokenId(pub Field);
 impl Default for TokenId {
     fn default() -> Self {

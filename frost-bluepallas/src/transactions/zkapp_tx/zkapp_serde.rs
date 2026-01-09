@@ -2,13 +2,16 @@
 //! for which custom serialization is required.
 
 use crate::{
-    base58::{from_base58_check, to_base58_check, Base58Error, MEMO_VERSION_BYTE},
+    base58::{
+        from_base58_check, to_base58_check, Base58Error, MEMO_VERSION_BYTE, TOKEN_ID_VERSION_BYTE,
+    },
     transactions::{
-        zkapp_tx::{Field, PublicKey},
+        zkapp_tx::{Field, PublicKey, TokenId},
         MEMO_BYTES,
     },
 };
 use alloc::string::{String, ToString};
+use ark_ff::{BigInteger, PrimeField};
 use mina_hasher::Fp;
 use mina_signer::CompressedPubKey;
 use serde::{ser::Serialize, Deserialize};
@@ -106,6 +109,62 @@ where
     let mut memo = [0u8; MEMO_BYTES];
     memo.copy_from_slice(&decoded);
     Ok(memo)
+}
+
+const TOKEN_BYTES: usize = 32;
+
+impl Serialize for TokenId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // self.0.0 is a bit cursed, but unfortunately necessary
+        let token_id_bytes: [u8; TOKEN_BYTES] = self
+            .0
+             .0
+            .into_bigint()
+            .to_bytes_le()
+            .try_into()
+            .map_err(|_| serde::ser::Error::custom("Failed to convert TokenId Fp to byte array"))?;
+        let encoded = to_base58_check(&token_id_bytes, TOKEN_ID_VERSION_BYTE);
+        serializer.serialize_str(&encoded)
+    }
+}
+
+impl<'de> Deserialize<'de> for TokenId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let decoded = from_base58_check(&s, TOKEN_ID_VERSION_BYTE).map_err(|e| match e {
+            Base58Error::InvalidBase58 => serde::de::Error::custom("Invalid base58 encoding"),
+            Base58Error::TooShort => serde::de::Error::custom("TokenId too short for base58check"),
+            Base58Error::InvalidVersionByte { expected, actual } => {
+                serde::de::Error::custom(format!(
+                    "Invalid TokenId version byte: expected {}, got {}",
+                    expected, actual
+                ))
+            }
+            Base58Error::InvalidChecksum => serde::de::Error::custom("Invalid TokenId checksum"),
+            Base58Error::InvalidLength { expected, actual } => serde::de::Error::custom(format!(
+                "Invalid TokenId length: expected {}, got {}",
+                expected, actual
+            )),
+        })?;
+
+        // Convert bytes to Fp
+        if decoded.len() != TOKEN_BYTES {
+            return Err(serde::de::Error::custom(format!(
+                "Invalid TokenId length: expected {}, got {}",
+                TOKEN_BYTES,
+                decoded.len()
+            )));
+        }
+
+        let fp = Fp::from_le_bytes_mod_order(&decoded);
+        Ok(TokenId(Field(fp)))
+    }
 }
 
 #[cfg(test)]
@@ -291,7 +350,41 @@ mod tests {
     }
 
     #[test]
-    fn test_example_file() {}
+    fn test_tokenid_serialization() {
+        let token_id = TokenId(Field(mina_hasher::Fp::from(6553655495137790042818026u128)));
+
+        // Test serialization
+        let json = serde_json::to_string(&token_id).unwrap();
+        assert!(
+            json.starts_with('"') && json.ends_with('"'),
+            "TokenId should serialize as quoted string"
+        );
+
+        assert_eq!(
+            json,
+            "\"yDEu4Va577zH492fh2dkdaTd6S6HWb9A4sa7B4FAAMnMWXqAp8\""
+        );
+
+        let deser = serde_json::from_str::<TokenId>(&json).unwrap();
+        assert_eq!(deser.0, token_id.0);
+
+        let token_id = TokenId(Field(mina_hasher::Fp::from(1u64)));
+
+        // Test serialization
+        let json = serde_json::to_string(&token_id).unwrap();
+        assert!(
+            json.starts_with('"') && json.ends_with('"'),
+            "TokenId should serialize as quoted string"
+        );
+
+        assert_eq!(
+            json,
+            "\"wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf\""
+        );
+
+        let deser = serde_json::from_str::<TokenId>(&json).unwrap();
+        assert_eq!(deser.0, token_id.0);
+    }
 
     #[test]
     fn test_deserialize_real_zkapp_transaction() {
