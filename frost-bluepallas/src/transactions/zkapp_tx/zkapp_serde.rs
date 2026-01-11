@@ -211,6 +211,33 @@ mod tests {
         }
     }
 
+    /// Helper to deserialize and validate basic structure of a ZKAppCommand from JSON
+    fn deserialize_and_validate_zkapp(json_str: &str) -> ZKAppCommand {
+        let result: Result<ZKAppCommand, _> = serde_json::from_str(json_str);
+        assert!(
+            result.is_ok(),
+            "Failed to deserialize ZKAppCommand: {:?}",
+            result.err()
+        );
+        result.unwrap()
+    }
+
+    /// Helper to validate memo starts with expected header
+    fn assert_memo_header(zkapp: &ZKAppCommand) {
+        assert_eq!(zkapp.memo[0], 0x01, "Memo should start with 0x01 header");
+    }
+
+    /// Helper to perform round-trip serialization test
+    fn assert_round_trip(zkapp: &ZKAppCommand) {
+        let serialized = serde_json::to_string(zkapp).expect("Failed to serialize ZKAppCommand");
+        let round_trip: ZKAppCommand =
+            serde_json::from_str(&serialized).expect("Failed to deserialize round-trip");
+        assert_eq!(
+            *zkapp, round_trip,
+            "Round-trip serialization should produce identical result"
+        );
+    }
+
     #[test]
     fn test_zkapp_command_serialization() {
         let command = create_minimal_zkapp_command();
@@ -391,15 +418,7 @@ mod tests {
         // Read the JSON file from test fixtures
         let json_str = include_str!("../../../tests/data/tx-2026-01-06T18-06-16-703Z.json");
 
-        // Deserialize into ZKAppCommand
-        let result: Result<ZKAppCommand, _> = serde_json::from_str(json_str);
-        assert!(
-            result.is_ok(),
-            "Failed to deserialize ZKAppCommand: {:?}",
-            result.err()
-        );
-
-        let zkapp_command = result.unwrap();
+        let zkapp_command = deserialize_and_validate_zkapp(json_str);
 
         // Validate fee payer
         assert_eq!(
@@ -422,11 +441,7 @@ mod tests {
             "Fee payer authorization mismatch"
         );
 
-        // Validate memo
-        assert_eq!(
-            zkapp_command.memo[0], 0x01,
-            "Memo should start with 0x01 header"
-        );
+        assert_memo_header(&zkapp_command);
 
         // Validate account updates count
         assert_eq!(
@@ -562,15 +577,169 @@ mod tests {
             "Second state element should be 0"
         );
 
-        // Round-trip test: serialize back to JSON and deserialize again
-        let serialized =
-            serde_json::to_string(&zkapp_command).expect("Failed to serialize ZKAppCommand");
-        let round_trip: ZKAppCommand =
-            serde_json::from_str(&serialized).expect("Failed to deserialize round-trip");
+        assert_round_trip(&zkapp_command);
+    }
 
+    #[test]
+    fn test_deserialize_payment_zkapp_transaction() {
+        // Read the JSON file from test fixtures
+        let json_str = include_str!("../../../tests/data/payment-zkapp.json");
+
+        let zkapp_command = deserialize_and_validate_zkapp(json_str);
+
+        // Validate fee payer
         assert_eq!(
-            zkapp_command, round_trip,
-            "Round-trip serialization should produce identical result"
+            zkapp_command.fee_payer.body.public_key.0.into_address(),
+            "B62qmrE6uh7voSqGn4eDSyXzEP9M5FGYCNd6ppFc4Y7FXNnJY3MyQ1k",
+            "Fee payer public key mismatch"
         );
+        assert_eq!(zkapp_command.fee_payer.body.fee, 0, "Fee amount mismatch");
+        assert_eq!(zkapp_command.fee_payer.body.nonce, 0, "Nonce mismatch");
+        assert_eq!(
+            zkapp_command.fee_payer.body.valid_until, None,
+            "Valid until should be None"
+        );
+        assert_eq!(
+            zkapp_command.fee_payer.authorization,
+            "7mWxjLYgbJUkZNcGouvhVj5tJ8yu9hoexb9ntvPK8t5LHqzmrL6QJjjKtf5SgmxB4QWkDw7qoMMbbNGtHVpsbJHPyTy2EzRQ",
+            "Fee payer authorization mismatch"
+        );
+
+        assert_memo_header(&zkapp_command);
+
+        // Validate account updates count
+        assert_eq!(
+            zkapp_command.account_updates.len(),
+            2,
+            "Expected 2 account updates"
+        );
+
+        // Validate first account update (sender)
+        let first_update = &zkapp_command.account_updates[0];
+        assert_eq!(
+            first_update.body.public_key.0.into_address(),
+            "B62qmrE6uh7voSqGn4eDSyXzEP9M5FGYCNd6ppFc4Y7FXNnJY3MyQ1k",
+            "First update public key mismatch"
+        );
+        assert_eq!(
+            first_update.body.balance_change.magnitude, 2000000000,
+            "First update balance change magnitude mismatch"
+        );
+        assert_eq!(
+            first_update.body.balance_change.sgn,
+            -1, // Negative
+            "First update balance change should be negative"
+        );
+        assert!(
+            !first_update.body.increment_nonce,
+            "First update should not increment nonce"
+        );
+        assert_eq!(
+            first_update.body.call_depth, 0,
+            "First update call depth should be 0"
+        );
+        assert!(
+            first_update.body.use_full_commitment,
+            "First update should use full commitment"
+        );
+        assert!(
+            first_update.body.authorization_kind.is_signed,
+            "First update should be signed"
+        );
+        assert!(
+            !first_update.body.authorization_kind.is_proved,
+            "First update should not be proved"
+        );
+        assert!(
+            first_update.authorization.proof.is_none(),
+            "First update should not have a proof"
+        );
+        assert!(
+            first_update.authorization.signature.is_none(),
+            "First update signature should be None (unsigned)"
+        );
+
+        // Validate second account update (receiver)
+        let second_update = &zkapp_command.account_updates[1];
+        assert_eq!(
+            second_update.body.public_key.0.into_address(),
+            "B62qoKvMKQRV9U9rsJtpedJbsY8g7CiUcMoyR3PjdCW6FteRTkiX6Ux",
+            "Second update public key mismatch"
+        );
+        assert_eq!(
+            second_update.body.balance_change.magnitude, 1000000000,
+            "Second update balance change magnitude mismatch"
+        );
+        assert_eq!(
+            second_update.body.balance_change.sgn,
+            1, // Positive
+            "Second update balance change should be positive"
+        );
+        assert_eq!(
+            second_update.body.call_depth, 1,
+            "Second update call depth should be 1"
+        );
+        assert!(
+            !second_update.body.use_full_commitment,
+            "Second update should not use full commitment"
+        );
+        assert!(
+            !second_update.body.authorization_kind.is_signed,
+            "Second update should not be signed"
+        );
+        assert!(
+            !second_update.body.authorization_kind.is_proved,
+            "Second update should not be proved"
+        );
+        assert!(
+            second_update.authorization.proof.is_none(),
+            "Second update should not have a proof"
+        );
+        assert!(
+            second_update.authorization.signature.is_none(),
+            "Second update should not have a signature"
+        );
+
+        // Validate events and actions are empty
+        assert!(
+            first_update.body.events.data.is_empty(),
+            "First update events should be empty"
+        );
+        assert!(
+            first_update.body.actions.data.is_empty(),
+            "First update actions should be empty"
+        );
+        assert!(
+            second_update.body.events.data.is_empty(),
+            "Second update events should be empty"
+        );
+        assert!(
+            second_update.body.actions.data.is_empty(),
+            "Second update actions should be empty"
+        );
+
+        // Validate verification key hash (dummy hash for non-proved accounts)
+        assert_eq!(
+            first_update
+                .body
+                .authorization_kind
+                .verification_key_hash
+                .0
+                .to_string(),
+            "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+            "First update verification key hash mismatch"
+        );
+        assert_eq!(
+            second_update
+                .body
+                .authorization_kind
+                .verification_key_hash
+                .0
+                .to_string(),
+            "3392518251768960475377392625298437850623664973002200885669375116181514017494",
+            "Second update verification key hash mismatch"
+        );
+
+        assert_round_trip(&zkapp_command);
     }
 }
