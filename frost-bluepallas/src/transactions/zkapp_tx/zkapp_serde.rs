@@ -452,7 +452,7 @@ mod tests {
             "First update balance change should be positive"
         );
         assert!(
-            first_update.body.increment_nonce,
+            !first_update.body.increment_nonce,
             "First update should not increment nonce"
         );
         assert_eq!(

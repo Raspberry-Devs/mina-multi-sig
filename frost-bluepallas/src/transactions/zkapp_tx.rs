@@ -268,11 +268,13 @@ pub struct NetworkPreconditions {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(transparent)]
 pub struct Events {
     pub data: Vec<Vec<Field>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(transparent)]
 pub struct Actions {
     pub data: Vec<Vec<Field>>,
 }
