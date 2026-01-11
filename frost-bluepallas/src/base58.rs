@@ -16,6 +16,9 @@ pub const SIGNATURE_VERSION_NUMBER: u8 = 1;
 /// Version byte for user command memos in base58check encoding
 pub const MEMO_VERSION_BYTE: u8 = 20;
 
+/// Version byte for TokenId in base58check encoding
+pub const TOKEN_ID_VERSION_BYTE: u8 = 28;
+
 /// Compute a checksum for base58check encoding (double SHA256, first 4 bytes)
 pub fn compute_checksum(input: &[u8]) -> [u8; 4] {
     let hash1 = Sha256::digest(input);

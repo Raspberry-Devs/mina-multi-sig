@@ -185,6 +185,9 @@ pub enum Command {
         /// human-readable hex-string is printed to stdout.
         #[arg(short = 'o', long, default_value = "")]
         signature: String,
+        /// The network ID to use for signing (mainnet or testnet).
+        #[arg(short = 'n', long, default_value = "testnet")]
+        network: String,
     },
     /// Participate in a FROST signing session.
     Participant {

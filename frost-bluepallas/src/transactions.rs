@@ -1,9 +1,12 @@
 //! This file defines the generic TransactionEnvelope structure that encapsulates all kinds of transactions that Mina supports. It is the structure that we sign using FROST.
 
-use crate::transactions::{
-    legacy_tx::LegacyTransaction,
-    network_id::NetworkIdEnvelope,
-    zkapp_tx::{zkapp_display::json_display, ZKAppCommand, ZKAppCommandHashable},
+use crate::{
+    errors::BluePallasError,
+    transactions::{
+        legacy_tx::LegacyTransaction,
+        network_id::NetworkIdEnvelope,
+        zkapp_tx::{zkapp_display::json_display, ZKAppCommand, ZKAppCommandHashable},
+    },
 };
 use alloc::{
     string::{String, ToString},
@@ -14,7 +17,7 @@ use mina_signer::NetworkId;
 use serde::{Deserialize, Serialize};
 
 pub mod legacy_tx;
-mod network_id;
+pub mod network_id;
 pub mod zkapp_tx;
 
 const MEMO_BYTES: usize = 34;
@@ -47,6 +50,7 @@ impl TransactionKind {
 // The TransactionEnvelope encapsulates either a legacy transaction or a zkApp transaction along with the network ID.
 // Should be the only structure necessary to access when signing transactions.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionEnvelope {
     network_id: NetworkIdEnvelope,
     kind: TransactionKind,
@@ -72,6 +76,36 @@ impl TransactionEnvelope {
 
     pub fn new_legacy(network_id: NetworkId, tx: LegacyTransaction) -> Self {
         Self::new(network_id, TransactionKind::new_legacy(tx))
+    }
+
+    /// Parse a Legacy or ZkApp transaction from a JSON string.
+    /// Auto-detects the transaction type by attempting to parse as each type.
+    /// Tries ZkApp first, then Legacy.
+    /// Returns an error if parsing fails for both types.
+    pub fn from_str_network(
+        s: &str,
+        network_id: NetworkIdEnvelope,
+    ) -> Result<Self, BluePallasError> {
+        let s = s.trim();
+
+        // Try parsing as ZkApp transaction first
+        if let Ok(zkapp) = serde_json::from_str::<ZKAppCommand>(s) {
+            return Ok(Self::new_zkapp(network_id.0, zkapp));
+        }
+
+        // Try parsing as Legacy transaction
+        if let Ok(legacy) = serde_json::from_str::<LegacyTransaction>(s) {
+            return Ok(Self::new_legacy(network_id.0, legacy));
+        }
+
+        // Neither worked, return an error
+        Err(BluePallasError::UnknownTransactionType(
+            "Unable to parse transaction. Expected a valid legacy transaction or ZkApp transaction JSON.".to_string()
+        ))
+    }
+
+    pub fn inner(&self) -> &TransactionKind {
+        &self.kind
     }
 
     /// Serialize the TransactionEnvelope to a byte vector using serde.
@@ -171,5 +205,60 @@ mod tests {
                 tv.name
             );
         }
+    }
+
+    #[test]
+    fn test_from_str_network_legacy_payment() {
+        let json = r#"{
+            "to": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "from": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+            "fee": "10000",
+            "amount": "1000000",
+            "nonce": "42",
+            "memo": "test",
+            "valid_until": "12345",
+            "tag": [false, false, false]
+        }"#;
+
+        let result = TransactionEnvelope::from_str_network(
+            json,
+            NetworkIdEnvelope::from(NetworkId::TESTNET),
+        );
+        assert!(result.is_ok());
+        let envelope = result.unwrap();
+        assert!(envelope.is_legacy());
+        assert_eq!(envelope.network_id() as u8, 0);
+    }
+
+    #[test]
+    fn test_from_str_network_zkapp() {
+        let json = include_str!("../tests/data/payment-zkapp.json");
+        let result = TransactionEnvelope::from_str_network(
+            json,
+            NetworkIdEnvelope::from(NetworkId::MAINNET),
+        );
+        assert!(result.is_ok());
+        let envelope = result.unwrap();
+        assert!(!envelope.is_legacy());
+        assert_eq!(envelope.network_id() as u8, 1);
+    }
+
+    #[test]
+    fn test_from_str_network_invalid_json() {
+        let result = TransactionEnvelope::from_str_network(
+            "not json",
+            NetworkIdEnvelope::from(NetworkId::TESTNET),
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_from_str_network_unrecognized_type() {
+        let json = r#"{"unknown": "field"}"#;
+        let result = TransactionEnvelope::from_str_network(
+            json,
+            NetworkIdEnvelope::from(NetworkId::TESTNET),
+        );
+        assert!(result.is_err());
     }
 }
