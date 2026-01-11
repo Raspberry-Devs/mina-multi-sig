@@ -7,7 +7,7 @@ use eyre::OptionExt;
 use frost_bluepallas::{
     errors::BluePallasError,
     mina_compat::{PubKeySer, Sig, TransactionSignature},
-    transactions::TransactionEnvelope,
+    transactions::{network_id::NetworkIdEnvelope, TransactionEnvelope},
     BluePallas,
 };
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};
@@ -56,6 +56,7 @@ pub(crate) async fn run(
         group: group_id,
         signers,
         message,
+        network,
         signature: _,
     } = (*args).clone()
     else {
@@ -80,6 +81,7 @@ pub(crate) async fn run(
         message_path: message,
         output: &mut output,
         input: &mut input,
+        network_id: network.into(),
     };
 
     let coordinator_config =
@@ -101,16 +103,17 @@ pub(crate) async fn run(
 // Read message from the provided file or stdin
 pub fn read_message(
     message_path: &String,
+    network_id: NetworkIdEnvelope,
     output: &mut dyn Write,
     input: &mut dyn BufRead,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     // If no message paths are provided, read from stdin
     let loaded_message = if *message_path == "-" || message_path.is_empty() {
         writeln!(output, "The message to be signed (json string)")?;
-        load_transaction_from_stdin(input)?
+        load_transaction_from_stdin(input, network_id)?
     } else {
         eprintln!("Reading message from {}...", &message_path);
-        load_transaction_from_json(message_path)?
+        load_transaction_from_json(message_path, network_id)?
     };
     let message = loaded_message.serialize()?;
 
@@ -178,6 +181,7 @@ struct CoordinatorSetupParams<'a, C: Ciphersuite> {
     message_path: String,
     output: &'a mut dyn Write,
     input: &'a mut dyn BufRead,
+    network_id: NetworkIdEnvelope,
 }
 
 /// Setup coordinator configuration for signing
@@ -205,7 +209,12 @@ fn setup_coordinator_config<C: Ciphersuite>(
         Url::parse(&format!("https://{}", server_url)).wrap_err("error parsing server-url")?;
 
     let num_signers = signers.len() as u16;
-    let message = read_message(&params.message_path, params.output, params.input)?;
+    let message = read_message(
+        &params.message_path,
+        params.network_id,
+        params.output,
+        params.input,
+    )?;
 
     let coordinator_config = CoordinatorConfig {
         signers,
@@ -278,25 +287,28 @@ pub fn save_signature(
 
 fn load_transaction_from_json<P: AsRef<Path>>(
     path: P,
+    network_id: NetworkIdEnvelope,
 ) -> Result<TransactionEnvelope, Box<dyn std::error::Error>> {
     let json_content = fs::read_to_string(path)?;
 
-    load_transaction_from_str(&json_content)
+    load_transaction_from_str(&json_content, network_id)
 }
 
 fn load_transaction_from_stdin(
     input: &mut dyn BufRead,
+    network_id: NetworkIdEnvelope,
 ) -> Result<TransactionEnvelope, Box<dyn std::error::Error>> {
     let mut json_content = String::new();
     input.read_to_string(&mut json_content)?;
 
-    load_transaction_from_str(&json_content)
+    load_transaction_from_str(&json_content, network_id)
 }
 
 fn load_transaction_from_str(
     transaction_str: &str,
+    network_id: NetworkIdEnvelope,
 ) -> Result<TransactionEnvelope, Box<dyn std::error::Error>> {
-    let transaction: TransactionEnvelope = serde_json::from_str(transaction_str.trim())
+    let transaction = TransactionEnvelope::from_str_network(transaction_str, network_id)
         .map_err(|e| eyre::eyre!("Failed to parse transaction from JSON: {}", e))?;
     Ok(transaction)
 }
