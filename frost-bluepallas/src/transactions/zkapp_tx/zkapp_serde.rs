@@ -243,8 +243,8 @@ mod tests {
         let command = create_minimal_zkapp_command();
         let json = serde_json::to_string(&command).unwrap();
 
-        assert!(json.contains("fee_payer"));
-        assert!(json.contains("account_updates"));
+        assert!(json.contains("feePayer"));
+        assert!(json.contains("accountUpdates"));
         assert!(json.contains("memo"));
     }
 
@@ -348,16 +348,16 @@ mod tests {
         let memo_base58 = test_memo_base58();
         let json_str = format!(
             r#"{{
-            "fee_payer": {{
+            "feePayer": {{
                 "body": {{
-                    "public_key": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
-                    "fee": 1000000,
-                    "valid_until": null,
-                    "nonce": 42
+                    "publicKey": "B62qiy32p8kAKnny8ZFwoMhYpBppM1DWVCqAPBYNcXnsAHhnfAAuXgg",
+                    "fee": "1000000",
+                    "validUntil": null,
+                    "nonce": "42"
                 }},
                 "authorization": "test_auth"
             }},
-            "account_updates": [],
+            "accountUpdates": [],
             "memo": "{}"
         }}"#,
             memo_base58
