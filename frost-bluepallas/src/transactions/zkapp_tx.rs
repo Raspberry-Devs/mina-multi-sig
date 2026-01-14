@@ -108,6 +108,10 @@ pub struct FeePayerBody {
         deserialize_with = "deserialize_u64_string"
     )]
     pub fee: UInt64,
+    #[serde(
+        serialize_with = "serialize_option_u32_string",
+        deserialize_with = "deserialize_option_u32_string"
+    )]
     pub valid_until: Option<UInt32>,
     #[serde(
         serialize_with = "serialize_u32_string",
@@ -231,6 +235,10 @@ pub struct Permissions {
 #[serde(rename_all = "camelCase")]
 pub struct SetVerificationKey {
     pub auth: AuthRequired,
+    #[serde(
+        serialize_with = "serialize_u32_string",
+        deserialize_with = "deserialize_u32_string"
+    )]
     pub txn_version: UInt32,
 }
 
@@ -558,5 +566,26 @@ where
         "Positive" => Ok(1),
         "Negative" => Ok(-1),
         _ => Err(serde::de::Error::custom("Invalid sign value")),
+    }
+}
+
+fn serialize_option_u32_string<S>(value: &Option<u32>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    match value {
+        Some(v) => serializer.serialize_str(&v.to_string()),
+        None => serializer.serialize_none(),
+    }
+}
+
+fn deserialize_option_u32_string<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt: Option<String> = Option::deserialize(deserializer)?;
+    match opt {
+        Some(s) => s.parse().map(Some).map_err(serde::de::Error::custom),
+        None => Ok(None),
     }
 }

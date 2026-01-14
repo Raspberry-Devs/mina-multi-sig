@@ -432,7 +432,8 @@ mod tests {
         );
         assert_eq!(zkapp_command.fee_payer.body.nonce, 1, "Nonce mismatch");
         assert_eq!(
-            zkapp_command.fee_payer.body.valid_until, None,
+            zkapp_command.fee_payer.body.valid_until,
+            Some(1000),
             "Valid until should be None"
         );
         assert_eq!(

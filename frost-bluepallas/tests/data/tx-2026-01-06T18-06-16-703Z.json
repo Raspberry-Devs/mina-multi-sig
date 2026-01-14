@@ -3,7 +3,7 @@
     "body": {
       "publicKey": "B62qn2fycPwxZJNZUdG2h11Muf4JEZmarctiyQnJy9dzBQj9kwzyoU5",
       "fee": "100000000",
-      "validUntil": null,
+      "validUntil": "1000",
       "nonce": "1"
     },
     "authorization": "7mXW37UR8WQauBnQv4TFBKzm4ArBsa4x8E6MgmrcK4mcTc5EDnW1ef5abBhBw9rw5ESaK4gpbeeUa54kRjmXgWbnSVBNTZNE"
