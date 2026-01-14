@@ -13,7 +13,8 @@ use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, NetworkId};
 use serde::{
-    Deserialize, Deserializer, Serialize, ser::{SerializeStruct, Serializer}
+    ser::{SerializeStruct, Serializer},
+    Deserialize, Deserializer, Serialize,
 };
 
 use crate::{
@@ -223,7 +224,6 @@ impl<'de> Deserialize<'de> for PubKeySer {
         Ok(PubKeySer { pubKey: pub_key })
     }
 }
-
 
 /// Combined transaction signature payload for legacy payments.
 ///

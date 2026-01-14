@@ -1,10 +1,14 @@
 //! This file defines the generic TransactionEnvelope structure that encapsulates all kinds of transactions that Mina supports. It is the structure that we sign using FROST.
 
-use crate::{errors::BluePallasError, mina_compat::Sig, transactions::{
-    legacy_tx::LegacyTransaction,
-    network_id::NetworkIdEnvelope,
-    zkapp_tx::{ZKAppCommand, ZKAppCommandHashable, zkapp_display::json_display},
-}};
+use crate::{
+    errors::BluePallasError,
+    mina_compat::Sig,
+    transactions::{
+        legacy_tx::LegacyTransaction,
+        network_id::NetworkIdEnvelope,
+        zkapp_tx::{zkapp_display::json_display, ZKAppCommand, ZKAppCommandHashable},
+    },
+};
 use alloc::{
     string::{String, ToString},
     vec::Vec,
@@ -102,7 +106,7 @@ impl TransactionEnvelope {
                     field: signature.field.to_string(),
                     scalar: signature.scalar.to_string(),
                 };
-                
+
                 if legacy_tx.is_delegation() {
                     let input = crate::graphql::SendDelegationInput::from(legacy_tx);
                     let mutation = crate::graphql::build_send_delegation_mutation(input, sig_input);

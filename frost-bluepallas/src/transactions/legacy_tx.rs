@@ -197,11 +197,11 @@ impl fmt::Display for LegacyTransaction {
 }
 
 impl LegacyTransaction {
-
     pub fn get_memo_string(&self) -> Result<String, BluePallasError> {
         // Drops header bytes and uses length byte to extract memo
         let memo_len = self.memo[1] as usize;
-        String::from_utf8(self.memo[MEMO_HEADER_BYTES..MEMO_HEADER_BYTES + memo_len].to_vec()).map_err(|e| BluePallasError::MemoSerializationError(e.to_string()))
+        String::from_utf8(self.memo[MEMO_HEADER_BYTES..MEMO_HEADER_BYTES + memo_len].to_vec())
+            .map_err(|e| BluePallasError::MemoSerializationError(e.to_string()))
     }
 
     pub fn new_payment(from: PubKey, to: PubKey, amount: u64, fee: u64, nonce: u32) -> Self {

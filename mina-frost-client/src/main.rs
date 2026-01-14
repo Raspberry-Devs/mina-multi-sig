@@ -25,9 +25,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Command::Coordinator { .. } => cli::coordinator::run_bluepallas(&args.command).await,
         // Participant implicitly assumes within the run() function that we use BluePallas
         Command::Participant { .. } => cli::participant::run_bluepallas(&args.command).await,
-        Command::Graphql { input_path, output_path } => {
-            cli::graphql::run_graphql_command(&input_path, &output_path)
-        }
+        Command::Graphql {
+            input_path,
+            output_path,
+        } => cli::graphql::run_graphql_command(&input_path, &output_path),
     }?;
 
     Ok(())

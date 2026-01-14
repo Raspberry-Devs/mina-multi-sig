@@ -214,5 +214,5 @@ pub enum Command {
         input_path: String,
         #[arg(short = 'o', long)]
         output_path: String,
-    }
+    },
 }

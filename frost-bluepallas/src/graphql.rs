@@ -1,6 +1,6 @@
+use crate::transactions::legacy_tx::LegacyTransaction;
 use alloc::string::{String, ToString};
 use serde::Serialize;
-use crate::transactions::{legacy_tx::LegacyTransaction};
 
 // ------------------------------- GraphQL Request Structs --------------------------------
 #[derive(Serialize)]
@@ -123,7 +123,6 @@ mutation SendPaymentSigned($input: SendPaymentInput!, $signature: SignatureInput
         variables: Some(SendPaymentSignedVariables { input, signature }),
     }
 }
-
 
 pub fn build_send_delegation_mutation(
     input: SendDelegationInput,
