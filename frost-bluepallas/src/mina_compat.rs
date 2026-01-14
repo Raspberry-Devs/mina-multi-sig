@@ -1,6 +1,8 @@
 //! Mina compatibility module for FROST signatures.
 //! This module provides methods and structs for conversions between FROST types and Mina types, enabling interoperability.
 
+use core::str::FromStr;
+
 use alloc::{
     string::{String, ToString},
     vec::Vec,
@@ -11,8 +13,7 @@ use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::{Hashable, ROInput};
 use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, NetworkId};
 use serde::{
-    ser::{SerializeStruct, Serializer},
-    Serialize,
+    Deserialize, Deserializer, Serialize, ser::{SerializeStruct, Serializer}
 };
 
 use crate::{
@@ -75,6 +76,7 @@ impl PallasMessage {
 /// Serializable signature representation for JSON output.
 ///
 /// This is used for outputting FROST signatures in a format compatible with Mina tooling.
+#[derive(Clone, Debug)]
 pub struct Sig {
     pub field: BigInt<4>,
     pub scalar: BigInt<4>,
@@ -142,6 +144,33 @@ impl Serialize for Sig {
     }
 }
 
+impl<'de> Deserialize<'de> for Sig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct SigHelper {
+            field: String,
+            scalar: String,
+            // Accept it (so deserialization won't fail), even if you don't use it.
+            // If you want to *require* it, remove Option<>.
+            base58: Option<String>,
+        }
+
+        let helper = SigHelper::deserialize(deserializer)?;
+
+        let field = BigInt::<4>::from_str(&helper.field)
+            .map_err(|_| serde::de::Error::custom("Failed to parse 'field' as BigInt<4>"))?;
+        let scalar = BigInt::<4>::from_str(&helper.scalar)
+            .map_err(|_| serde::de::Error::custom("Failed to parse 'scalar' as BigInt<4>"))?;
+
+        let sig = Sig { field, scalar };
+
+        Ok(sig)
+    }
+}
+
 /// Serializable public key wrapper for JSON output.
 #[allow(non_snake_case)]
 pub struct PubKeySer {
@@ -176,16 +205,42 @@ impl Serialize for PubKeySer {
     }
 }
 
+impl<'de> Deserialize<'de> for PubKeySer {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct PubKeyHelper {
+            address: String,
+        }
+
+        let helper = PubKeyHelper::deserialize(deserializer)?;
+
+        let pub_key = PubKey::from_address(&helper.address)
+            .map_err(|_| serde::de::Error::custom("Failed to parse 'address' as PubKey"))?;
+
+        Ok(PubKeySer { pubKey: pub_key })
+    }
+}
+
+
 /// Combined transaction signature payload for legacy payments.
 ///
 /// Note that this structure is only correct for legacy payments.
 /// ZKApp transactions may include signature payloads within account updates and fee payer.
 #[allow(non_snake_case)]
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct TransactionSignature {
     pub publicKey: PubKeySer,
     pub signature: Sig,
     pub payload: TransactionEnvelope,
+}
+
+impl TransactionSignature {
+    pub fn to_graphql_query_json(&self) -> String {
+        self.payload.to_graphql_query_json(self.signature.clone())
+    }
 }
 
 // Note

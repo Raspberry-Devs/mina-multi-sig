@@ -1,10 +1,10 @@
 //! This file defines the generic TransactionEnvelope structure that encapsulates all kinds of transactions that Mina supports. It is the structure that we sign using FROST.
 
-use crate::transactions::{
+use crate::{errors::BluePallasError, mina_compat::Sig, transactions::{
     legacy_tx::LegacyTransaction,
     network_id::NetworkIdEnvelope,
-    zkapp_tx::{zkapp_display::json_display, ZKAppCommand, ZKAppCommandHashable},
-};
+    zkapp_tx::{ZKAppCommand, ZKAppCommandHashable, zkapp_display::json_display},
+}};
 use alloc::{
     string::{String, ToString},
     vec::Vec,
@@ -90,6 +90,30 @@ impl TransactionEnvelope {
 
     pub fn is_legacy(&self) -> bool {
         self.kind.is_legacy()
+    }
+
+    pub fn to_graphql_query_json(&self, signature: Sig) -> String {
+        match &self.kind {
+            TransactionKind::ZkApp(_) => {
+                unimplemented!("ZkApp GraphQL mutation not implemented yet");
+            }
+            TransactionKind::Legacy(legacy_tx) => {
+                let sig_input = crate::graphql::SignatureInput::FieldScalar {
+                    field: signature.field.to_string(),
+                    scalar: signature.scalar.to_string(),
+                };
+                
+                if legacy_tx.is_delegation() {
+                    let input = crate::graphql::SendDelegationInput::from(legacy_tx);
+                    let mutation = crate::graphql::build_send_delegation_mutation(input, sig_input);
+                    serde_json::to_string_pretty(&mutation).unwrap()
+                } else {
+                    let input = crate::graphql::SendPaymentInput::from(legacy_tx);
+                    let mutation = crate::graphql::build_send_payment_mutation(input, sig_input);
+                    serde_json::to_string_pretty(&mutation).unwrap()
+                }
+            }
+        }
     }
 }
 

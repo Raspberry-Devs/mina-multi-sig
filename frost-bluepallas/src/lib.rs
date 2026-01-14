@@ -48,6 +48,7 @@ pub mod mina_compat;
 mod negate;
 pub mod signing_utilities;
 pub mod transactions;
+pub mod graphql;
 
 /// PallasScalarField implements the FROST field interface for the Pallas scalar field
 #[derive(Clone, Copy)]

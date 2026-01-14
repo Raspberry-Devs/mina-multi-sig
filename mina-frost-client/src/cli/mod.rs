@@ -13,3 +13,4 @@ pub mod participant;
 pub mod session;
 pub mod trusted_dealer;
 pub mod write_atomic;
+pub mod graphql;

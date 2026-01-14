@@ -209,4 +209,10 @@ pub enum Command {
         #[arg(short = 'y', long, default_value_t = false)]
         yes: bool,
     },
+    Graphql {
+        #[arg(short = 'i', long)]
+        input_path: String,
+        #[arg(short = 'o', long)]
+        output_path: String,
+    }
 }

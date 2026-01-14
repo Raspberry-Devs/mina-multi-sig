@@ -53,12 +53,8 @@ impl Serialize for LegacyTransaction {
         }
         state.serialize_field("nonce", &self.nonce.to_string())?;
 
-        // Read the length parameter
-        let memo_len = self.memo[1] as usize;
         // Serialize memo as a string, dropping the header bytes
-        let memo_str =
-            String::from_utf8(self.memo[MEMO_HEADER_BYTES..MEMO_HEADER_BYTES + memo_len].to_vec())
-                .map_err(serde::ser::Error::custom)?;
+        let memo_str = Self::get_memo_string(self).map_err(serde::ser::Error::custom)?;
         state.serialize_field("memo", &memo_str)?;
 
         state.serialize_field("valid_until", &self.valid_until.to_string())?;
@@ -201,6 +197,13 @@ impl fmt::Display for LegacyTransaction {
 }
 
 impl LegacyTransaction {
+
+    pub fn get_memo_string(&self) -> Result<String, BluePallasError> {
+        // Drops header bytes and uses length byte to extract memo
+        let memo_len = self.memo[1] as usize;
+        String::from_utf8(self.memo[MEMO_HEADER_BYTES..MEMO_HEADER_BYTES + memo_len].to_vec()).map_err(|e| BluePallasError::MemoSerializationError(e.to_string()))
+    }
+
     pub fn new_payment(from: PubKey, to: PubKey, amount: u64, fee: u64, nonce: u32) -> Self {
         LegacyTransaction {
             fee,
@@ -261,6 +264,10 @@ impl LegacyTransaction {
         self.memo[2..].copy_from_slice(memo.as_bytes());
 
         Ok(self)
+    }
+
+    pub fn is_delegation(&self) -> bool {
+        self.tag == DELEGATION_TX_TAG
     }
 }
 
