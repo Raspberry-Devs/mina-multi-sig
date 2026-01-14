@@ -81,7 +81,7 @@ pub(crate) async fn run(
         message_path: message,
         output: &mut output,
         input: &mut input,
-        network_id: network.into(),
+        network_id: network.try_into()?,
     };
 
     let coordinator_config =

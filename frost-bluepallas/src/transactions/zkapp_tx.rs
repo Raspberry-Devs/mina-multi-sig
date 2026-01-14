@@ -542,7 +542,10 @@ fn serialize_sign<S>(value: &i8, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
-    let s = if *value >= 0 { "Positive" } else { "Negative" };
+    if *value == 0 {
+        return Err(serde::ser::Error::custom("Sign must be -1 or 1, found 0"));
+    }
+    let s = if *value > 0 { "Positive" } else { "Negative" };
     serializer.serialize_str(s)
 }
 

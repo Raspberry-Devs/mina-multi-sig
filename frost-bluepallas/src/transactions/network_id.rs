@@ -42,12 +42,13 @@ impl From<NetworkId> for NetworkIdEnvelope {
     }
 }
 
-impl From<String> for NetworkIdEnvelope {
-    fn from(s: String) -> Self {
+impl core::convert::TryFrom<String> for NetworkIdEnvelope {
+    type Error = String;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
         match s.as_str() {
-            "testnet" => NetworkIdEnvelope(NetworkId::TESTNET),
-            "mainnet" => NetworkIdEnvelope(NetworkId::MAINNET),
-            _ => panic!("invalid NetworkId string: {}", s),
+            "testnet" => Ok(NetworkIdEnvelope(NetworkId::TESTNET)),
+            "mainnet" => Ok(NetworkIdEnvelope(NetworkId::MAINNET)),
+            _ => Err(format!("invalid NetworkId string: {}", s)),
         }
     }
 }

@@ -270,8 +270,11 @@ fn sign(pids: &[Pid], group_pk: &str, threshold: usize, sign_message_path: &str)
 fn parse_and_verify(pk_str: &str, verify_message_path: &str, is_legacy: bool) {
     let msg_json = fs::read_to_string(verify_message_path).unwrap();
 
-    let msg = TransactionEnvelope::from_str_network(msg_json.trim(), NETWORK_ID.to_string().into())
-        .unwrap();
+    let msg = TransactionEnvelope::from_str_network(
+        msg_json.trim(),
+        NETWORK_ID.to_string().try_into().unwrap(),
+    )
+    .unwrap();
 
     let pk = PubKey::from_address(pk_str).unwrap();
 
