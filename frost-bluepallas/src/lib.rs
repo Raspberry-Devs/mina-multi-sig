@@ -42,6 +42,7 @@ use crate::{
 
 mod base58;
 pub mod errors;
+pub mod graphql;
 pub mod hasher;
 pub mod keys;
 pub mod mina_compat;

@@ -7,6 +7,7 @@ pub mod config;
 pub mod contact;
 pub mod coordinator;
 pub mod dkg;
+pub mod graphql;
 pub mod group;
 pub mod init;
 pub mod participant;
