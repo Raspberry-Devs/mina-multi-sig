@@ -71,6 +71,7 @@ impl<'a> Hashable for ZKAppCommandHashable<'a> {
 // FeePayer is a field which may be signed by the same key as in the account updates
 // or by a different key
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct ZKAppCommand {
     pub fee_payer: FeePayer,
     pub account_updates: Vec<AccountUpdate>,
@@ -99,16 +100,30 @@ pub struct FeePayer {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct FeePayerBody {
     pub public_key: PublicKey,
+    #[serde(
+        serialize_with = "serialize_u64_string",
+        deserialize_with = "deserialize_u64_string"
+    )]
     pub fee: UInt64,
+    #[serde(
+        serialize_with = "serialize_option_u32_string",
+        deserialize_with = "deserialize_option_u32_string"
+    )]
     pub valid_until: Option<UInt32>,
+    #[serde(
+        serialize_with = "serialize_u32_string",
+        deserialize_with = "deserialize_u32_string"
+    )]
     pub nonce: UInt32,
 }
 
 // Account update
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct AccountUpdate {
     pub body: AccountUpdateBody,
     pub authorization: Authorization,
@@ -167,6 +182,7 @@ impl From<FeePayer> for AccountUpdate {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct AccountUpdateBody {
     pub public_key: PublicKey,
     pub token_id: TokenId,
@@ -185,6 +201,7 @@ pub struct AccountUpdateBody {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct Update {
     pub app_state: [Option<Field>; APP_STATE_LENGTH],
     pub delegate: Option<PublicKey>,
@@ -197,6 +214,7 @@ pub struct Update {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct Permissions {
     pub edit_state: AuthRequired,
     pub access: AuthRequired,
@@ -214,12 +232,18 @@ pub struct Permissions {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct SetVerificationKey {
     pub auth: AuthRequired,
+    #[serde(
+        serialize_with = "serialize_u32_string",
+        deserialize_with = "deserialize_u32_string"
+    )]
     pub txn_version: UInt32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct Preconditions {
     pub network: NetworkPreconditions,
     pub account: AccountPreconditions,
@@ -227,6 +251,7 @@ pub struct Preconditions {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct AccountPreconditions {
     pub balance: Option<RangeCondition<UInt64>>,
     pub nonce: Option<RangeCondition<UInt32>>,
@@ -239,6 +264,7 @@ pub struct AccountPreconditions {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct NetworkPreconditions {
     pub snarked_ledger_hash: Option<Field>,
     pub blockchain_length: Option<RangeCondition<UInt32>>,
@@ -250,11 +276,13 @@ pub struct NetworkPreconditions {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(transparent)]
 pub struct Events {
     pub data: Vec<Vec<Field>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(transparent)]
 pub struct Actions {
     pub data: Vec<Vec<Field>>,
 }
@@ -274,12 +302,14 @@ pub struct RangeCondition<T> {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct VerificationKeyData {
     pub data: String,
     pub hash: VerificationKeyHash,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct TimingData {
     pub initial_minimum_balance: UInt64,
     pub cliff_time: UInt32,
@@ -289,6 +319,7 @@ pub struct TimingData {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct EpochData {
     pub ledger: EpochLedger,
     pub seed: Option<Field>,
@@ -298,6 +329,7 @@ pub struct EpochData {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct EpochLedger {
     pub hash: Option<Field>,
     pub total_currency: Option<RangeCondition<UInt64>>,
@@ -347,7 +379,7 @@ pub type UInt32 = u32;
 pub type Sign = i8; // -1 or 1
 
 // Wrapper structs
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TokenId(pub Field);
 impl Default for TokenId {
     fn default() -> Self {
@@ -447,6 +479,7 @@ impl core::str::FromStr for ZkappUri {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct MayUseToken {
     pub parents_own_token: Bool,
     pub inherit_from_parent: Bool,
@@ -454,7 +487,15 @@ pub struct MayUseToken {
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct BalanceChange {
+    #[serde(
+        serialize_with = "serialize_u64_string",
+        deserialize_with = "deserialize_u64_string"
+    )]
     pub magnitude: UInt64,
+    #[serde(
+        serialize_with = "serialize_sign",
+        deserialize_with = "deserialize_sign"
+    )]
     pub sgn: Sign,
 }
 impl Default for BalanceChange {
@@ -467,8 +508,84 @@ impl Default for BalanceChange {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct AuthorizationKind {
     pub is_signed: Bool,
     pub is_proved: Bool,
     pub verification_key_hash: VerificationKeyHash,
+}
+
+// Helper functions for serde
+fn serialize_u64_string<S>(value: &u64, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&value.to_string())
+}
+
+fn deserialize_u64_string<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    s.parse().map_err(serde::de::Error::custom)
+}
+
+fn serialize_u32_string<S>(value: &u32, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&value.to_string())
+}
+
+fn deserialize_u32_string<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    s.parse().map_err(serde::de::Error::custom)
+}
+
+fn serialize_sign<S>(value: &i8, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    if *value == 0 {
+        return Err(serde::ser::Error::custom("Sign must be -1 or 1, found 0"));
+    }
+    let s = if *value > 0 { "Positive" } else { "Negative" };
+    serializer.serialize_str(s)
+}
+
+fn deserialize_sign<'de, D>(deserializer: D) -> Result<i8, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    match s.as_str() {
+        "Positive" => Ok(1),
+        "Negative" => Ok(-1),
+        _ => Err(serde::de::Error::custom("Invalid sign value")),
+    }
+}
+
+fn serialize_option_u32_string<S>(value: &Option<u32>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    match value {
+        Some(v) => serializer.serialize_str(&v.to_string()),
+        None => serializer.serialize_none(),
+    }
+}
+
+fn deserialize_option_u32_string<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let opt: Option<String> = Option::deserialize(deserializer)?;
+    match opt {
+        Some(s) => s.parse().map(Some).map_err(serde::de::Error::custom),
+        None => Ok(None),
+    }
 }

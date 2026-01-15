@@ -132,25 +132,20 @@ cargo run --bin mina-frost-client -- participant \
 
 ```json
 {
-  "network_id": 0,
-  "kind": {
-    "tag": "Legacy",
-    "transaction": {
-      "to": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
-      "from": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
-      "fee": "1000000000",
-      "amount": "1000000000",
-      "nonce": "1",
-      "memo": "Hello Mina x FROST from the Rasp",
-      "valid_until": "4294967295",
-      "tag": [
-        false,
-        false,
-        false
-      ]
-    }
-  }
+  "to": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+  "from": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+  "fee": "1000000000",
+  "amount": "1000000000",
+  "nonce": "1",
+  "memo": "Hello Mina x FROST from the Rasp",
+  "valid_until": "4294967295",
+  "tag": [
+    false,
+    false,
+    false
+  ]
 }
+
 ```
 
 ## Contributing
