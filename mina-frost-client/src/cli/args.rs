@@ -209,10 +209,16 @@ pub enum Command {
         #[arg(short = 'y', long, default_value_t = false)]
         yes: bool,
     },
-    Graphql {
+    GraphqlBuild {
         #[arg(short = 'i', long)]
         input_path: String,
         #[arg(short = 'o', long)]
         output_path: String,
+    },
+    GraphqlBroadcast {
+        #[arg(short = 'g', long)]
+        graphql_path: String,
+        #[arg(short = 'e', long)]
+        endpoint_url: Option<String>,
     },
 }

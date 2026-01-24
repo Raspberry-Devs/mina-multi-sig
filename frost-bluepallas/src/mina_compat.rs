@@ -10,7 +10,7 @@ use alloc::{
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInt, PrimeField};
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
-use mina_hasher::{Hashable, ROInput};
+use mina_hasher::{DomainParameter, Hashable, ROInput};
 use mina_signer::{pubkey::PubKey, signature::Signature as MinaSig, NetworkId};
 use serde::{
     ser::{SerializeStruct, Serializer},
@@ -240,6 +240,14 @@ pub struct TransactionSignature {
 impl TransactionSignature {
     pub fn to_graphql_query_json(&self) -> String {
         self.payload.to_graphql_query_json(self.signature.clone())
+    }
+
+    pub fn is_mainnet(&self) -> bool {
+        self.payload.network_id().into_bytes() == NetworkId::MAINNET.into_bytes()
+    }
+
+    pub fn is_testnet(&self) -> bool {
+        self.payload.network_id().into_bytes() == NetworkId::TESTNET.into_bytes()
     }
 }
 

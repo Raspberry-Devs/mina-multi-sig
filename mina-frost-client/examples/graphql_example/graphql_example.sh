@@ -19,4 +19,4 @@ if [ ! -f "$SIGNATURE_PATH" ]; then
 fi
 
 # Run the GraphQL example
-use_frost_client graphql -i "$SIGNATURE_PATH" -o "$OUTPUT_PATH"
+use_frost_client graphql-build -i "$SIGNATURE_PATH" -o "$OUTPUT_PATH"
