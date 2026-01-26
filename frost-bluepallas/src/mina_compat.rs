@@ -156,6 +156,7 @@ impl<'de> Deserialize<'de> for Sig {
             scalar: String,
             // Accept it (so deserialization won't fail), even if you don't use it.
             // If you want to *require* it, remove Option<>.
+            #[allow(dead_code)]
             base58: Option<String>,
         }
 

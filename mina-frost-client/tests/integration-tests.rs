@@ -7,6 +7,7 @@
 
 use ark_ff::BigInt;
 use frost_bluepallas::transactions::TransactionEnvelope;
+use frost_bluepallas::transactions::TransactionKind;
 use lazy_static::lazy_static;
 use mina_signer::PubKey;
 use mina_signer::Signature;
@@ -39,6 +40,7 @@ lazy_static! {
 }
 
 const SIG_FILE: &str = "signature.json";
+const NETWORK_ID: &str = "testnet";
 
 #[derive(Debug)]
 struct Pid {
@@ -117,7 +119,12 @@ fn write_zkapp_tx_files() -> Result<Vec<String>> {
 
         let tx_env: TransactionEnvelope = tv.into();
 
-        let json = serde_json::to_string_pretty(&tx_env).unwrap();
+        let inner = match tx_env.inner() {
+            TransactionKind::ZkApp(inner) => inner,
+            _ => panic!("Expected ZKApp transaction"),
+        };
+
+        let json = serde_json::to_string_pretty(&inner).unwrap();
         fs::write(path, json)?;
     }
     Ok(paths)
@@ -218,6 +225,8 @@ fn sign(pids: &[Pid], group_pk: &str, threshold: usize, sign_message_path: &str)
         sign_message_path,
         "-o",
         SIG_FILE,
+        "-n",
+        NETWORK_ID,
     ];
     let pks: Vec<&str> = pids
         .iter()
@@ -261,8 +270,12 @@ fn sign(pids: &[Pid], group_pk: &str, threshold: usize, sign_message_path: &str)
 fn parse_and_verify(pk_str: &str, verify_message_path: &str, is_legacy: bool) {
     let msg_json = fs::read_to_string(verify_message_path).unwrap();
 
-    let msg: TransactionEnvelope =
-        serde_json::from_str(msg_json.trim()).expect("Failed to parse transaction from JSON");
+    let msg = TransactionEnvelope::from_str_network(
+        msg_json.trim(),
+        NETWORK_ID.to_string().try_into().unwrap(),
+    )
+    .unwrap();
+
     let pk = PubKey::from_address(pk_str).unwrap();
 
     let sig_json = fs::read_to_string(working_dir.join(SIG_FILE).clone()).unwrap();
