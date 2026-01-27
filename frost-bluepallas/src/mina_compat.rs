@@ -239,7 +239,7 @@ pub struct TransactionSignature {
 }
 
 impl TransactionSignature {
-    pub fn to_graphql_query_json(&self) -> String {
+    pub fn to_graphql_query_json(&self) -> Result<String, serde_json::Error> {
         self.payload.to_graphql_query_json(self.signature.clone())
     }
 

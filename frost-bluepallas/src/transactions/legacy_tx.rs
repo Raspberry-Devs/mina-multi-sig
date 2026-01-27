@@ -200,6 +200,14 @@ impl LegacyTransaction {
     pub fn get_memo_string(&self) -> Result<String, BluePallasError> {
         // Drops header bytes and uses length byte to extract memo
         let memo_len = self.memo[1] as usize;
+
+        // Ensure the declared memo length does not exceed the available memo payload bytes.
+        if memo_len > MEMO_BYTES - MEMO_HEADER_BYTES {
+            return Err(BluePallasError::MemoSerializationError(
+                "Invalid memo length byte".to_string(),
+            ));
+        }
+
         String::from_utf8(self.memo[MEMO_HEADER_BYTES..MEMO_HEADER_BYTES + memo_len].to_vec())
             .map_err(|e| BluePallasError::MemoSerializationError(e.to_string()))
     }
