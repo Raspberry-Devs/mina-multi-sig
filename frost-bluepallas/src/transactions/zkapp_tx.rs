@@ -20,6 +20,7 @@ mod commit;
 mod constants;
 pub mod packing;
 pub mod zkapp_display;
+pub mod zkapp_graphql;
 pub mod zkapp_serde;
 
 // Allow any test-only code to access this module

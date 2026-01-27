@@ -25,6 +25,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Command::Coordinator { .. } => cli::coordinator::run_bluepallas(&args.command).await,
         // Participant implicitly assumes within the run() function that we use BluePallas
         Command::Participant { .. } => cli::participant::run_bluepallas(&args.command).await,
+        Command::GraphqlBuild { .. } => cli::graphql::graphql_build_command(&args.command),
+        Command::GraphqlBroadcast { .. } => {
+            cli::graphql::graphql_broadcast_command(&args.command).await
+        }
     }?;
 
     Ok(())

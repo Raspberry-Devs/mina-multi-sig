@@ -2,10 +2,13 @@
 
 use crate::{
     errors::BluePallasError,
+    mina_compat::Sig,
     transactions::{
         legacy_tx::LegacyTransaction,
         network_id::NetworkIdEnvelope,
-        zkapp_tx::{zkapp_display::json_display, ZKAppCommand, ZKAppCommandHashable},
+        zkapp_tx::{
+            zkapp_display::json_display, zkapp_graphql, ZKAppCommand, ZKAppCommandHashable,
+        },
     },
 };
 use alloc::{
@@ -124,6 +127,31 @@ impl TransactionEnvelope {
 
     pub fn is_legacy(&self) -> bool {
         self.kind.is_legacy()
+    }
+
+    pub fn to_graphql_query_json(&self, signature: Sig) -> Result<String, serde_json::Error> {
+        match &self.kind {
+            TransactionKind::ZkApp(zkapp) => {
+                let mutation = zkapp_graphql::build_send_zkapp_mutation(zkapp);
+                serde_json::to_string_pretty(&mutation)
+            }
+            TransactionKind::Legacy(legacy_tx) => {
+                let sig_input = crate::graphql::SignatureInput::FieldScalar {
+                    field: signature.field.to_string(),
+                    scalar: signature.scalar.to_string(),
+                };
+
+                if legacy_tx.is_delegation() {
+                    let input = crate::graphql::SendDelegationInput::from(legacy_tx);
+                    let mutation = crate::graphql::build_send_delegation_mutation(input, sig_input);
+                    serde_json::to_string_pretty(&mutation)
+                } else {
+                    let input = crate::graphql::SendPaymentInput::from(legacy_tx);
+                    let mutation = crate::graphql::build_send_payment_mutation(input, sig_input);
+                    serde_json::to_string_pretty(&mutation)
+                }
+            }
+        }
     }
 }
 

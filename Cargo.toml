@@ -26,7 +26,7 @@ postcard = "1.1.3"
 rand = "0.8.5"
 rand_core = "0.6.4"
 regex = "1.11.1"
-reqwest = { version = "0.12.12", default-features = false }
+reqwest = { version = "0.12.12", default-features = false, features = ["rustls-tls"] }
 serde = "1.0.204"
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 serdect = "0.3.0"

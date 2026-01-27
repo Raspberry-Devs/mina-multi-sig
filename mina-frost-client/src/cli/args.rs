@@ -212,4 +212,22 @@ pub enum Command {
         #[arg(short = 'y', long, default_value_t = false)]
         yes: bool,
     },
+    /// Build a GraphQL mutation for sending a Mina transaction.
+    GraphqlBuild {
+        /// The input file containing the transaction to send, in JSON format.
+        #[arg(short = 'i', long)]
+        input_path: String,
+        /// Output file to write GraphQL mutation.
+        #[arg(short = 'o', long)]
+        output_path: String,
+    },
+    /// Broadcast a GraphQL mutation to a Mina node.
+    GraphqlBroadcast {
+        /// The path to the file containing the GraphQL mutation to send.
+        #[arg(short = 'g', long)]
+        graphql_path: String,
+        /// Endpoint URL of the Mina node's GraphQL API.
+        #[arg(short = 'e', long)]
+        endpoint_url: String,
+    },
 }
