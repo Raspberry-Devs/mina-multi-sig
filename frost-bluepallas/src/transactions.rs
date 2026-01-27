@@ -111,6 +111,11 @@ impl TransactionEnvelope {
         &self.kind
     }
 
+    /// Get a mutable reference to the inner transaction kind.
+    pub fn inner_mut(&mut self) -> &mut TransactionKind {
+        &mut self.kind
+    }
+
     /// Serialize the TransactionEnvelope to a byte vector using serde.
     pub fn serialize(&self) -> Result<Vec<u8>, serde_json::Error> {
         serde_json::to_vec(self)

@@ -20,7 +20,7 @@ use serde::{
 use crate::{
     base58::{to_base58_check, SIGNATURE_VERSION_BYTE, SIGNATURE_VERSION_NUMBER},
     errors::{BluePallasError, BluePallasResult},
-    transactions::TransactionEnvelope,
+    transactions::{zkapp_tx::SignatureInjectionResult, TransactionEnvelope, TransactionKind},
     BluePallas, SigningKey,
 };
 
@@ -226,10 +226,11 @@ impl<'de> Deserialize<'de> for PubKeySer {
     }
 }
 
-/// Combined transaction signature payload for legacy payments.
+/// Combined transaction signature payload.
 ///
-/// Note that this structure is only correct for legacy payments.
-/// ZKApp transactions may include signature payloads within account updates and fee payer.
+/// For legacy payments, the signature is kept separate from the transaction.
+/// For ZKApp transactions, use [`TransactionSignature::new_with_zkapp_injection`]
+/// to inject the signature into the fee payer and account update authorization fields.
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub struct TransactionSignature {
@@ -239,6 +240,44 @@ pub struct TransactionSignature {
 }
 
 impl TransactionSignature {
+    /// Create a new `TransactionSignature` with automatic ZkApp signature injection.
+    ///
+    /// For ZkApp transactions, this method injects the signature into:
+    /// 1. The fee payer authorization (if the public key matches)
+    /// 2. Account updates that require signature-based authorization with full commitment
+    ///
+    /// For legacy transactions, this behaves the same as [`TransactionSignature::new`].
+    ///
+    /// # Arguments
+    /// * `public_key` - The FROST group public key
+    /// * `signature` - The FROST-generated signature
+    /// * `payload` - The transaction envelope (will be mutated for ZkApp transactions)
+    ///
+    /// # Returns
+    /// A tuple of `(TransactionSignature, Option<SignatureInjectionResult>)`.
+    /// The result is `Some` for ZkApp transactions with details about injection,
+    /// or `None` for legacy transactions.
+    pub fn new_with_zkapp_injection(
+        public_key: PubKeySer,
+        signature: Sig,
+        mut payload: TransactionEnvelope,
+    ) -> (Self, Option<SignatureInjectionResult>) {
+        let injection_result = match payload.inner_mut() {
+            TransactionKind::ZkApp(zkapp) => {
+                Some(zkapp.inject_signature(&public_key.pubKey, &signature))
+            }
+            TransactionKind::Legacy(_) => None,
+        };
+
+        let tx_sig = Self {
+            publicKey: public_key,
+            signature,
+            payload,
+        };
+
+        (tx_sig, injection_result)
+    }
+
     pub fn to_graphql_query_json(&self) -> Result<String, serde_json::Error> {
         self.payload.to_graphql_query_json(self.signature.clone())
     }
