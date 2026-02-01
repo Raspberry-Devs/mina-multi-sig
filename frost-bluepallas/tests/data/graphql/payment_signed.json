@@ -1,0 +1,30 @@
+{
+  "publicKey": {
+    "address": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1"
+  },
+  "signature": {
+    "field": "9913855888091449848531227559722483574723796038163335485258339126327732898913",
+    "scalar": "26670537294538850778257651319463732972647799507178866333187572912352199385044",
+    "base58": "7mXBMxChdYbGaib63C53Bv3dPgMw5EXpxWvCMAfP3iJ2WKdowB9jmwVLNkNBx2oEjfLopc2kgT4kMPjkgYZrQSKpW4otBXHz"
+  },
+  "payload": {
+    "networkId": "testnet",
+    "kind": {
+      "tag": "Legacy",
+      "transaction": {
+        "to": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+        "from": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+        "fee": "10000000",
+        "amount": "1000000000",
+        "nonce": "0",
+        "memo": "FROST payment test",
+        "valid_until": "4294967295",
+        "tag": [
+          false,
+          false,
+          false
+        ]
+      }
+    }
+  }
+}

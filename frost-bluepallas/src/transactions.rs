@@ -23,7 +23,7 @@ pub mod legacy_tx;
 pub mod network_id;
 pub mod zkapp_tx;
 
-const MEMO_BYTES: usize = 34;
+pub const MEMO_BYTES: usize = 34;
 const MEMO_HEADER_BYTES: usize = 2; // 0x01 + length byte
 
 // Enum distinguishing between legacy and zkApp transactions
@@ -109,6 +109,11 @@ impl TransactionEnvelope {
 
     pub fn inner(&self) -> &TransactionKind {
         &self.kind
+    }
+
+    /// Get a mutable reference to the inner transaction kind.
+    pub fn inner_mut(&mut self) -> &mut TransactionKind {
+        &mut self.kind
     }
 
     /// Serialize the TransactionEnvelope to a byte vector using serde.

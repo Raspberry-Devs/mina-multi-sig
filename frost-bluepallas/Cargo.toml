@@ -31,6 +31,7 @@ insta.workspace = true
 hex.workspace = true
 rand_chacha = "0.3"
 bs58 = "0.5.1"
+reqwest = { workspace = true, features = ["blocking"] }
 # Use test-utils feature as dev dependency, this enables sharing test vectors
 # across unit tests and integration tests
 frost-bluepallas = { path = ".", features = ["test-utils"] }

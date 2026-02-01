@@ -1,0 +1,18 @@
+{
+  "operationName": "SendDelegationSigned",
+  "query": "mutation SendDelegationSigned($input: SendDelegationInput!, $signature: SignatureInput!) {\n  sendDelegation(input: $input, signature: $signature) {\n    delegation {\n      id\n      hash\n      kind\n      nonce\n      from\n      to\n      fee\n      memo\n      failureReason\n      ... on UserCommandDelegation {\n        delegator { publicKey }\n        delegatee { publicKey }\n      }\n    }\n  }\n}",
+  "variables": {
+    "input": {
+      "from": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+      "to": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+      "fee": "10000000",
+      "nonce": 1,
+      "memo": "FROST delegation test",
+      "validUntil": 4294967295
+    },
+    "signature": {
+      "field": "26131918044883583147435379162152009106444509561339970401837182542189152385208",
+      "scalar": "22574047265650895185495852237224066850019618143279421328434326359237546658695"
+    }
+  }
+}

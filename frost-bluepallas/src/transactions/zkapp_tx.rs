@@ -19,6 +19,7 @@ use crate::transactions::{
 mod commit;
 mod constants;
 pub mod packing;
+pub mod signature_injection;
 pub mod zkapp_display;
 pub mod zkapp_graphql;
 pub mod zkapp_serde;
@@ -26,6 +27,9 @@ pub mod zkapp_serde;
 // Allow any test-only code to access this module
 #[cfg(any(test, feature = "test-utils"))]
 pub mod zkapp_test_vectors;
+
+// Re-export signature injection types for convenience
+pub use signature_injection::{SignatureInjectionResult, SignatureInjectionWarning};
 
 // -------------------------------------------------------------------------------------------------
 // ------------------------------------ Hashing Logic ----------------------------------------------
@@ -508,12 +512,22 @@ impl Default for BalanceChange {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthorizationKind {
     pub is_signed: Bool,
     pub is_proved: Bool,
     pub verification_key_hash: VerificationKeyHash,
+}
+
+impl Default for AuthorizationKind {
+    fn default() -> Self {
+        Self {
+            is_signed: true,
+            is_proved: false,
+            verification_key_hash: *DUMMY_HASH,
+        }
+    }
 }
 
 // Helper functions for serde
