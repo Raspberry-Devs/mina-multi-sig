@@ -10,6 +10,10 @@ target/
 .vscode/
 
 mina-frost-client/tests/assets/
+frost-bluepallas/examples/assets/
 
 # GraphQL schemas
 *.graphql
+
+# AI generated files
+CLAUDE.md

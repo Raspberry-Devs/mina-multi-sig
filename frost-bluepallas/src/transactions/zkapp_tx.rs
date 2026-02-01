@@ -512,12 +512,22 @@ impl Default for BalanceChange {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthorizationKind {
     pub is_signed: Bool,
     pub is_proved: Bool,
     pub verification_key_hash: VerificationKeyHash,
+}
+
+impl Default for AuthorizationKind {
+    fn default() -> Self {
+        Self {
+            is_signed: true,
+            is_proved: false,
+            verification_key_hash: *DUMMY_HASH,
+        }
+    }
 }
 
 // Helper functions for serde
