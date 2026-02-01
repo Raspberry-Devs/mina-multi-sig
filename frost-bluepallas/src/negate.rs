@@ -1,13 +1,10 @@
 //! Utilities for negating Y coordinates in FROST commitments using the BluePallas curve. This mimics Mina's handling of point negation.
 
-use frost_core::{
-    round1::{Nonce, NonceCommitment},
-    Group,
-};
+use frost_core::round1::{Nonce, NonceCommitment};
 
 use crate::{
     round1::{SigningCommitments, SigningNonces},
-    BluePallas, PallasGroup, SigningPackage,
+    BluePallas, SigningPackage,
 };
 
 /// This trait is used to negate the Y coordinate of the group commitment element with FROST
@@ -31,42 +28,13 @@ impl NegateY for SigningNonces {
 /// Negate the Y coordinate of the group commitment element with FROST
 impl NegateY for SigningCommitments {
     fn negate_y(&self) -> Self {
-        // Perform serialization roundtrip to get the hiding and binding parts
-        // Note that we use expect() clauses here because these are ALWAYS expected to succeed
-        let hiding_commitment_ser: <PallasGroup as frost_core::Group>::Serialization = self
-            .hiding()
-            .serialize()
-            .unwrap()
-            .as_slice()
-            .try_into()
-            .expect("Hiding commitment should be 96 bytes long");
-
-        // Deserialize the hiding commitment to get the group element
-        let hiding_commitment = PallasGroup::deserialize(&hiding_commitment_ser)
-            .expect("Failed to deserialize hiding commitment");
-
-        // Perform the same for the binding commitment
-        let binding_commitment_ser: <PallasGroup as frost_core::Group>::Serialization = self
-            .binding()
-            .serialize()
-            .unwrap()
-            .as_slice()
-            .try_into()
-            .expect("Binding commitment should be 32 bytes long");
-        let binding_commitment = PallasGroup::deserialize(&binding_commitment_ser)
-            .expect("Failed to deserialize binding commitment");
-
         // Negate the commitments and serialize/deserialize roundtrip
-        let negated_hiding = -hiding_commitment;
-        let negated_binding = -binding_commitment;
+        let negated_hiding = -self.hiding().value();
+        let negated_binding = -self.binding().value();
 
         // Create a new SigningCommitments instance with the negated values
-        let negated_hiding_nonce =
-            NoncePallas::deserialize(&<PallasGroup as Group>::serialize(&negated_hiding).unwrap())
-                .unwrap();
-        let negated_binding_nonce =
-            NoncePallas::deserialize(&<PallasGroup as Group>::serialize(&negated_binding).unwrap())
-                .unwrap();
+        let negated_hiding_nonce = NoncePallas::new(negated_hiding);
+        let negated_binding_nonce = NoncePallas::new(negated_binding);
 
         SigningCommitments::new(negated_hiding_nonce, negated_binding_nonce)
     }
@@ -88,24 +56,21 @@ impl NegateY for SigningPackage {
 
 #[cfg(test)]
 mod tests {
-    use crate::PallasScalarField;
+    use crate::{PallasGroup, PallasScalarField};
 
     use super::*;
     use alloc::collections::BTreeMap;
     use ark_ff::UniformRand;
-    use frost_core::round1::{Nonce, NonceCommitment};
-    use frost_core::Group;
+    use frost_core::{
+        round1::{Nonce, NonceCommitment},
+        Group,
+    };
     use mina_curves::pasta::ProjectivePallas;
     use rand_core::OsRng;
 
     /// Helpers to extract the underlying `PallasGroup` from a `NonceCommitment<BluePallas>`.
     fn commit_to_group(c: &NonceCommitment<BluePallas>) -> ProjectivePallas {
-        let ser = c.serialize().unwrap();
-        let ser: [u8; 96] = ser
-            .as_slice()
-            .try_into()
-            .expect("Commitment should be 96 bytes long");
-        PallasGroup::deserialize(&ser).unwrap()
+        c.value()
     }
 
     #[test]
