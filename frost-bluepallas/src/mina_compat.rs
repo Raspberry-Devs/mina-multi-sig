@@ -246,8 +246,6 @@ impl TransactionSignature {
     /// 1. The fee payer authorization (if the public key matches)
     /// 2. Account updates that require signature-based authorization with full commitment
     ///
-    /// For legacy transactions, this behaves the same as [`TransactionSignature::new`].
-    ///
     /// # Arguments
     /// * `public_key` - The FROST group public key
     /// * `signature` - The FROST-generated signature

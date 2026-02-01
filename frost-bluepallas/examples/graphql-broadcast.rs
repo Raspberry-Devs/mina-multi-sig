@@ -29,6 +29,8 @@ use frost_bluepallas::{
     },
 };
 use mina_signer::{CompressedPubKey, Keypair, NetworkId, PubKey};
+use rand_chacha::ChaCha20Rng;
+use rand_core::SeedableRng;
 
 // ---------------------------------------------------------------------------
 // CLI argument parsing (minimal, no extra deps)
@@ -150,8 +152,9 @@ fn sign_envelope(envelope: TransactionEnvelope, keypair: &Keypair) -> Transactio
 
     let msg = envelope.serialize().expect("serialize envelope");
 
-    let (frost_sig, _vk) = generate_signature_from_sk(&msg, &signing_key, rand_core::OsRng)
-        .expect("FROST signing succeeds");
+    let (frost_sig, _vk) =
+        generate_signature_from_sk(&msg, &signing_key, ChaCha20Rng::from_seed([0u8; 32]))
+            .expect("FROST signing succeeds");
 
     let mina_sig = frost_bluepallas::mina_compat::translate_sig(&frost_sig).expect("translate sig");
 
