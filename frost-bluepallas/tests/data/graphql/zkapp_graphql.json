@@ -1,0 +1,120 @@
+{
+  "operationName": "SendZkapp",
+  "query": "mutation SendZkapp($input: SendZkappInput!) {\n  sendZkapp(input: $input) {\n    zkapp {\n      id\n      hash\n      failureReason {\n        index\n        failures\n      }\n    }\n  }\n}",
+  "variables": {
+    "input": {
+      "zkappCommand": {
+        "feePayer": {
+          "body": {
+            "publicKey": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+            "fee": "100000000",
+            "validUntil": "4294967295",
+            "nonce": "0"
+          },
+          "authorization": "7mXHgoHEjRncQrWGZCXJttTTKiTTVbUCUForJJmvPUER96oV5MzfGyPvhtWFYhq6T6SRq68ie1DZRwubFcJckH6UxKVf6pGM"
+        },
+        "accountUpdates": [
+          {
+            "body": {
+              "publicKey": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+              "tokenId": "wSHV2S4qX9jFsLjQo8r1BsMLH2ZRKsZx6EJd1sbozGPieEC4Jf",
+              "update": {
+                "appState": [
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null
+                ],
+                "delegate": null,
+                "verificationKey": null,
+                "permissions": null,
+                "zkappUri": null,
+                "tokenSymbol": null,
+                "timing": null,
+                "votingFor": null
+              },
+              "balanceChange": {
+                "magnitude": "0",
+                "sgn": "Positive"
+              },
+              "incrementNonce": false,
+              "events": [],
+              "actions": [],
+              "callData": "0",
+              "callDepth": 0,
+              "preconditions": {
+                "network": {
+                  "snarkedLedgerHash": null,
+                  "blockchainLength": null,
+                  "minWindowDensity": null,
+                  "totalCurrency": null,
+                  "globalSlotSinceGenesis": null,
+                  "stakingEpochData": {
+                    "ledger": {
+                      "hash": null,
+                      "totalCurrency": null
+                    },
+                    "seed": null,
+                    "startCheckpoint": null,
+                    "lockCheckpoint": null,
+                    "epochLength": null
+                  },
+                  "nextEpochData": {
+                    "ledger": {
+                      "hash": null,
+                      "totalCurrency": null
+                    },
+                    "seed": null,
+                    "startCheckpoint": null,
+                    "lockCheckpoint": null,
+                    "epochLength": null
+                  }
+                },
+                "account": {
+                  "balance": null,
+                  "nonce": null,
+                  "receiptChainHash": null,
+                  "delegate": null,
+                  "state": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                  ],
+                  "actionState": null,
+                  "provedState": null,
+                  "isNew": null
+                },
+                "validWhile": null
+              },
+              "useFullCommitment": true,
+              "implicitAccountCreationFee": false,
+              "mayUseToken": {
+                "parentsOwnToken": false,
+                "inheritFromParent": false
+              },
+              "authorizationKind": {
+                "isSigned": true,
+                "isProved": false,
+                "verificationKeyHash": "3392518251768960475377392625298437850623664973002200885669375116181514017494"
+              }
+            },
+            "authorization": {
+              "proof": null,
+              "signature": "7mXHgoHEjRncQrWGZCXJttTTKiTTVbUCUForJJmvPUER96oV5MzfGyPvhtWFYhq6T6SRq68ie1DZRwubFcJckH6UxKVf6pGM"
+            }
+          }
+        ],
+        "memo": "E4YtfoYbXnfiDE285VUaquKV9dx9k5TbRed1mMQKi5hYrxyYyyY21"
+      }
+    }
+  }
+}
