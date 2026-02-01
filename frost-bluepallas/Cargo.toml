@@ -24,7 +24,7 @@ bs58 = "0.5.1"
 sha2 = "0.10"
 
 [dev-dependencies]
-frost-core = { version = "2.2.0", features = ["test-impl", "internals"] }
+frost-core = { version = "3.0.0-rc.0", features = ["test-impl", "internals"] }
 lazy_static.workspace = true
 serde_json.workspace = true
 insta.workspace = true

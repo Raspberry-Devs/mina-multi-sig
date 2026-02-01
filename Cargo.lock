@@ -798,9 +798,9 @@ dependencies = [
 
 [[package]]
 name = "debugless-unwrap"
-version = "0.0.4"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f400d0750c0c069e8493f2256cb4da6f604b6d2eeb69a0ca8863acde352f8400"
+checksum = "b93fdcfc175d53094fca1d23d171685621bb67f1658413514f2053d575b3b38c"
 
 [[package]]
 name = "der"
@@ -1059,9 +1059,9 @@ dependencies = [
 
 [[package]]
 name = "frost-core"
-version = "2.2.0"
+version = "3.0.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2619366c227233c0f817ae01156bd21b8cf74d2bd96cbe0889f4c2e266724e44"
+checksum = "b28afb08296406bf64550a289fe37a779747cf24b062a8ad5f24f9c871d4b425"
 dependencies = [
  "byteorder",
  "const-crc32-nostd",
@@ -1078,8 +1078,10 @@ dependencies = [
  "serde_json",
  "serdect 0.2.0",
  "thiserror 2.0.14",
+ "tokio",
  "visibility",
  "zeroize",
+ "zeroize_derive",
 ]
 
 [[package]]

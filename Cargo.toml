@@ -3,7 +3,7 @@ members = ["frost-bluepallas", "mina-frost-client"]
 resolver = "2"
 
 [workspace.dependencies]
-frost-core = { version = "2.2.0", features = ["internals"] }
+frost-core = { version = "3.0.0-rc.0", features = ["internals"] }
 mina-hasher = { git = "https://github.com/o1-labs/proof-systems", tag = "0.3.0" }
 mina-curves = { git = "https://github.com/o1-labs/proof-systems", tag = "0.3.0" }
 mina-signer = { git = "https://github.com/o1-labs/proof-systems", tag = "0.3.0" }
