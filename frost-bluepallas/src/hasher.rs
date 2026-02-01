@@ -1,6 +1,6 @@
 //! Mina-compatible hashing utilities for FROST using the Pallas curve.
 
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use ark_ff::PrimeField;
 use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
@@ -77,13 +77,7 @@ impl Hashable for PallasMessage {
     // Domain string specification from:
     // https://github.com/o1-labs/proof-systems/blob/0.1.0/signer/tests/transaction.rs#L53-L61
     fn domain_string(network_id: NetworkId) -> Option<String> {
-        // Domain strings must have length <= 20
-        match network_id {
-            NetworkId::MAINNET => "MinaSignatureMainnet",
-            NetworkId::TESTNET => "CodaSignature",
-        }
-        .to_string()
-        .into()
+        network_id.into_domain_string().into()
     }
 }
 
@@ -147,6 +141,7 @@ pub fn hash_to_array(input: &[&[u8]]) -> <PallasScalarField as frost_core::Field
 
 #[cfg(test)]
 mod tests {
+    use crate::alloc::string::ToString;
     use mina_hasher::Fp;
 
     use super::*;
@@ -172,12 +167,7 @@ mod tests {
         }
 
         fn domain_string(network_id: NetworkId) -> Option<String> {
-            match network_id {
-                NetworkId::MAINNET => "MinaSignatureMainnet",
-                NetworkId::TESTNET => "CodaSignature",
-            }
-            .to_string()
-            .into()
+            network_id.into_domain_string().into()
         }
     }
 

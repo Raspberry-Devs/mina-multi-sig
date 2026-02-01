@@ -4,10 +4,10 @@ resolver = "2"
 
 [workspace.dependencies]
 frost-core = { version = "2.2.0", features = ["internals"] }
-mina-hasher = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
-mina-curves = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
-mina-signer = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
-mina-poseidon = { git = "https://github.com/o1-labs/proof-systems", tag = "0.2.0" }
+mina-hasher = { git = "https://github.com/o1-labs/proof-systems", tag = "0.3.0" }
+mina-curves = { git = "https://github.com/o1-labs/proof-systems", tag = "0.3.0" }
+mina-signer = { git = "https://github.com/o1-labs/proof-systems", tag = "0.3.0" }
+mina-poseidon = { git = "https://github.com/o1-labs/proof-systems", tag = "0.3.0" }
 
 ark-ec = "0.5.0"
 ark-ff = "0.5.0"

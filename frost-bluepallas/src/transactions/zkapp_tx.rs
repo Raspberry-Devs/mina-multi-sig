@@ -52,12 +52,7 @@ impl<'a> Hashable for ZKAppCommandHashable<'a> {
     type D = NetworkId;
 
     fn domain_string(domain_param: Self::D) -> Option<String> {
-        match domain_param {
-            NetworkId::MAINNET => "MinaSignatureMainnet",
-            NetworkId::TESTNET => "CodaSignature",
-        }
-        .to_string()
-        .into()
+        domain_param.into_domain_string().into()
     }
 
     fn to_roinput(&self) -> mina_hasher::ROInput {

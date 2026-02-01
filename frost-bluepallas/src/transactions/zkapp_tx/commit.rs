@@ -170,15 +170,21 @@ fn hash_account_update(
 // -------------------------------------------------------------------------------------------------
 
 pub(crate) fn hash_noinput(prefix: &str) -> BluePallasResult<Fp> {
-    let mut sponge =
-        ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
+    let mut sponge = ArithmeticSponge::<
+        Fp,
+        PlonkSpongeConstantsKimchi,
+        { constants::POSEIDON_FULL_ROUNDS },
+    >::new(fp_kimchi::static_params());
     sponge.absorb(&[param_to_field(prefix)?]);
     Ok(sponge.squeeze())
 }
 
 pub(crate) fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
-    let mut sponge =
-        ArithmeticSponge::<Fp, PlonkSpongeConstantsKimchi>::new(fp_kimchi::static_params());
+    let mut sponge = ArithmeticSponge::<
+        Fp,
+        PlonkSpongeConstantsKimchi,
+        { constants::POSEIDON_FULL_ROUNDS },
+    >::new(fp_kimchi::static_params());
     sponge.absorb(&[param_to_field(prefix)?]);
 
     sponge.squeeze();

@@ -37,7 +37,7 @@ reqwest = { workspace = true, features = ["blocking"] }
 frost-bluepallas = { path = ".", features = ["test-utils"] }
 
 [features]
-default = ["serialization", "cheater-detection"]
+default = ["serialization"]
 #! ## Features
 ## Enable `serde` support for types that need to be communicated. You
 ## can use `serde` to serialize structs with any encoder that supports
@@ -45,6 +45,4 @@ default = ["serialization", "cheater-detection"]
 serde = ["frost-core/serde"]
 ## Enable a default serialization format. Enables `serde`.
 serialization = ["serde", "frost-core/serialization"]
-## Enable cheater detection
-cheater-detection = ["frost-core/cheater-detection"]
 test-utils = []
