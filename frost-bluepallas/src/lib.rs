@@ -25,7 +25,7 @@ use ark_ec::{models::CurveConfig, CurveGroup, PrimeGroup};
 use ark_ff::{fields::Field as ArkField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 pub use frost_core::{self as frost, Ciphersuite, Field, FieldError, Group, GroupError};
-use frost_core::{compute_binding_factor_list, compute_group_commitment, BindingFactorList};
+use frost_core::{compute_group_commitment, BindingFactorList};
 use mina_curves::pasta::{PallasParameters, ProjectivePallas};
 
 use num_traits::identities::Zero;
@@ -204,6 +204,62 @@ impl Ciphersuite for BluePallas {
 
         Ok(frost_core::Challenge::from_scalar(scalar))
     }
+
+    /// This performs the same functionality as [`pre_commitment_sign`], but instead only negates commitments because the coordinator is not able to receive any nonces
+    /// Naturally, this is called by the coordinator in the [`aggregate`] function
+    fn pre_commitment_aggregate<'a>(
+        signing_package: &'a frost_core::SigningPackage<Self>,
+        binding_factor_list: &'a BindingFactorList<Self>,
+    ) -> Result<Cow<'a, frost_core::SigningPackage<Self>>, frost_core::Error<Self>> {
+        use ark_ff::{BigInteger, PrimeField};
+        // Compute the group commitment from signing commitments produced in round one.
+        let commit = compute_group_commitment(signing_package, binding_factor_list)?;
+
+        if commit.to_element().into_affine().y.into_bigint().is_even() {
+            return Ok(Cow::Borrowed(signing_package));
+        }
+
+        // Otherwise negate the commitments
+        let negated_commitments =
+            <frost_core::SigningPackage<Self> as NegateY>::negate_y(signing_package);
+
+        Ok(Cow::Owned(negated_commitments))
+    }
+
+    /// This functions computes the group commitment and checks whether the y-coordinate of the
+    /// group commitment is even, as required by the Mina protocol.
+    /// If the group commitment is not even, it negates the nonces and commitments
+    /// This will be called by each individual signer during [`round2::sign`]
+    fn pre_commitment_sign<'a>(
+        signing_package: &'a frost_core::SigningPackage<Self>,
+        signing_nonces: &'a frost_core::round1::SigningNonces<Self>,
+        binding_factor_list: &'a BindingFactorList<Self>,
+    ) -> Result<
+        (
+            Cow<'a, frost_core::SigningPackage<Self>>,
+            Cow<'a, frost_core::round1::SigningNonces<Self>>,
+        ),
+        frost_core::Error<Self>,
+    > {
+        use ark_ff::{BigInteger, PrimeField};
+        // Compute the group commitment from signing commitments produced in round one.
+        let commit = compute_group_commitment(signing_package, binding_factor_list)?;
+
+        if commit.to_element().into_affine().y.into_bigint().is_even() {
+            return Ok((
+                Cow::Borrowed(signing_package),
+                Cow::Borrowed(signing_nonces),
+            ));
+        }
+
+        // Otherwise negate the nonce that we know and all the commitments
+        let negated_nonce =
+            <frost_core::round1::SigningNonces<Self> as NegateY>::negate_y(signing_nonces);
+        let negated_commitments =
+            <frost_core::SigningPackage<Self> as NegateY>::negate_y(signing_package);
+
+        Ok((Cow::Owned(negated_commitments), Cow::Owned(negated_nonce)))
+    }
 }
 
 // Simply type alias for the FROST ciphersuite using Pallas with Poseidon
@@ -250,52 +306,6 @@ pub mod round1 {
 /// each signing party.
 pub type SigningPackage = frost::SigningPackage<P>;
 
-/// This functions computes the group commitment and checks whether the y-coordinate of the
-/// group commitment is even, as required by the Mina protocol.
-/// If the group commitment is not even, it negates the nonces and commitments
-/// This will be called by each individual signer during [`round2::sign`]
-pub(crate) fn pre_commitment_sign<'a>(
-    signing_package: &'a SigningPackage,
-    signing_nonces: &'a SigningNonces,
-    binding_factor_list: &'a BindingFactorList<BluePallas>,
-) -> Result<(Cow<'a, SigningPackage>, Cow<'a, SigningNonces>), Error> {
-    use ark_ff::{BigInteger, PrimeField};
-    // Compute the group commitment from signing commitments produced in round one.
-    let commit = compute_group_commitment(signing_package, binding_factor_list)?;
-
-    if commit.to_element().into_affine().y.into_bigint().is_even() {
-        return Ok((
-            Cow::Borrowed(signing_package),
-            Cow::Borrowed(signing_nonces),
-        ));
-    }
-
-    // Otherwise negate the nonce that we know and all the commitments
-    let negated_nonce = signing_nonces.negate_y();
-    let negated_commitments = signing_package.negate_y();
-
-    Ok((Cow::Owned(negated_commitments), Cow::Owned(negated_nonce)))
-}
-
-/// This performs the same functionality as [`pre_commitment_sign`], but instead only negates commitments because the coordinator is not able to receive any nonces
-/// Naturally, this is called by the coordinator in the [`aggregate`] function
-pub(crate) fn pre_commitment_aggregate<'a>(
-    signing_package: &'a SigningPackage,
-    binding_factor_list: &'a BindingFactorList<BluePallas>,
-) -> Result<Cow<'a, SigningPackage>, Error> {
-    use ark_ff::{BigInteger, PrimeField};
-    // Compute the group commitment from signing commitments produced in round one.
-    let commit = compute_group_commitment(signing_package, binding_factor_list)?;
-
-    if commit.to_element().into_affine().y.into_bigint().is_even() {
-        return Ok(Cow::Borrowed(signing_package));
-    }
-
-    // Otherwise negate the nonce that we know and all the commitments
-    let negated_commitments = signing_package.negate_y();
-    Ok(Cow::Owned(negated_commitments))
-}
-
 /// FROST(Pallas, Posiedon) Round 2 functionality and types, for signature share generation.
 pub mod round2 {
     use super::*;
@@ -304,162 +314,28 @@ pub mod round2 {
     /// shares into the joint signature.
     pub type SignatureShare = frost::round2::SignatureShare<P>;
 
-    /// Performed once by each participant selected for the signing operation.
-    ///
-    /// Receives the message to be signed and a set of signing commitments and a set
-    /// of randomizing commitments to be used in that signing operation, including
-    /// that for this participant.
-    ///
-    /// Assumes the participant has already determined which nonce corresponds with
-    /// the commitment that was assigned by the coordinator in the SigningPackage.
     pub fn sign(
         signing_package: &SigningPackage,
-        signer_nonces: &round1::SigningNonces,
-        key_package: &keys::KeyPackage,
+        signer_nonces: &SigningNonces,
+        key_package: &frost::keys::KeyPackage<P>,
     ) -> Result<SignatureShare, Error> {
-        if signing_package.signing_commitments().len() < *key_package.min_signers() as usize {
-            return Err(Error::IncorrectNumberOfCommitments);
-        }
-
-        // Validate the signer's commitment is present in the signing package
-        let commitment = signing_package
-            .signing_commitments()
-            .get(key_package.identifier())
-            .ok_or(Error::MissingCommitment)?;
-
-        // Validate if the signer's commitment exists
-        if signer_nonces.commitments() != commitment {
-            return Err(Error::IncorrectCommitment);
-        }
-
-        let (signing_package, signer_nonces, key_package) =
-            BluePallas::pre_sign(signing_package, signer_nonces, key_package)?;
-
-        // Encodes the signing commitment list produced in round one as part of generating [`BindingFactor`], the
-        // binding factor.
-        let binding_factor_list: BindingFactorList<BluePallas> =
-            compute_binding_factor_list(&signing_package, key_package.verifying_key(), &[])?;
-        let binding_factor: frost::BindingFactor<BluePallas> = binding_factor_list
-            .get(key_package.identifier())
-            .ok_or(Error::UnknownIdentifier)?
-            .clone();
-
-        // Perform pre_group_commitment to check if the group commitment is even
-        let (signing_package, signer_nonces) =
-            pre_commitment_sign(&signing_package, &signer_nonces, &binding_factor_list)?;
-
-        // Compute the group commitment from signing commitments produced in round one.
-        let group_commitment = compute_group_commitment(&signing_package, &binding_factor_list)?;
-        let group_commitment_element = group_commitment.clone().to_element();
-
-        // Compute Lagrange coefficient.
-        let lambda_i =
-            frost::derive_interpolating_value(key_package.identifier(), &signing_package)?;
-
-        // Compute the per-message challenge.
-        let challenge = <BluePallas>::challenge(
-            &group_commitment_element,
-            key_package.verifying_key(),
-            signing_package.message(),
-        )?;
-
-        // Compute the Schnorr signature share.
-        let signature_share = <BluePallas>::compute_signature_share(
-            &group_commitment,
-            &signer_nonces,
-            binding_factor,
-            lambda_i,
-            &key_package,
-            challenge,
-        );
-
-        Ok(signature_share)
+        frost::round2::sign::<P>(signing_package, signer_nonces, key_package)
     }
 }
 
 /// A Schnorr signature on FROST(Pallas, Posiedon).
 pub type Signature = frost::Signature<P>;
 
-/// Verifies each FROST(Pallas, Posiedon) participant's signature share, and if all are valid,
-/// aggregates the shares into a signature to publish.
-///
-/// Resulting signature is compatible with verification of a plain Schnorr
-/// signature.
-///
-/// This operation is performed by a coordinator that can communicate with all
-/// the signing participants before publishing the final signature. The
-/// coordinator can be one of the participants or a semi-trusted third party
-/// (who is trusted to not perform denial of service attacks, but does not learn
-/// any secret information). Note that because the coordinator is trusted to
-/// report misbehaving parties in order to avoid publishing an invalid
-/// signature, if the coordinator themselves is a signer and misbehaves, they
-/// can avoid that step. However, at worst, this results in a denial of
-/// service attack due to publishing an invalid signature.
-pub fn aggregate(
-    signing_package: &SigningPackage,
-    signature_shares: &BTreeMap<Identifier, round2::SignatureShare>,
-    pubkeys: &keys::PublicKeyPackage,
-) -> Result<Signature, Error> {
-    // Check if signing_package.signing_commitments and signature_shares have
-    // the same set of identifiers, and if they are all in pubkeys.verifying_shares.
-    if signing_package.signing_commitments().len() != signature_shares.len() {
-        return Err(Error::UnknownIdentifier);
-    }
-
-    if !signing_package
-        .signing_commitments()
-        .keys()
-        .all(|id| signature_shares.contains_key(id))
-    {
-        return Err(Error::UnknownIdentifier);
-    }
-
-    let (signing_package, signature_shares, pubkeys) =
-        BluePallas::pre_aggregate(signing_package, signature_shares, pubkeys)?;
-
-    // Encodes the signing commitment list produced in round one as part of generating [`BindingFactor`], the
-    // binding factor.
-    let binding_factor_list: BindingFactorList<BluePallas> =
-        compute_binding_factor_list(&signing_package, pubkeys.verifying_key(), &[])?;
-
-    let signing_package = pre_commitment_aggregate(&signing_package, &binding_factor_list)?;
-
-    // Compute the group commitment from signing commitments produced in round one.
-    let group_commitment = compute_group_commitment(&signing_package, &binding_factor_list)?;
-
-    // The aggregation of the signature shares by summing them up, resulting in
-    // a plain Schnorr signature.
-    //
-    // Implements [`aggregate`] from the spec.
-    //
-    // [`aggregate`]: https://datatracker.ietf.org/doc/html/rfc9591#name-signature-share-aggregation
-    let mut z = PallasScalarField::zero();
-
-    for signature_share in signature_shares.values() {
-        // RASP_DEVS: I've used a serialiazation roundtrip to get the field value
-        let ser = signature_share.serialize();
-        let ser_array: [u8; 32] = ser
-            .as_slice()
-            .try_into()
-            .map_err(|_| frost_core::FieldError::MalformedScalar)?;
-        let scalar = PallasScalarField::deserialize(&ser_array)?;
-        z += scalar;
-    }
-
-    let signature = Signature::new(group_commitment.to_element(), z);
-
-    // Verify the aggregate signature
-    let verification_result = pubkeys
-        .verifying_key()
-        .verify(signing_package.message(), &signature);
-
-    verification_result?;
-
-    Ok(signature)
-}
-
 /// A signing key for a Schnorr signature on FROST(Pallas, Posiedon).
 pub type SigningKey = frost::SigningKey<P>;
 
 /// A valid verifying key for Schnorr signatures on FROST(Pallas, Posiedon).
 pub type VerifyingKey = frost::VerifyingKey<P>;
+
+pub fn aggregate(
+    signing_package: &SigningPackage,
+    signature_shares: &BTreeMap<Identifier, frost::round2::SignatureShare<P>>,
+    pubkey_package: &frost::keys::PublicKeyPackage<P>,
+) -> Result<Signature, Error> {
+    frost::aggregate(signing_package, signature_shares, pubkey_package)
+}
