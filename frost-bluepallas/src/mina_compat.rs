@@ -473,10 +473,8 @@ mod tests {
         let legacy_tx = LegacyTransaction::new_payment(
             PubKey::from_address("B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA")
                 .unwrap(),
-            PubKey::from_address(
-                "B62qkJvY5o9Z6F7Y8L5X9Z3V7Q8W9X0Y1Z2A3B4C5D6E7F8G9H0I1J2K3L4M5N6O7",
-            )
-            .unwrap(),
+            PubKey::from_address("B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA")
+                .unwrap(),
             1000,
             1,
             0,
