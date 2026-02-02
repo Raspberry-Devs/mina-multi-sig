@@ -223,14 +223,6 @@ impl Ciphersuite for BluePallas {
         let negated_commitments =
             <frost_core::SigningPackage<Self> as NegateY>::negate_y(signing_package);
 
-        let new_commit = compute_group_commitment(&negated_commitments, binding_factor_list)?;
-        assert!(new_commit
-            .to_element()
-            .into_affine()
-            .y
-            .into_bigint()
-            .is_even());
-
         Ok(Cow::Owned(negated_commitments))
     }
 
@@ -265,14 +257,6 @@ impl Ciphersuite for BluePallas {
             <frost_core::round1::SigningNonces<Self> as NegateY>::negate_y(signing_nonces);
         let negated_commitments =
             <frost_core::SigningPackage<Self> as NegateY>::negate_y(signing_package);
-
-        let group_commitment = compute_group_commitment(&negated_commitments, binding_factor_list)?;
-        assert!(group_commitment
-            .to_element()
-            .into_affine()
-            .y
-            .into_bigint()
-            .is_even());
 
         Ok((Cow::Owned(negated_commitments), Cow::Owned(negated_nonce)))
     }
