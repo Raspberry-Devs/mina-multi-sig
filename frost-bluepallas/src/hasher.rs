@@ -141,7 +141,7 @@ pub fn hash_to_array(input: &[&[u8]]) -> <PallasScalarField as frost_core::Field
 
 #[cfg(test)]
 mod tests {
-    use crate::alloc::string::ToString;
+    use alloc::string::ToString;
     use mina_hasher::Fp;
 
     use super::*;
