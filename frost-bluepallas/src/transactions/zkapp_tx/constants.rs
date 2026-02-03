@@ -71,3 +71,6 @@ impl From<ZkAppBodyPrefix> for &'static str {
         }
     }
 }
+
+// Poseidon hashing parameters
+pub(crate) const POSEIDON_FULL_ROUNDS: usize = 55;

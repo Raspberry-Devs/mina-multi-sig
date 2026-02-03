@@ -23,7 +23,7 @@ pub mod legacy_tx;
 pub mod network_id;
 pub mod zkapp_tx;
 
-const MEMO_BYTES: usize = 34;
+pub const MEMO_BYTES: usize = 34;
 const MEMO_HEADER_BYTES: usize = 2; // 0x01 + length byte
 
 // Enum distinguishing between legacy and zkApp transactions
@@ -111,6 +111,11 @@ impl TransactionEnvelope {
         &self.kind
     }
 
+    /// Get a mutable reference to the inner transaction kind.
+    pub fn inner_mut(&mut self) -> &mut TransactionKind {
+        &mut self.kind
+    }
+
     /// Serialize the TransactionEnvelope to a byte vector using serde.
     pub fn serialize(&self) -> Result<Vec<u8>, serde_json::Error> {
         serde_json::to_vec(self)
@@ -159,12 +164,7 @@ impl Hashable for TransactionEnvelope {
     type D = NetworkId;
 
     fn domain_string(domain_param: Self::D) -> Option<String> {
-        match domain_param {
-            NetworkId::MAINNET => "MinaSignatureMainnet",
-            NetworkId::TESTNET => "CodaSignature",
-        }
-        .to_string()
-        .into()
+        domain_param.into_domain_string().into()
     }
 
     fn to_roinput(&self) -> mina_hasher::ROInput {

@@ -24,19 +24,20 @@ bs58 = "0.5.1"
 sha2 = "0.10"
 
 [dev-dependencies]
-frost-core = { version = "2.2.0", features = ["test-impl", "internals"] }
+frost-core = { version = "3.0.0-rc.0", features = ["test-impl", "internals"] }
 lazy_static.workspace = true
 serde_json.workspace = true
 insta.workspace = true
 hex.workspace = true
 rand_chacha = "0.3"
 bs58 = "0.5.1"
+reqwest = { workspace = true, features = ["blocking"] }
 # Use test-utils feature as dev dependency, this enables sharing test vectors
 # across unit tests and integration tests
 frost-bluepallas = { path = ".", features = ["test-utils"] }
 
 [features]
-default = ["serialization", "cheater-detection"]
+default = ["serialization"]
 #! ## Features
 ## Enable `serde` support for types that need to be communicated. You
 ## can use `serde` to serialize structs with any encoder that supports
@@ -44,6 +45,4 @@ default = ["serialization", "cheater-detection"]
 serde = ["frost-core/serde"]
 ## Enable a default serialization format. Enables `serde`.
 serialization = ["serde", "frost-core/serialization"]
-## Enable cheater detection
-cheater-detection = ["frost-core/cheater-detection"]
 test-utils = []

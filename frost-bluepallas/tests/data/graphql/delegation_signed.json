@@ -1,0 +1,29 @@
+{
+  "publicKey": {
+    "address": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1"
+  },
+  "signature": {
+    "field": "26131918044883583147435379162152009106444509561339970401837182542189152385208",
+    "scalar": "22574047265650895185495852237224066850019618143279421328434326359237546658695",
+    "base58": "7mXNhdJx7pEBzAHU7Df7cQJuXnVjaiBjfwxDDZVeZrpmmVGVqxVjKjhdqvQPSNq7Zc7peCesDgiMVQojxh4TQ9jZvrrmRS2K"
+  },
+  "payload": {
+    "networkId": "testnet",
+    "kind": {
+      "tag": "Legacy",
+      "transaction": {
+        "to": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+        "from": "B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1",
+        "fee": "10000000",
+        "nonce": "1",
+        "memo": "FROST delegation test",
+        "valid_until": "4294967295",
+        "tag": [
+          false,
+          false,
+          true
+        ]
+      }
+    }
+  }
+}

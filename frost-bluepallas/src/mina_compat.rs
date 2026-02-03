@@ -20,7 +20,7 @@ use serde::{
 use crate::{
     base58::{to_base58_check, SIGNATURE_VERSION_BYTE, SIGNATURE_VERSION_NUMBER},
     errors::{BluePallasError, BluePallasResult},
-    transactions::TransactionEnvelope,
+    transactions::{zkapp_tx::SignatureInjectionResult, TransactionEnvelope, TransactionKind},
     BluePallas, SigningKey,
 };
 
@@ -226,10 +226,11 @@ impl<'de> Deserialize<'de> for PubKeySer {
     }
 }
 
-/// Combined transaction signature payload for legacy payments.
+/// Combined transaction signature payload.
 ///
-/// Note that this structure is only correct for legacy payments.
-/// ZKApp transactions may include signature payloads within account updates and fee payer.
+/// For legacy payments, the signature is kept separate from the transaction.
+/// For ZKApp transactions, use [`TransactionSignature::new_with_zkapp_injection`]
+/// to inject the signature into the fee payer and account update authorization fields.
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub struct TransactionSignature {
@@ -239,6 +240,42 @@ pub struct TransactionSignature {
 }
 
 impl TransactionSignature {
+    /// Create a new `TransactionSignature` with automatic ZkApp signature injection.
+    ///
+    /// For ZkApp transactions, this method injects the signature into:
+    /// 1. The fee payer authorization (if the public key matches)
+    /// 2. Account updates that require signature-based authorization with full commitment
+    ///
+    /// # Arguments
+    /// * `public_key` - The FROST group public key
+    /// * `signature` - The FROST-generated signature
+    /// * `payload` - The transaction envelope (will be mutated for ZkApp transactions)
+    ///
+    /// # Returns
+    /// A tuple of `(TransactionSignature, Option<SignatureInjectionResult>)`.
+    /// The result is `Some` for ZkApp transactions with details about injection,
+    /// or `None` for legacy transactions.
+    pub fn new_with_zkapp_injection(
+        public_key: PubKeySer,
+        signature: Sig,
+        mut payload: TransactionEnvelope,
+    ) -> (Self, Option<SignatureInjectionResult>) {
+        let injection_result = match payload.inner_mut() {
+            TransactionKind::ZkApp(zkapp) => {
+                Some(zkapp.inject_signature(&public_key.pubKey, &signature))
+            }
+            TransactionKind::Legacy(_) => None,
+        };
+
+        let tx_sig = Self {
+            publicKey: public_key,
+            signature,
+            payload,
+        };
+
+        (tx_sig, injection_result)
+    }
+
     pub fn to_graphql_query_json(&self) -> Result<String, serde_json::Error> {
         self.payload.to_graphql_query_json(self.signature.clone())
     }
@@ -284,12 +321,15 @@ pub fn translate_minask(msg: &mina_signer::Keypair) -> BluePallasResult<SigningK
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{signing_utilities, transactions::legacy_tx::LegacyTransaction};
+    use crate::{
+        signing_utilities,
+        transactions::{legacy_tx::LegacyTransaction, zkapp_tx::ZKAppCommand},
+    };
     use ark_ff::fields::models::fp::{Fp, MontBackend};
     use core::convert::TryInto;
     use frost_core::SigningKey;
     use mina_curves::pasta::fields::fq::FrConfig;
-    use mina_signer::{seckey::SecKey, Keypair};
+    use mina_signer::{seckey::SecKey, CompressedPubKey, Keypair};
 
     #[test]
     fn test_translate_pk() -> BluePallasResult<()> {
@@ -425,5 +465,69 @@ mod tests {
                 i, r_str, s_str, expected_base58, actual_base58
             );
         }
+    }
+
+    #[test]
+    fn test_new_with_zkapp_injection_legacy_tx() {
+        // Create legacy transaction
+        let legacy_tx = LegacyTransaction::new_payment(
+            PubKey::from_address("B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA")
+                .unwrap(),
+            PubKey::from_address("B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA")
+                .unwrap(),
+            1000,
+            1,
+            0,
+        );
+        let tx_envelope = TransactionEnvelope::new_legacy(NetworkId::TESTNET, legacy_tx);
+
+        let pubkey_ser = PubKeySer::from(
+            PubKey::from_address("B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA")
+                .unwrap(),
+        );
+        let sig = Sig {
+            field: bigint_from_decimal("1234567890123456789012345678901234567890"),
+            scalar: bigint_from_decimal("9876543210987654321098765432109876543210"),
+        };
+
+        let (tx_sig, injection_result) =
+            TransactionSignature::new_with_zkapp_injection(pubkey_ser, sig, tx_envelope.clone());
+
+        // For legacy transaction, injection_result should be None
+        assert!(injection_result.is_none());
+        assert_eq!(tx_sig.payload, tx_envelope);
+    }
+
+    #[test]
+    fn test_new_with_zkapp_injection_zkapp_tx() {
+        // Create default zk app transaction with a single account update
+        let mut zkapp_tx: ZKAppCommand = Default::default();
+        zkapp_tx.fee_payer.body.public_key = CompressedPubKey::from_address(
+            "B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA",
+        )
+        .unwrap()
+        .into();
+        zkapp_tx.account_updates.push(Default::default());
+        zkapp_tx.account_updates[0].body.public_key = CompressedPubKey::from_address(
+            "B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA",
+        )
+        .unwrap()
+        .into();
+
+        let tx_envelope = TransactionEnvelope::new_zkapp(NetworkId::TESTNET, zkapp_tx);
+        let pubkey_ser = PubKeySer::from(
+            PubKey::from_address("B62qrmyUJNTuoaC1pMYUETGjKX4Mn3pk2MRUBPS6bwP6ZDZ7JfKxwVA")
+                .unwrap(),
+        );
+        let sig = Sig {
+            field: bigint_from_decimal("1234567890123456789012345678901234567890"),
+            scalar: bigint_from_decimal("9876543210987654321098765432109876543210"),
+        };
+
+        let (_, injection_result) =
+            TransactionSignature::new_with_zkapp_injection(pubkey_ser, sig, tx_envelope.clone());
+
+        // For zkapp transaction, injection_result should be Some
+        assert!(injection_result.is_some());
     }
 }

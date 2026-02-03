@@ -798,9 +798,9 @@ dependencies = [
 
 [[package]]
 name = "debugless-unwrap"
-version = "0.0.4"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f400d0750c0c069e8493f2256cb4da6f604b6d2eeb69a0ca8863acde352f8400"
+checksum = "b93fdcfc175d53094fca1d23d171685621bb67f1658413514f2053d575b3b38c"
 
 [[package]]
 name = "der"
@@ -1051,6 +1051,7 @@ dependencies = [
  "num-traits",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
+ "reqwest",
  "serde",
  "serde_json",
  "sha2",
@@ -1058,9 +1059,9 @@ dependencies = [
 
 [[package]]
 name = "frost-core"
-version = "2.2.0"
+version = "3.0.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2619366c227233c0f817ae01156bd21b8cf74d2bd96cbe0889f4c2e266724e44"
+checksum = "b28afb08296406bf64550a289fe37a779747cf24b062a8ad5f24f9c871d4b425"
 dependencies = [
  "byteorder",
  "const-crc32-nostd",
@@ -1077,8 +1078,10 @@ dependencies = [
  "serde_json",
  "serdect 0.2.0",
  "thiserror 2.0.14",
+ "tokio",
  "visibility",
  "zeroize",
+ "zeroize_derive",
 ]
 
 [[package]]
@@ -1094,6 +1097,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dff15bf788c671c1934e366d07e30c1814a8ef514e1af724a602e8a2fbe1b10"
 dependencies = [
  "futures-core",
+ "futures-sink",
 ]
 
 [[package]]
@@ -1101,6 +1105,18 @@ name = "futures-core"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f29059c0c2090612e8d742178b0580d2dc940c837851ad723096f87af6663e"
+
+[[package]]
+name = "futures-io"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e5c1b78ca4aae1ac06c48a526a655760685149f0d465d21f37abfe57ce075c6"
+
+[[package]]
+name = "futures-sink"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e575fab7d1e0dcb8d0c7bcf9a63ee213816ab51902e6d244a95819acacf1d4f7"
 
 [[package]]
 name = "futures-task"
@@ -1115,9 +1131,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
  "futures-core",
+ "futures-io",
+ "futures-sink",
  "futures-task",
+ "memchr",
  "pin-project-lite",
  "pin-utils",
+ "slab",
 ]
 
 [[package]]
@@ -1668,12 +1688,13 @@ checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
 
 [[package]]
 name = "mina-curves"
-version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
+version = "0.3.0"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.3.0#a73ca6ed580a346344ba80a88137b100237070dc"
 dependencies = [
  "ark-bn254",
  "ark-ec",
  "ark-ff",
+ "ark-std",
  "num-bigint",
 ]
 
@@ -1714,8 +1735,8 @@ dependencies = [
 
 [[package]]
 name = "mina-hasher"
-version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
+version = "0.3.0"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.3.0#a73ca6ed580a346344ba80a88137b100237070dc"
 dependencies = [
  "ark-ff",
  "bitvec",
@@ -1727,8 +1748,8 @@ dependencies = [
 
 [[package]]
 name = "mina-poseidon"
-version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
+version = "0.3.0"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.3.0#a73ca6ed580a346344ba80a88137b100237070dc"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -1745,8 +1766,8 @@ dependencies = [
 
 [[package]]
 name = "mina-signer"
-version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
+version = "0.3.0"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.3.0#a73ca6ed580a346344ba80a88137b100237070dc"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -1759,6 +1780,7 @@ dependencies = [
  "num-bigint",
  "o1-utils",
  "rand 0.8.5",
+ "serde",
  "sha2",
  "thiserror 2.0.14",
 ]
@@ -1821,8 +1843,8 @@ dependencies = [
 
 [[package]]
 name = "o1-utils"
-version = "0.1.0"
-source = "git+https://github.com/o1-labs/proof-systems?tag=0.2.0#e8e02799802b42caf727d69c2dba7fce9548cb5b"
+version = "0.3.0"
+source = "git+https://github.com/o1-labs/proof-systems?tag=0.3.0#a73ca6ed580a346344ba80a88137b100237070dc"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -1836,6 +1858,7 @@ dependencies = [
  "rand_core 0.6.4",
  "rayon",
  "rmp-serde",
+ "rustversion",
  "serde",
  "serde_json",
  "serde_with",
@@ -2289,7 +2312,9 @@ checksum = "d429f34c8092b2d42c7c93cec323bb4adeb7c67698f70839adec842ec10c7ceb"
 dependencies = [
  "base64",
  "bytes",
+ "futures-channel",
  "futures-core",
+ "futures-util",
  "http",
  "http-body",
  "http-body-util",
