@@ -153,14 +153,14 @@ impl From<FeePayer> for AccountUpdate {
 
         body.preconditions.network.global_slot_since_genesis = {
             Some(RangeCondition {
-                lower: 0,
-                upper: vaild_until,
+                lower: StringU32(0),
+                upper: StringU32(vaild_until),
             })
         };
         body.preconditions.account.nonce = {
             Some(RangeCondition {
-                lower: nonce,
-                upper: nonce,
+                lower: StringU32(nonce),
+                upper: StringU32(nonce),
             })
         };
         body.use_full_commitment = true;
@@ -247,14 +247,14 @@ pub struct SetVerificationKey {
 pub struct Preconditions {
     pub network: NetworkPreconditions,
     pub account: AccountPreconditions,
-    pub valid_while: Option<RangeCondition<UInt32>>,
+    pub valid_while: Option<RangeCondition<StringU32>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountPreconditions {
-    pub balance: Option<RangeCondition<UInt64>>,
-    pub nonce: Option<RangeCondition<UInt32>>,
+    pub balance: Option<RangeCondition<StringU64>>,
+    pub nonce: Option<RangeCondition<StringU32>>,
     pub receipt_chain_hash: Option<ReceiptChainHash>,
     pub delegate: Option<PublicKey>,
     pub state: [Option<Field>; APP_STATE_LENGTH],
@@ -267,10 +267,10 @@ pub struct AccountPreconditions {
 #[serde(rename_all = "camelCase")]
 pub struct NetworkPreconditions {
     pub snarked_ledger_hash: Option<Field>,
-    pub blockchain_length: Option<RangeCondition<UInt32>>,
-    pub min_window_density: Option<RangeCondition<UInt32>>,
-    pub total_currency: Option<RangeCondition<UInt64>>,
-    pub global_slot_since_genesis: Option<RangeCondition<UInt32>>,
+    pub blockchain_length: Option<RangeCondition<StringU32>>,
+    pub min_window_density: Option<RangeCondition<StringU32>>,
+    pub total_currency: Option<RangeCondition<StringU64>>,
+    pub global_slot_since_genesis: Option<RangeCondition<StringU32>>,
     pub staking_epoch_data: EpochData,
     pub next_epoch_data: EpochData,
 }
@@ -325,14 +325,14 @@ pub struct EpochData {
     pub seed: Option<Field>,
     pub start_checkpoint: Option<Field>,
     pub lock_checkpoint: Option<Field>,
-    pub epoch_length: Option<RangeCondition<UInt32>>,
+    pub epoch_length: Option<RangeCondition<StringU32>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct EpochLedger {
     pub hash: Option<Field>,
-    pub total_currency: Option<RangeCondition<UInt64>>,
+    pub total_currency: Option<RangeCondition<StringU64>>,
 }
 
 // Wrappers for base types that need additional traits implemented
@@ -377,6 +377,38 @@ pub type Bool = bool;
 pub type UInt64 = u64;
 pub type UInt32 = u32;
 pub type Sign = i8; // -1 or 1
+
+/// A u32 that serializes/deserializes as a string (for JSON compatibility with o1js)
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct StringU32(pub u32);
+
+impl From<u32> for StringU32 {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<StringU32> for u32 {
+    fn from(wrapper: StringU32) -> Self {
+        wrapper.0
+    }
+}
+
+/// A u64 that serializes/deserializes as a string (for JSON compatibility with o1js)
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct StringU64(pub u64);
+
+impl From<u64> for StringU64 {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+impl From<StringU64> for u64 {
+    fn from(wrapper: StringU64) -> Self {
+        wrapper.0
+    }
+}
 
 // Wrapper structs
 #[derive(Clone, Debug, PartialEq, Eq)]
