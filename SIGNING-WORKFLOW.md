@@ -267,6 +267,7 @@ import {
   Mina,
   AccountUpdate,
   PublicKey,
+  Bool,
 } from 'o1js';
 import * as fs from 'fs';
 
@@ -325,6 +326,11 @@ async function generateStateUpdateTx() {
       await contract.incrementCounter();
     }
   );
+
+  // Set useFullCommitment to true for FROST signing
+  const contractAccountUpdate = updateTx.transaction.accountUpdates[0];
+  contractAccountUpdate.body.useFullCommitment = Bool(true);
+
   fs.writeFileSync('./tx-json/update-state-transaction.json', updateTx.toJSON());
   console.log('Update transaction saved to ./tx-json/update-state-transaction.json');
 }
@@ -350,6 +356,7 @@ import {
   Mina,
   AccountUpdate,
   PublicKey,
+  Bool,
 } from 'o1js';
 import * as fs from 'fs';
 
@@ -406,6 +413,11 @@ async function generateVerificationKeyUpdateTx() {
       await contract.updateVerificationKey(newVerificationKey);
     }
   );
+
+  // Set useFullCommitment to true for FROST signing
+  const contractAccountUpdate = updateTx.transaction.accountUpdates[0];
+  contractAccountUpdate.body.useFullCommitment = Bool(true);
+
   fs.writeFileSync('./tx-json/update-verification-key-transaction.json', updateTx.toJSON());
   console.log('Transactions saved to ./tx-json/');
 }

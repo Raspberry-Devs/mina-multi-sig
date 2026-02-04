@@ -138,6 +138,7 @@ import {
   Permissions,
   Mina,
   AccountUpdate,
+  Bool,
 } from 'o1js';
 import * as fs from 'fs';
 
@@ -186,6 +187,11 @@ async function generateUpdateStateTx() {
   const tx = await Mina.transaction(deployer, async () => {
     await contract.incrementCounter();
   });
+
+  // Set useFullCommitment to true for FROST signing
+  const contractAccountUpdate = tx.transaction.accountUpdates[0];
+  contractAccountUpdate.body.useFullCommitment = Bool(true);
+
   fs.writeFileSync('./tx-json/update-state-transaction.json', tx.toJSON());
   console.log('Update transaction saved to ./tx-json/update-state-transaction.json');
 }
@@ -201,6 +207,7 @@ import {
   Permissions,
   Mina,
   AccountUpdate,
+  Bool,
 } from 'o1js';
 import * as fs from 'fs';
 
@@ -250,6 +257,11 @@ async function generateUpdatePermissionsTx() {
   const tx = await Mina.transaction(deployer, async () => {
     await contract.updatePermissions();
   });
+
+  // Set useFullCommitment to true for FROST signing
+  const contractAccountUpdate = tx.transaction.accountUpdates[0];
+  contractAccountUpdate.body.useFullCommitment = Bool(true);
+
   fs.writeFileSync('./tx-json/update-permissions-transaction.json', tx.toJSON());
   console.log('Update transaction saved to ./tx-json/update-permissions-transaction.json');
 }
@@ -266,6 +278,7 @@ import {
   Permissions,
   Mina,
   AccountUpdate,
+  Bool,
 } from 'o1js';
 import * as fs from 'fs';
 
@@ -318,6 +331,11 @@ async function generateUpdateVerificationKeyTx() {
   const tx = await Mina.transaction(deployer, async () => {
     await contract.updateVerificationKey(newVerificationKey);
   });
+
+  // Set useFullCommitment to true for FROST signing
+  const contractAccountUpdate = tx.transaction.accountUpdates[0];
+  contractAccountUpdate.body.useFullCommitment = Bool(true);
+
   fs.writeFileSync('./tx-json/update-verification-key-transaction.json', tx.toJSON());
   console.log('Update transaction saved to ./tx-json/update-verification-key-transaction.json');
 }
