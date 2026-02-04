@@ -31,14 +31,10 @@ This guide walks you through signing Mina transactions using FROST threshold sig
 
 | Software | Version | Install Command |
 |----------|---------|-----------------|
-| Rust | 1.87.0+ | [TODO: Add platform-specific install notes] |
+| Rust | 1.87.0+ | See [the Rust book](https://doc.rust-lang.org/book/ch01-01-installation.html) |
 | mina-frost-client | latest | `cargo install --git https://github.com/Raspberry-Devs/mina-multi-sig.git --locked mina-frost-client` |
 | frostd | latest | `cargo install --git https://github.com/ZcashFoundation/frost-zcash-demo.git --locked frostd` |
-| mkcert | latest | [TODO: Add platform-specific install notes] |
-
-### Network Requirements
-
-[TODO: Document required network ports, firewall rules, and connectivity requirements between participants and the frostd server]
+| mkcert | latest | `apt install mkcert` |
 
 ---
 
@@ -88,7 +84,8 @@ mina-frost-client import <CONTACT_STRING> -c <CONFIG_PATH>
 mina-frost-client contacts -c <CONFIG_PATH>
 ```
 
-[TODO: Document secure methods for exchanging contact strings between participants (e.g., encrypted messaging, in-person exchange, etc.)]
+#### Sharing Contacts
+The FROST tool does not support a way for participants to share contact information, instead we recommend using your favourite messenger application (e.g. WhatsApp, Signal, Telegram) to share contact strings.
 
 ---
 
@@ -98,25 +95,26 @@ The FROST protocol requires a coordination server (`frostd`) for participants to
 
 ### 2.1 Generate TLS Certificates
 
+#### Development (mkcert)
+
 ```bash
 mkcert localhost 127.0.0.1 ::1 2>/dev/null
 ```
 
-This creates `localhost+2.pem` and `localhost+2-key.pem` in the current directory.
+This creates `localhost+2.pem` and `localhost+2-key.pem` in the current directory, this will be installed to be trusted by your local system trust store. This is not recommended for production systems.
+
+### Production
+We recommend setting up a DNS name which points to your `frostd` instance and generating trusted certificates through a certificate authority such as [Let's Encrypt](https://letsencrypt.org/). This is out of the scope of this document, and we recommend looking at Let's Encrypt's documentation.
 
 ### 2.2 Start the Server
 
 ```bash
-frostd --tls-cert localhost+2.pem --tls-key localhost+2-key.pem
+frostd --tls-cert <CERT.pem> --tls-key <KEY.pem>
 ```
 
 The server runs on `localhost:2744` by default.
 
-[TODO: Add guidance for production server deployment, including:
-- Running behind a reverse proxy
-- Using proper domain certificates
-- Server hardening recommendations
-- High availability considerations]
+For production systems, we recommend using a reverse proxy (such as nginx) with a domain name. Additionally, you need a central authority to sign your certificates as explained above.
 
 For more information, see the [frostd documentation](https://frost.zfnd.org/zcash/server.html).
 
@@ -199,8 +197,6 @@ mina-frost-client trusted-dealer \
   -N Alice,Bob,Eve \
   -t 2
 ```
-
-[TODO: Add additional warnings about why trusted dealer should never be used in production]
 
 ### 3.3 Verify Group Creation
 
@@ -340,79 +336,7 @@ Run with:
 ```bash
 npx ts-node src/update_state.ts
 ```
-
-#### 4.2.2 Permissions Update Contract
-
-This contract allows updating its own permissions via signature:
-
-**src/update_permissions.ts:**
-```typescript
-import {
-  SmartContract,
-  method,
-  Permissions,
-  Mina,
-  AccountUpdate,
-  PublicKey,
-} from 'o1js';
-import * as fs from 'fs';
-
-class PermissionsContract extends SmartContract {
-  init() {
-    super.init();
-    this.account.permissions.set({
-      ...Permissions.default(),
-      setPermissions: Permissions.signature(),
-    });
-  }
-
-  @method async updatePermissions() {
-    this.requireSignature();
-    this.account.permissions.set({
-      ...Permissions.default(),
-      editState: Permissions.proofOrSignature(),
-      send: Permissions.proof(),
-      setPermissions: Permissions.signature(),
-      setVerificationKey: Permissions.VerificationKey.impossibleDuringCurrentVersion(),
-    });
-  }
-}
-
-async function generatePermissionsUpdateTx() {
-  const Local = await Mina.LocalBlockchain({ proofsEnabled: false });
-  Mina.setActiveInstance(Local);
-
-  const frostGroupPubKey = PublicKey.fromBase58('<GROUP_PUBLIC_KEY>');
-  const contractAccount = Mina.TestPublicKey.random();
-  const contract = new PermissionsContract(contractAccount);
-
-  await PermissionsContract.compile();
-
-  // Deploy transaction
-  const deployTx = await Mina.transaction(
-    { sender: frostGroupPubKey, fee: 1e8 },
-    async () => {
-      AccountUpdate.fundNewAccount(frostGroupPubKey);
-      await contract.deploy();
-    }
-  );
-  fs.writeFileSync('./tx-json/deploy-permissions-contract.json', deployTx.toJSON());
-
-  // Update permissions transaction
-  const updateTx = await Mina.transaction(
-    { sender: frostGroupPubKey, fee: 1e8 },
-    async () => {
-      await contract.updatePermissions();
-    }
-  );
-  fs.writeFileSync('./tx-json/update-permissions-transaction.json', updateTx.toJSON());
-  console.log('Transactions saved to ./tx-json/');
-}
-
-generatePermissionsUpdateTx();
-```
-
-#### 4.2.3 Verification Key Update Contract
+#### 4.2.2 Verification Key Update Contract
 
 This contract allows updating its verification key (useful after Mina hard forks):
 
@@ -540,7 +464,7 @@ Query the current nonce for your FROST group account using GraphQL:
 
 ```graphql
 query {
-  account(publicKey: "<GROUP_PUBLIC_KEY>") {
+  accounts(publicKey: "<GROUP_PUBLIC_KEY_ADDR>") {
     nonce
   }
 }
@@ -548,7 +472,7 @@ query {
 
 Or use the Mina CLI:
 ```bash
-mina account get --public-key <GROUP_PUBLIC_KEY>
+mina account get --public-key <GROUP_PUBLIC_KEY_ADDR>
 ```
 
 When generating transactions, set the correct nonce:
@@ -699,7 +623,7 @@ mina-frost-client sessions \
   --close-all
 ```
 
-[TODO: Document timing requirements and what happens if participants don't join in time]
+Note: All users must be online during FROST signing for successful participation, if a user loses connection, the session must be restarted.
 
 ---
 
@@ -741,13 +665,13 @@ mina-frost-client graphql-broadcast \
 
 ### GraphQL Endpoints
 
-[TODO: Add list of available GraphQL endpoints for different networks]
+These are an example of GraphQL endpoints, we highly recommending users to use their own node's URLs if they have one.
 
 | Network | Endpoint |
 |---------|----------|
-| Mainnet | [TODO] |
+| Mainnet | `https://api.minascan.io/node/mainnet/v1/graphql` |
 | Devnet | `https://api.minascan.io/node/devnet/v1/graphql` |
-| Berkeley | [TODO] |
+| Berkeley | `https://api.minascan.io/node/berkeley/v1/graphql` |
 
 ---
 
@@ -776,20 +700,12 @@ mina-frost-client graphql-broadcast \
 
 ### Common Issues
 
-[TODO: Document common error messages and solutions]
-
 | Issue | Possible Cause | Solution |
 |-------|---------------|----------|
 | Connection refused | Server not running | Start `frostd` server |
-| Certificate error | Invalid TLS cert | Regenerate with `mkcert` |
+| Certificate error | Invalid TLS cert | Regenerate with `mkcert` or look at your certificate setup |
 | Group not found | Wrong group key | Run `groups` to list valid keys |
-| Session timeout | Participants too slow | [TODO] |
-
-### Debug Tips
-
-[TODO: Add debugging guidance, log locations, verbose mode flags, etc.]
-
----
+| Session timeout | Participants too slow | Setup a new session |
 
 ## See Also
 
