@@ -15,6 +15,11 @@ Besides the usual advantages of shared control over accounts, threshold signatur
 - **`frost-bluepallas/`** – A Rust crate implementing FROST for Mina's Pallas curve using the Poseidon hash function. It allows generation of signatures that are compatible with Mina nodes and includes example programs for key generation and transaction signing.
 - **`mina-frost-client/`** – A demo client and utilities for running distributed key generation and signing sessions. It exposes various sub‑commands for initializing participants, running a trusted dealer or DKG, and coordinating signing rounds.
 
+## Signing Workflow
+A document which describes a full signing workflow with the FROST tool can be read [here](SIGNING-WORKFLOW.md). This provides a comprehensive step-by-step tutorial on how to use the tool and to submit FROST-signed transactions to the Mina blockchain.
+
+Additionally, view the [transaction generation document](DOC-WORKFLOW.md) for example scripts which specify transaction JSON generation to use in the FROST Multi-sig.
+
 ## Installation
 ### mina-frost-client
 To install `mina-frost-client` run
