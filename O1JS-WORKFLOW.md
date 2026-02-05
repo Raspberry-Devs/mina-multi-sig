@@ -10,6 +10,7 @@ This project generates unsigned Mina zkApp transactions as JSON files for extern
 ```
 mina-tx-generator/
 ├── src/
+│   ├── commit.ts                  # Update transaction fields
 │   ├── payment.ts                 # Simple payment transaction
 │   ├── update_state.ts            # zkApp state modification
 │   ├── update_permissions.ts      # zkApp permissions update
@@ -94,6 +95,18 @@ Each JSON file contains:
 ---
 
 ## Source Code
+### src/commit.ts
+```typescript
+import { Bool, Mina } from "o1js";
+
+export function UpdateFullCommitment(...tx: Mina.Transaction<false, false>[]) {
+  tx.forEach((transaction) => {
+    transaction.transaction.accountUpdates.map(
+      (au) => au.body.useFullCommitment = Bool(true)
+    );
+  });
+}
+```
 
 ### src/payment.ts
 ```typescript
@@ -111,7 +124,6 @@ async function createPayment() {
   const tx = await Mina.transaction(
     sender,
     async () => {
-      let senderUpdate = AccountUpdate.fundNewAccount(sender);
       senderUpdate.send({ to: receiver, amount: UInt64.from(1e9) });
     }
   );
@@ -138,9 +150,14 @@ import {
   Permissions,
   Mina,
   AccountUpdate,
-  Bool,
+  PublicKey,
 } from 'o1js';
 import * as fs from 'fs';
+import { UpdateFullCommitment } from './commit';
+
+const MINA_TESTNET_URL = 'https://api.minascan.io/node/devnet/v1/graphql';
+const FEE = 100_000_000; // 0.1 MINA
+const DEPLOYER_KEY = '<PUBLIC_KEY>';
 
 class StateContract extends SmartContract {
   @state(Field) counter = State<Field>();
@@ -156,41 +173,45 @@ class StateContract extends SmartContract {
 
   @method async incrementCounter() {
     this.requireSignature();
-    const currentValue = Field(0);
+    const currentValue = this.counter.get();
     this.counter.requireEquals(currentValue);
     this.counter.set(currentValue.add(1));
   }
 }
 
 async function generateUpdateStateTx() {
-  // 1. Setup LocalBlockchain (proofsEnabled: false for signature-based)
-  const Local = await Mina.LocalBlockchain({ proofsEnabled: false });
-  Mina.setActiveInstance(Local);
+  // 1. Setup Mina testnet
+  const network = Mina.Network(MINA_TESTNET_URL);
+  Mina.setActiveInstance(network);
 
   // 2. Get accounts
-  const [deployer] = Local.testAccounts;
-  const contractAccount = Mina.TestPublicKey.random();
+  const deployer = PublicKey.fromBase58(DEPLOYER_KEY);
+  const contractAccount = PublicKey.fromBase58(DEPLOYER_KEY);
   const contract = new StateContract(contractAccount);
 
   // 3. Compile (needed for verification key)
   await StateContract.compile();
 
   // 4. Create deploy transaction (unsigned)
-  const deployTx = await Mina.transaction(deployer, async () => {
-    AccountUpdate.fundNewAccount(deployer);
-    await contract.deploy();
-  });
-  fs.writeFileSync('./tx-json/deploy-state-contract.json', deployTx.toJSON());
-  console.log('Deploy transaction saved to ./tx-json/deploy-state-contract.json');
+  const deployTx = await Mina.transaction(
+    { sender: deployer, fee: FEE },
+    async () => {
+      await contract.deploy();
+    }
+  );
 
   // 5. Create update transaction (unsigned)
-  const tx = await Mina.transaction(deployer, async () => {
-    await contract.incrementCounter();
-  });
+  const tx = await Mina.transaction(
+    { sender: deployer, fee: FEE },
+    async () => {
+      await contract.incrementCounter();
+    }
+  );
 
-  // Set useFullCommitment to true for FROST signing
-  const contractAccountUpdate = tx.transaction.accountUpdates[0];
-  contractAccountUpdate.body.useFullCommitment = Bool(true);
+  UpdateFullCommitment(deployTx, tx);
+
+  fs.writeFileSync('./tx-json/deploy-state-contract.json', deployTx.toJSON());
+  console.log('Deploy transaction saved to ./tx-json/deploy-state-contract.json');
 
   fs.writeFileSync('./tx-json/update-state-transaction.json', tx.toJSON());
   console.log('Update transaction saved to ./tx-json/update-state-transaction.json');
@@ -207,9 +228,14 @@ import {
   Permissions,
   Mina,
   AccountUpdate,
-  Bool,
+  PublicKey,
 } from 'o1js';
 import * as fs from 'fs';
+import { UpdateFullCommitment } from './commit';
+
+const MINA_TESTNET_URL = 'https://api.minascan.io/node/devnet/v1/graphql';
+const FEE = 100_000_000; // 0.1 MINA
+const DEPLOYER_KEY = '<PUBLIC_KEY>';
 
 class PermissionsContract extends SmartContract {
   init() {
@@ -233,34 +259,38 @@ class PermissionsContract extends SmartContract {
 }
 
 async function generateUpdatePermissionsTx() {
-  // 1. Setup LocalBlockchain (proofsEnabled: false for signature-based)
-  const Local = await Mina.LocalBlockchain({ proofsEnabled: false });
-  Mina.setActiveInstance(Local);
+  // 1. Setup Mina testnet
+  const network = Mina.Network(MINA_TESTNET_URL);
+  Mina.setActiveInstance(network);
 
   // 2. Get accounts
-  const [deployer] = Local.testAccounts;
-  const contractAccount = Mina.TestPublicKey.random();
+  const deployer = PublicKey.fromBase58(DEPLOYER_KEY);
+  const contractAccount = PublicKey.fromBase58(DEPLOYER_KEY);
   const contract = new PermissionsContract(contractAccount);
 
   // 3. Compile (needed for verification key)
   await PermissionsContract.compile();
 
   // 4. Create deploy transaction (unsigned)
-  const deployTx = await Mina.transaction(deployer, async () => {
-    AccountUpdate.fundNewAccount(deployer);
-    await contract.deploy();
-  });
-  fs.writeFileSync('./tx-json/deploy-permissions-contract.json', deployTx.toJSON());
-  console.log('Deploy transaction saved to ./tx-json/deploy-permissions-contract.json');
+  const deployTx = await Mina.transaction(
+    { sender: deployer, fee: FEE },
+    async () => {
+      await contract.deploy();
+    }
+  );
 
   // 5. Create update transaction (unsigned)
-  const tx = await Mina.transaction(deployer, async () => {
-    await contract.updatePermissions();
-  });
+  const tx = await Mina.transaction(
+    { sender: deployer, fee: FEE },
+    async () => {
+      await contract.updatePermissions();
+    }
+  );
 
-  // Set useFullCommitment to true for FROST signing
-  const contractAccountUpdate = tx.transaction.accountUpdates[0];
-  contractAccountUpdate.body.useFullCommitment = Bool(true);
+  UpdateFullCommitment(deployTx, tx);
+
+  fs.writeFileSync('./tx-json/deploy-permissions-contract.json', deployTx.toJSON());
+  console.log('Deploy transaction saved to ./tx-json/deploy-permissions-contract.json');
 
   fs.writeFileSync('./tx-json/update-permissions-transaction.json', tx.toJSON());
   console.log('Update transaction saved to ./tx-json/update-permissions-transaction.json');
@@ -278,9 +308,14 @@ import {
   Permissions,
   Mina,
   AccountUpdate,
-  Bool,
+  PublicKey,
 } from 'o1js';
 import * as fs from 'fs';
+import { UpdateFullCommitment } from './commit';
+
+const MINA_TESTNET_URL = 'https://api.minascan.io/node/devnet/v1/graphql';
+const FEE = 100_000_000; // 0.1 MINA
+const DEPLOYER_KEY = '<PUBLIC_KEY>';
 
 class UpdatableContract extends SmartContract {
   init() {
@@ -304,37 +339,41 @@ class NewContract extends SmartContract {
 }
 
 async function generateUpdateVerificationKeyTx() {
-  // 1. Setup LocalBlockchain (proofsEnabled: false for signature-based)
-  const Local = await Mina.LocalBlockchain({ proofsEnabled: false });
-  Mina.setActiveInstance(Local);
+  // 1. Setup Mina testnet
+  const network = Mina.Network(MINA_TESTNET_URL);
+  Mina.setActiveInstance(network);
 
   // 2. Get accounts
-  const [deployer] = Local.testAccounts;
-  const contractAccount = Mina.TestPublicKey.random();
+  const deployer = PublicKey.fromBase58(DEPLOYER_KEY);
+  const contractAccount = PublicKey.fromBase58(DEPLOYER_KEY);
   const contract = new UpdatableContract(contractAccount);
 
   // 3. Compile original contract (needed for verification key)
   await UpdatableContract.compile();
 
   // 4. Create deploy transaction (unsigned)
-  const deployTx = await Mina.transaction(deployer, async () => {
-    AccountUpdate.fundNewAccount(deployer);
-    await contract.deploy();
-  });
-  fs.writeFileSync('./tx-json/deploy-updatable-contract.json', deployTx.toJSON());
-  console.log('Deploy transaction saved to ./tx-json/deploy-updatable-contract.json');
+  const deployTx = await Mina.transaction(
+    { sender: deployer, fee: FEE },
+    async () => {
+      await contract.deploy();
+    }
+  );
 
   // 5. Compile new contract for different verification key
   const { verificationKey: newVerificationKey } = await NewContract.compile();
 
   // 6. Create update transaction (unsigned)
-  const tx = await Mina.transaction(deployer, async () => {
-    await contract.updateVerificationKey(newVerificationKey);
-  });
+  const tx = await Mina.transaction(
+    { sender: deployer, fee: FEE },
+    async () => {
+      await contract.updateVerificationKey(newVerificationKey);
+    }
+  );
 
-  // Set useFullCommitment to true for FROST signing
-  const contractAccountUpdate = tx.transaction.accountUpdates[0];
-  contractAccountUpdate.body.useFullCommitment = Bool(true);
+  UpdateFullCommitment(deployTx, tx);
+
+  fs.writeFileSync('./tx-json/deploy-updatable-contract.json', deployTx.toJSON());
+  console.log('Deploy transaction saved to ./tx-json/deploy-updatable-contract.json');
 
   fs.writeFileSync('./tx-json/update-verification-key-transaction.json', tx.toJSON());
   console.log('Update transaction saved to ./tx-json/update-verification-key-transaction.json');
@@ -351,7 +390,6 @@ generateUpdateVerificationKeyTx();
 - **`Permissions.signature()`** — allows authorization via signature instead of proof
 - **`this.requireSignature()`** — method call that requires contract account signature for authorization
 - **Compilation is still required** — generates verification key needed for contract deployment
-- **`Mina.TestPublicKey.random()`** — generates a random keypair for the contract account
 
 ---
 

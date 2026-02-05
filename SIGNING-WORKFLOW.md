@@ -210,9 +210,9 @@ Note the **group public key** — you'll need it for signing sessions.
 
 ---
 
-## Section 4: Transaction Preparation
+## Section 4: Transaction Preparation Overview
 
-Before signing, you need an unsigned transaction in JSON format. This section shows how to generate transactions using o1js.
+Before signing, you need an unsigned transaction in JSON format. This section shows how to generate transactions using o1js. See [the O1JS workflow document](O1JS-WORKFLOW.md) for full project setup.
 
 ### 4.1 Project Setup
 
@@ -267,11 +267,14 @@ import {
   Mina,
   AccountUpdate,
   PublicKey,
-  Bool,
 } from 'o1js';
 import * as fs from 'fs';
+import { UpdateFullCommitment } from './commit';
 
-// Contract that requires signature to update state
+const MINA_TESTNET_URL = 'https://api.minascan.io/node/devnet/v1/graphql';
+const FEE = 100_000_000; // 0.1 MINA
+const DEPLOYER_KEY = '<PUBLIC_KEY>';
+
 class StateContract extends SmartContract {
   @state(Field) counter = State<Field>();
 
@@ -285,57 +288,52 @@ class StateContract extends SmartContract {
   }
 
   @method async incrementCounter() {
-    this.requireSignature();  // Requires contract account signature
+    this.requireSignature();
     const currentValue = this.counter.get();
     this.counter.requireEquals(currentValue);
     this.counter.set(currentValue.add(1));
   }
 }
 
-async function generateStateUpdateTx() {
-  // Setup local blockchain (proofsEnabled: false for signature-based)
-  const Local = await Mina.LocalBlockchain({ proofsEnabled: false });
-  Mina.setActiveInstance(Local);
+async function generateUpdateStateTx() {
+  // 1. Setup Mina testnet
+  const network = Mina.Network(MINA_TESTNET_URL);
+  Mina.setActiveInstance(network);
 
-  // Use your FROST group public key as the fee payer
-  // Replace with your actual group public key from `mina-frost-client groups`
-  const frostGroupPubKey = PublicKey.fromBase58('<GROUP_PUBLIC_KEY>');
-
-  // Contract account (can also be FROST-controlled)
-  const contractAccount = Mina.TestPublicKey.random();
+  // 2. Get accounts
+  const deployer = PublicKey.fromBase58(DEPLOYER_KEY);
+  const contractAccount = PublicKey.fromBase58(DEPLOYER_KEY);
   const contract = new StateContract(contractAccount);
 
-  // Compile contract (required for verification key)
+  // 3. Compile (needed for verification key)
   await StateContract.compile();
 
-  // Create deploy transaction
+  // 4. Create deploy transaction (unsigned)
   const deployTx = await Mina.transaction(
-    { sender: frostGroupPubKey, fee: 1e8 },
+    { sender: deployer, fee: FEE },
     async () => {
-      AccountUpdate.fundNewAccount(frostGroupPubKey);
       await contract.deploy();
     }
   );
-  fs.writeFileSync('./tx-json/deploy-state-contract.json', deployTx.toJSON());
-  console.log('Deploy transaction saved to ./tx-json/deploy-state-contract.json');
 
-  // Create state update transaction
-  const updateTx = await Mina.transaction(
-    { sender: frostGroupPubKey, fee: 1e8 },
+  // 5. Create update transaction (unsigned)
+  const tx = await Mina.transaction(
+    { sender: deployer, fee: FEE },
     async () => {
       await contract.incrementCounter();
     }
   );
 
-  // Set useFullCommitment to true for FROST signing
-  const contractAccountUpdate = updateTx.transaction.accountUpdates[0];
-  contractAccountUpdate.body.useFullCommitment = Bool(true);
+  UpdateFullCommitment(deployTx, tx);
 
-  fs.writeFileSync('./tx-json/update-state-transaction.json', updateTx.toJSON());
+  fs.writeFileSync('./tx-json/deploy-state-contract.json', deployTx.toJSON());
+  console.log('Deploy transaction saved to ./tx-json/deploy-state-contract.json');
+
+  fs.writeFileSync('./tx-json/update-state-transaction.json', tx.toJSON());
   console.log('Update transaction saved to ./tx-json/update-state-transaction.json');
 }
 
-generateStateUpdateTx();
+generateUpdateStateTx();
 ```
 
 Run with:
@@ -346,7 +344,7 @@ npx ts-node src/update_state.ts
 
 This contract allows updating its verification key (useful after Mina hard forks):
 
-**src/update_verification_key.ts:**
+### src/update_verification_key.ts
 ```typescript
 import {
   SmartContract,
@@ -356,9 +354,13 @@ import {
   Mina,
   AccountUpdate,
   PublicKey,
-  Bool,
 } from 'o1js';
 import * as fs from 'fs';
+import { UpdateFullCommitment } from './commit';
+
+const MINA_TESTNET_URL = 'https://api.minascan.io/node/devnet/v1/graphql';
+const FEE = 100_000_000; // 0.1 MINA
+const DEPLOYER_KEY = '<PUBLIC_KEY>';
 
 class UpdatableContract extends SmartContract {
   init() {
@@ -375,54 +377,54 @@ class UpdatableContract extends SmartContract {
   }
 }
 
-// New contract version with different verification key
-class NewContractVersion extends SmartContract {
-  @method async newMethod() {
-    // Different method = different verification key
+class NewContract extends SmartContract {
+  @method async dummy() {
+    // Different contract = different verification key
   }
 }
 
-async function generateVerificationKeyUpdateTx() {
-  const Local = await Mina.LocalBlockchain({ proofsEnabled: false });
-  Mina.setActiveInstance(Local);
+async function generateUpdateVerificationKeyTx() {
+  // 1. Setup Mina testnet
+  const network = Mina.Network(MINA_TESTNET_URL);
+  Mina.setActiveInstance(network);
 
-  const frostGroupPubKey = PublicKey.fromBase58('<GROUP_PUBLIC_KEY>');
-  const contractAccount = Mina.TestPublicKey.random();
+  // 2. Get accounts
+  const deployer = PublicKey.fromBase58(DEPLOYER_KEY);
+  const contractAccount = PublicKey.fromBase58(DEPLOYER_KEY);
   const contract = new UpdatableContract(contractAccount);
 
-  // Compile original contract
+  // 3. Compile original contract (needed for verification key)
   await UpdatableContract.compile();
 
-  // Deploy transaction
+  // 4. Create deploy transaction (unsigned)
   const deployTx = await Mina.transaction(
-    { sender: frostGroupPubKey, fee: 1e8 },
+    { sender: deployer, fee: FEE },
     async () => {
-      AccountUpdate.fundNewAccount(frostGroupPubKey);
       await contract.deploy();
     }
   );
-  fs.writeFileSync('./tx-json/deploy-updatable-contract.json', deployTx.toJSON());
 
-  // Compile new contract version for its verification key
-  const { verificationKey: newVerificationKey } = await NewContractVersion.compile();
+  // 5. Compile new contract for different verification key
+  const { verificationKey: newVerificationKey } = await NewContract.compile();
 
-  // Update verification key transaction
-  const updateTx = await Mina.transaction(
-    { sender: frostGroupPubKey, fee: 1e8 },
+  // 6. Create update transaction (unsigned)
+  const tx = await Mina.transaction(
+    { sender: deployer, fee: FEE },
     async () => {
       await contract.updateVerificationKey(newVerificationKey);
     }
   );
 
-  // Set useFullCommitment to true for FROST signing
-  const contractAccountUpdate = updateTx.transaction.accountUpdates[0];
-  contractAccountUpdate.body.useFullCommitment = Bool(true);
+  UpdateFullCommitment(deployTx, tx);
 
-  fs.writeFileSync('./tx-json/update-verification-key-transaction.json', updateTx.toJSON());
-  console.log('Transactions saved to ./tx-json/');
+  fs.writeFileSync('./tx-json/deploy-updatable-contract.json', deployTx.toJSON());
+  console.log('Deploy transaction saved to ./tx-json/deploy-updatable-contract.json');
+
+  fs.writeFileSync('./tx-json/update-verification-key-transaction.json', tx.toJSON());
+  console.log('Update transaction saved to ./tx-json/update-verification-key-transaction.json');
 }
 
-generateVerificationKeyUpdateTx();
+generateUpdateVerificationKeyTx();
 ```
 
 #### Transaction Structure
@@ -471,7 +473,7 @@ FROST signatures are injected into the transaction at:
 | Verification key update | Fee payer + Contract account (if `requireSignature()` used) |
 
 #### Transactions with Full Commitments
-Note that the FROST multi-sig does not sign partial account updates (updates whose `use_full_commitment` field is `false`). Therefore, any
+Note that the FROST multi-sig does not sign partial account updates (updates whose `use_full_commitment` field is `false`). Therefore,
 
 #### Nonce Management
 
@@ -713,7 +715,7 @@ These are an example of GraphQL endpoints, we highly recommending users to use t
 
 ## Troubleshooting
 
-### Common Issues
+### Common FROST Tool Issues
 
 | Issue | Possible Cause | Solution |
 |-------|---------------|----------|
@@ -721,6 +723,12 @@ These are an example of GraphQL endpoints, we highly recommending users to use t
 | Certificate error | Invalid TLS cert | Regenerate with `mkcert` or look at your certificate setup |
 | Group not found | Wrong group key | Run `groups` to list valid keys |
 | Session timeout | Participants too slow | Setup a new session |
+
+
+### Common Mina Blockchain Issues
+| Issue | Possible Cause | Solution |
+|-------|---------------|----------|
+| Invalid Fee Excess | Fee Payer does not have any funds | Ensure that the FROST account you generate has funds or use an external FeePayer |
 
 ## See Also
 
