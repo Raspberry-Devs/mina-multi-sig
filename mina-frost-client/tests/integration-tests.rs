@@ -5,7 +5,7 @@
 //! server. through the mina-frost-client. Finally we read the generated signature and verify that it
 //! agrees with the group public key according to the `mina-signer` crate
 
-use ark_ff::BigInt;
+use frost_bluepallas::mina_compat::TransactionSignature;
 use frost_bluepallas::transactions::TransactionEnvelope;
 use frost_bluepallas::transactions::TransactionKind;
 use lazy_static::lazy_static;
@@ -19,7 +19,6 @@ use std::path::PathBuf;
 use std::process;
 use std::process::Command;
 use std::process::Stdio;
-use std::str::FromStr;
 
 lazy_static! {
     static ref binary_path: PathBuf = PathBuf::from(format!(
@@ -280,25 +279,55 @@ fn parse_and_verify(pk_str: &str, verify_message_path: &str, is_legacy: bool) {
 
     let sig_json = fs::read_to_string(working_dir.join(SIG_FILE).clone()).unwrap();
 
-    // instead of implementing deserialize for frost_bluepallas::signature::TransactionSignature
-    // which would be the right way to do this. I cheat by just taking what I want using regexes
-    // out of the json, as we already have quite a bit of regex machinery
-    let (field_str, scalar_str) = regex_match!(
-        &sig_json,
-        r#""field"\s*:\s*"([0-9]+)""#,
-        r#""scalar"\s*:\s*"([0-9]+)""#
-    );
-    println!("field: {}", field_str);
-    println!("scalar: {}", scalar_str);
-    let field = BigInt::<4>::from_str(&field_str).unwrap();
-    let scalar = BigInt::<4>::from_str(&scalar_str).unwrap();
+    // Deserialize the full TransactionSignature output
+    let tx_sig: TransactionSignature = serde_json::from_str(&sig_json).unwrap();
+
+    let field = tx_sig.signature.field;
+    let scalar = tx_sig.signature.scalar;
+    println!("field: {}", field);
+    println!("scalar: {}", scalar);
 
     let mina_sig: Signature = Signature {
         s: scalar.into(),
         rx: field.into(),
     };
 
-    // Verify the signature using mina-signer, depending on whether it's legacy or zkapp, change the signer type
+    if !is_legacy {
+        // For ZkApp transactions, verify the signature was injected into the transaction
+        let zkapp = match tx_sig.payload.inner() {
+            TransactionKind::ZkApp(inner) => inner,
+            _ => panic!("Expected ZkApp transaction in payload"),
+        };
+
+        // Verify fee payer authorization was injected (non-empty)
+        assert!(
+            !zkapp.fee_payer.authorization.is_empty(),
+            "Fee payer authorization should be non-empty after signature injection"
+        );
+
+        // Verify account updates that should have been signed have signatures
+        for (i, update) in zkapp.account_updates.iter().enumerate() {
+            let is_signed = update.body.authorization_kind.is_signed;
+            let pk_matches = update.body.public_key.0 == pk.into_compressed();
+            let full_commitment = update.body.use_full_commitment;
+
+            if is_signed && pk_matches && full_commitment {
+                let sig = update.authorization.signature.as_ref().unwrap_or_else(|| {
+                    panic!(
+                        "Account update at index {} should have a signature after injection",
+                        i
+                    )
+                });
+                assert!(
+                    !sig.is_empty(),
+                    "Account update at index {} has an empty signature",
+                    i
+                );
+            }
+        }
+    }
+
+    // Verify the signature using mina-signer, depending on whether it's legacy or zkapp
     if is_legacy {
         let mut ctx = mina_signer::create_legacy::<TransactionEnvelope>(msg.network_id());
         assert!(ctx.verify(&mina_sig, &pk, &msg));
