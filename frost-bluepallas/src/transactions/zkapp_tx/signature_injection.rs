@@ -5,6 +5,7 @@
 //! the appropriate authorization fields within the transaction structure.
 
 use alloc::{
+    fmt::Display,
     string::{String, ToString},
     vec::Vec,
 };
@@ -28,6 +29,32 @@ pub enum SignatureInjectionWarning {
     SignatureOverwritten { index: usize, public_key: String },
     /// Fee payer already had a non-empty authorization that was overwritten.
     FeePayerSignatureOverwritten,
+}
+
+impl Display for SignatureInjectionWarning {
+    fn fmt(&self, f: &mut alloc::fmt::Formatter<'_>) -> alloc::fmt::Result {
+        match self {
+            SignatureInjectionWarning::FeePayerKeyMismatch { expected, found } => {
+                write!(
+                    f,
+                    "Fee payer key mismatch: expected {}, found {}",
+                    expected, found
+                )
+            }
+            SignatureInjectionWarning::PartialCommitmentSkipped { index, public_key } => {
+                write!(f, "Account update at index {} with public key {} was skipped due to use_full_commitment=false", index, public_key)
+            }
+            SignatureInjectionWarning::SignatureOverwritten { index, public_key } => {
+                write!(f, "Account update at index {} with public key {} had an existing signature that was overwritten", index, public_key)
+            }
+            SignatureInjectionWarning::FeePayerSignatureOverwritten => {
+                write!(
+                    f,
+                    "Fee payer had an existing authorization that was overwritten"
+                )
+            }
+        }
+    }
 }
 
 /// Result of signature injection operation.

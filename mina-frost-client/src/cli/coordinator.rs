@@ -266,12 +266,16 @@ pub fn save_signature(
 
     let pubkey: PubKeySer = vk.try_into()?;
 
-    // Create transaction signature
-    let transaction_signature = TransactionSignature {
-        signature,
-        payload: tx,
-        publicKey: pubkey,
-    };
+    let (transaction_signature, warnings_opt) =
+        TransactionSignature::new_with_zkapp_injection(pubkey, signature, tx);
+
+    // If there are any warnings during the creation of the transaction signature, print them out
+    if let Some(warnings) = warnings_opt {
+        eprintln!("Warnings during transaction signature creation:");
+        for warning in warnings.warnings {
+            eprintln!("- {}", warning);
+        }
+    }
 
     let output_str = serde_json::to_string_pretty(&transaction_signature)
         .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
