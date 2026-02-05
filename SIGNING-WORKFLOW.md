@@ -473,7 +473,7 @@ FROST signatures are injected into the transaction at:
 | Verification key update | Fee payer + Contract account (if `requireSignature()` used) |
 
 #### Transactions with Full Commitments
-Note that the FROST multi-sig does not sign partial account updates (updates whose `use_full_commitment` field is `false`). Therefore,
+Note that the FROST multi-sig does not sign partial account updates (updates whose `use_full_commitment` field is `false`).
 
 #### Nonce Management
 
@@ -732,7 +732,7 @@ These are an example of GraphQL endpoints, we highly recommending users to use t
 
 ## See Also
 
-- [DOC-WORKFLOW.md](./DOC-WORKFLOW.md) — Generating unsigned Mina transactions with o1js
+- [O1JS-WORKFLOW.md](./O1JS-WORKFLOW.md) — Generating unsigned Mina transactions with o1js
 - [README.md](./README.md) — Project overview and repository layout
-- [frostd documentation](https://frost.zfndf.org/zcash/server.html) — FROST server setup guide
+- [frostd documentation](https://frost.zfnd.org/zcash/server.html) — FROST server setup guide
 - [Mina Protocol Documentation](https://docs.minaprotocol.com/) — Official Mina documentation

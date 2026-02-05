@@ -18,7 +18,7 @@ Besides the usual advantages of shared control over accounts, threshold signatur
 ## Signing Workflow
 A document which describes a full signing workflow with the FROST tool can be read [here](SIGNING-WORKFLOW.md). This provides a comprehensive step-by-step tutorial on how to use the tool and to submit FROST-signed transactions to the Mina blockchain.
 
-Additionally, view the [transaction generation document](DOC-WORKFLOW.md) for example scripts which specify transaction JSON generation to use in the FROST Multi-sig.
+Additionally, view the [transaction generation document](O1JS-WORKFLOW.md) for example scripts which specify transaction JSON generation to use in the FROST Multi-sig.
 
 ## Installation
 ### mina-frost-client
