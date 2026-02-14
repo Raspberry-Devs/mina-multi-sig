@@ -15,9 +15,12 @@ cd "$SCRIPT_DIR"
 SERVER_URL="localhost:2744"
 
 # Source helpers
+# shellcheck source=init_frostd.sh
 source "$HELPERS_DIR/init_frostd.sh"
+# shellcheck source=file_generation.sh
 source "$HELPERS_DIR/file_generation.sh"
 # Remove release binary if you want the script to use cargo run
+# shellcheck source=use_frost_client.sh
 source "$HELPERS_DIR/use_frost_client.sh"
 
 # Function to cleanup on exit

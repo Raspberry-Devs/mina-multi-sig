@@ -5,9 +5,6 @@
 # Strict error handling - exit on any error, undefined variable, or pipe failure
 set -euo pipefail
 
-# Get the directory where the script is located
-HELPER_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Function to initialize and start frostd server
 init_frostd() {
     local generated_dir="$1"
@@ -84,7 +81,7 @@ stop_frostd() {
         server_pid="$FROSTD_SERVER_PID"
     fi
 
-    if [ ! -z "$server_pid" ] && kill -0 "$server_pid" 2>/dev/null; then
+    if [ -n "$server_pid" ] && kill -0 "$server_pid" 2>/dev/null; then
         echo "Stopping frostd server (PID: $server_pid)..."
         kill "$server_pid"
         wait "$server_pid" 2>/dev/null || true

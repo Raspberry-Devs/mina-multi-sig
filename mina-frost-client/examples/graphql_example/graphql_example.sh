@@ -1,3 +1,6 @@
+#!/bin/bash
+
+set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$0")
 GENERATED_DIR="$SCRIPT_DIR/generated"
@@ -5,7 +8,8 @@ HELPERS_DIR=$(dirname "$0")/../helpers
 SIGNATURE_PATH="$SCRIPT_DIR/../signing_example/generated/signature.json"
 OUTPUT_PATH="$GENERATED_DIR/out.json"
 
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR" || exit
+# shellcheck source=use_frost_client.sh
 source "$HELPERS_DIR/use_frost_client.sh"
 
 # Clean generated directory

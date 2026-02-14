@@ -11,7 +11,9 @@ HELPERS_DIR="$SCRIPT_DIR/../helpers"
 cd "$SCRIPT_DIR"
 
 # Source helpers
+# shellcheck source=file_generation.sh
 source "$HELPERS_DIR/file_generation.sh"
+# shellcheck source=use_frost_client.sh
 source "$HELPERS_DIR/use_frost_client.sh"
 
 # Setup
