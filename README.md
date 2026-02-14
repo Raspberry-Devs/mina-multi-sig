@@ -17,8 +17,8 @@ Besides the usual advantages of shared control over accounts, threshold signatur
 
 ## API Documentation
 
-- `frost-bluepallas`: <https://raspberry-devs.github.io/mina-multi-sig/frost_bluepallas/>
-- `mina-frost-client`: <https://raspberry-devs.github.io/mina-multi-sig/mina_frost_client/>
+- Main docs: <https://raspberry-devs.github.io/mina-multi-sig/frost_bluepallas/>
+- Other crates in the workspace are available from the rustdoc sidebar.
 
 ## Signing Workflow
 A document which describes a full signing workflow with the FROST tool can be read [here](SIGNING-WORKFLOW.md). This provides a comprehensive step-by-step tutorial on how to use the tool and to submit FROST-signed transactions to the Mina blockchain.
