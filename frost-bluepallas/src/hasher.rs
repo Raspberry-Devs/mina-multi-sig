@@ -36,7 +36,8 @@ impl Hashable for PallasHashElement<'_> {
 }
 
 /// This allows us to hash a Mina/FROST signature
-/// Follows the Mina signing specification at https://github.com/MinaProtocol/mina/blob/develop/docs/specs/signatures/description.md
+/// Follows the Mina signing specification at
+/// <https://github.com/MinaProtocol/mina/blob/develop/docs/specs/signatures/description.md>.
 #[derive(Clone)]
 struct Message<H: Hashable> {
     input: H,

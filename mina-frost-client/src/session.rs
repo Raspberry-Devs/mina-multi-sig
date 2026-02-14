@@ -78,9 +78,9 @@ impl<C: Ciphersuite> CoordinatorSessionState<C> {
 
     /// Handle a Msg received from a participant.
     ///
-    /// This should be called for new Msgs until [`are_commitments_ready()`]
+    /// This should be called for new Msgs until [`Self::has_commitments`]
     /// returns true, and after the SigningPackage is sent to the participants,
-    /// it should be called for new Msgs until [`are_signature_shares_ready()`]
+    /// it should be called for new Msgs until [`Self::has_signature_shares`]
     /// returns true.
     pub fn recv(&mut self, msg: Msg) -> Result<(), Box<dyn Error>> {
         match self {
@@ -138,7 +138,7 @@ impl<C: Ciphersuite> CoordinatorSessionState<C> {
     }
 
     /// Returns if all participants sent their commitments.
-    /// When this returns `true`, [`commitments()`] can be called.
+    /// When this returns `true`, [`Self::commitments`] can be called.
     pub fn has_commitments(&self) -> bool {
         matches!(
             self,
@@ -181,7 +181,7 @@ impl<C: Ciphersuite> CoordinatorSessionState<C> {
     }
 
     /// Returns if all participants sent their SignatureShares.
-    /// When this returns `true`, [`signature_shares()`] can be called.
+    /// When this returns `true`, [`Self::signature_shares`] can be called.
     pub fn has_signature_shares(&self) -> bool {
         matches!(self, CoordinatorSessionState::SignatureSharesReady { .. })
     }
@@ -265,7 +265,7 @@ pub enum DKGSessionState<C: Ciphersuite> {
         round1_packages: BTreeMap<Identifier<C>, round1::Package<C>>,
     },
     /// Waiting for participants to send their broadcasts of other participant's
-    /// commitments. See documentation of [`handle_round1_package_broadcast()`]
+    /// commitments. See documentation of `handle_round1_package_broadcast`
     /// for details.
     WaitingForRound1PackagesBroadcast {
         /// Pubkey -> Identifier mapping.
@@ -310,9 +310,9 @@ impl<C: Ciphersuite> Default for DKGSessionState<C> {
 impl<C: Ciphersuite> DKGSessionState<C> {
     /// Handle a Msg received from a participant.
     ///
-    /// This should be called for new Msgs until [`are_commitments_ready()`]
+    /// This should be called for new Msgs until [`Self::has_round1_packages`]
     /// returns true, and after the SigningPackage is sent to the participants,
-    /// it should be called for new Msgs until [`are_signature_shares_ready()`]
+    /// it should be called for new Msgs until [`Self::has_round2_packages`]
     /// returns true.
     pub fn recv(&mut self, msg: Msg, self_identifier: Identifier<C>) -> Result<(), Box<dyn Error>> {
         match self {
@@ -499,7 +499,7 @@ impl<C: Ciphersuite> DKGSessionState<C> {
     }
 
     /// Returns if all participants sent their Round 1 Packages.
-    /// When this returns `true`, [`round1_packages()`] can be called, but
+    /// When this returns `true`, [`Self::round1_packages`] can be called, but
     /// its contents have not been checked via echo broadcast.
     pub fn has_round1_packages(&self) -> bool {
         matches!(
@@ -529,14 +529,14 @@ impl<C: Ciphersuite> DKGSessionState<C> {
     /// Returns if all participants sent their broadcast Round 1 Packages,
     /// or if the echo broadcast round should be skipped.
     ///
-    /// When this returns `true`, [`round1_packages()`] can be called,
+    /// When this returns `true`, [`Self::round1_packages`] can be called,
     /// and its contents are ensured to be checked via echo broadcast.
     pub fn has_round1_broadcast_packages(&self) -> bool {
         matches!(self, DKGSessionState::WaitingForRound2Packages { .. })
     }
 
     /// Returns if all participants sent their Round 2 Packages.
-    /// When this returns `true`, [`round2_packages()`] can be called.
+    /// When this returns `true`, [`Self::round2_packages`] can be called.
     pub fn has_round2_packages(&self) -> bool {
         matches!(self, DKGSessionState::Round2PackagesReady { .. })
     }
