@@ -32,6 +32,16 @@ cd ../signing_example/
 ./signing_example.sh
 ```
 
+### 4. Graphql Broadcasting (`graphql_example/`)
+
+Convert a signed transaction JSON into a GraphQL string
+
+```bash
+cd graphql_example/
+./graphql_example.sh
+```
+
+
 ## Development
 
 Remember to add executable permisions for each example before running:

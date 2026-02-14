@@ -15,8 +15,8 @@ use super::{
     AccountPreconditions, AccountUpdate, AccountUpdateBody, ActionState, Actions, AuthRequired,
     Authorization, AuthorizationKind, BalanceChange, EpochData, EpochLedger, Events, FeePayer,
     FeePayerBody, Field, MayUseToken, NetworkPreconditions, Permissions, Preconditions, PublicKey,
-    RangeCondition, SetVerificationKey, TimingData, TokenId, TokenSymbol, Update,
-    VerificationKeyData, ZKAppCommand, ZkappUri,
+    RangeCondition, SetVerificationKey, StringU32, StringU64, TimingData, TokenId, TokenSymbol,
+    Update, VerificationKeyData, ZKAppCommand, ZkappUri,
 };
 
 /// Comprehensive test vector containing all data needed for commitment function tests
@@ -140,13 +140,13 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                 network: NetworkPreconditions {
                                     snarked_ledger_hash: None,
                                     blockchain_length: None,
-                                    min_window_density: Some(RangeCondition { lower: 968906268, upper: 4294967295 }),
-                                    total_currency: Some(RangeCondition { lower: 112903, upper: 963644603788 }),
+                                    min_window_density: Some(RangeCondition { lower: StringU32(968906268), upper: StringU32(4294967295) }),
+                                    total_currency: Some(RangeCondition { lower: StringU64(112903), upper: StringU64(963644603788) }),
                                     global_slot_since_genesis: None,
                                     staking_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: None,
-                                            total_currency: Some(RangeCondition { lower: 2, upper: 48 }),
+                                            total_currency: Some(RangeCondition { lower: StringU64(2), upper: StringU64(48) }),
                                         },
                                         seed: None,
                                         start_checkpoint: None,
@@ -161,12 +161,12 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                         seed: None,
                                         start_checkpoint: None,
                                         lock_checkpoint: None,
-                                        epoch_length: Some(RangeCondition { lower: 18, upper: 8 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(18), upper: StringU32(8) }),
                                     },
                                 },
                                 account: AccountPreconditions {
                                     balance: None,
-                                    nonce: Some(RangeCondition { lower: 0, upper: 0 }),
+                                    nonce: Some(RangeCondition { lower: StringU32(0), upper: StringU32(0) }),
                                     receipt_chain_hash: None,
                                     delegate: None,
                                     state: [
@@ -183,7 +183,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                     proved_state: Some(true),
                                     is_new: Some(true),
                                 },
-                                valid_while: Some(RangeCondition { lower: 0, upper: 89383 }),
+                                valid_while: Some(RangeCondition { lower: StringU32(0), upper: StringU32(89383) }),
                             },
                             use_full_commitment: true,
                             implicit_account_creation_fee: true,
@@ -261,19 +261,19 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                             preconditions: Preconditions {
                                 network: NetworkPreconditions {
                                     snarked_ledger_hash: None,
-                                    blockchain_length: Some(RangeCondition { lower: 3367553, upper: 399559988 }),
+                                    blockchain_length: Some(RangeCondition { lower: StringU32(3367553), upper: StringU32(399559988) }),
                                     min_window_density: None,
-                                    total_currency: Some(RangeCondition { lower: 0, upper: 2 }),
-                                    global_slot_since_genesis: Some(RangeCondition { lower: 44647, upper: 553540 }),
+                                    total_currency: Some(RangeCondition { lower: StringU64(0), upper: StringU64(2) }),
+                                    global_slot_since_genesis: Some(RangeCondition { lower: StringU32(44647), upper: StringU32(553540) }),
                                     staking_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: Some(Field(Fp::from_str("1").unwrap())),
-                                            total_currency: Some(RangeCondition { lower: 4232005208983, upper: 1993887331942805073 }),
+                                            total_currency: Some(RangeCondition { lower: StringU64(4232005208983), upper: StringU64(1993887331942805073) }),
                                         },
                                         seed: None,
                                         start_checkpoint: Some(Field(Fp::from_str("8551691513815324128155113273682553456300193355242658631211007401180455349905").unwrap())),
                                         lock_checkpoint: Some(Field(Fp::from_str("9").unwrap())),
-                                        epoch_length: Some(RangeCondition { lower: 6837, upper: 28 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(6837), upper: StringU32(28) }),
                                     },
                                     next_epoch_data: EpochData {
                                         ledger: EpochLedger {
@@ -288,7 +288,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                 },
                                 account: AccountPreconditions {
                                     balance: None,
-                                    nonce: Some(RangeCondition { lower: 79184, upper: 63 }),
+                                    nonce: Some(RangeCondition { lower: StringU32(79184), upper: StringU32(63) }),
                                     receipt_chain_hash: Some(Field(Fp::from_str("21191699883298263006422823142554748231014573704116211684602785011310892024989").unwrap())),
                                     delegate: Some(PublicKey(CompressedPubKey::from_address("B62qirGubpcZsQsjdZKirbmWPPizrh73BfJvPqmfa2MtPssxUAMA7ao").unwrap())),
                                     state: [None, None, Some(Field(Fp::from_str("0").unwrap())), Some(Field(Fp::from_str("0").unwrap())), None, None, None, None],
@@ -296,7 +296,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                     proved_state: Some(true),
                                     is_new: Some(false),
                                 },
-                                valid_while: Some(RangeCondition { lower: 2, upper: 0 }),
+                                valid_while: Some(RangeCondition { lower: StringU32(2), upper: StringU32(0) }),
                             },
                             use_full_commitment: true,
                             implicit_account_creation_fee: false,
@@ -353,11 +353,11 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                     blockchain_length: None,
                                     min_window_density: None,
                                     total_currency: None,
-                                    global_slot_since_genesis: Some(RangeCondition { lower: 4294967295, upper: 10170731 }),
+                                    global_slot_since_genesis: Some(RangeCondition { lower: StringU32(4294967295), upper: StringU32(10170731) }),
                                     staking_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: Some(Field(Fp::from_str("4569095890697923837264237854655117431245925494697050748652154697884120554153").unwrap())),
-                                            total_currency: Some(RangeCondition { lower: 1180559990179017004, upper: 3969572169593 }),
+                                            total_currency: Some(RangeCondition { lower: StringU64(1180559990179017004), upper: StringU64(3969572169593) }),
                                         },
                                         seed: Some(Field(Fp::from_str("97200270175").unwrap())),
                                         start_checkpoint: None,
@@ -372,11 +372,11 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                         seed: Some(Field(Fp::from_str("8339017875517482179795821028053168607000431480335084651806802236975010360242").unwrap())),
                                         start_checkpoint: Some(Field(Fp::from_str("28948022309329048855892746252171976963363056481941560715954676764349967630336").unwrap())),
                                         lock_checkpoint: None,
-                                        epoch_length: Some(RangeCondition { lower: 1, upper: 4067969102 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(1), upper: StringU32(4067969102) }),
                                     },
                                 },
                                 account: AccountPreconditions {
-                                    balance: Some(RangeCondition { lower: 4151275998, upper: 2 }),
+                                    balance: Some(RangeCondition { lower: StringU64(4151275998), upper: StringU64(2) }),
                                     nonce: None,
                                     receipt_chain_hash: Some(Field(Fp::from_str("12289268747890117559755220730604137967513503362584152064993215527813717275300").unwrap())),
                                     delegate: Some(PublicKey(CompressedPubKey::from_address("B62qotoaG8qSVe5RG23EXfCJfCn5qCKPhybhZSWDCD69jiMDmTqJYCo").unwrap())),
@@ -458,9 +458,9 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                 network: NetworkPreconditions {
                                     snarked_ledger_hash: None,
                                     blockchain_length: None,
-                                    min_window_density: Some(RangeCondition { lower: 174, upper: 1 }),
-                                    total_currency: Some(RangeCondition { lower: 31037002641868, upper: 9674328 }),
-                                    global_slot_since_genesis: Some(RangeCondition { lower: 0, upper: 0 }),
+                                    min_window_density: Some(RangeCondition { lower: StringU32(174), upper: StringU32(1) }),
+                                    total_currency: Some(RangeCondition { lower: StringU64(31037002641868), upper: StringU64(9674328) }),
+                                    global_slot_since_genesis: Some(RangeCondition { lower: StringU32(0), upper: StringU32(0) }),
                                     staking_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: None,
@@ -469,7 +469,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                         seed: Some(Field(Fp::from_str("1").unwrap())),
                                         start_checkpoint: None,
                                         lock_checkpoint: None,
-                                        epoch_length: Some(RangeCondition { lower: 0, upper: 72321381 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(0), upper: StringU32(72321381) }),
                                     },
                                     next_epoch_data: EpochData {
                                         ledger: EpochLedger {
@@ -479,11 +479,11 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                         seed: None,
                                         start_checkpoint: None,
                                         lock_checkpoint: Some(Field(Fp::from_str("28948022309329048855892746252171976963363056481941560715954676764349967630336").unwrap())),
-                                        epoch_length: Some(RangeCondition { lower: 868, upper: 1357 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(868), upper: StringU32(1357) }),
                                     },
                                 },
                                 account: AccountPreconditions {
-                                    balance: Some(RangeCondition { lower: 65, upper: 1 }),
+                                    balance: Some(RangeCondition { lower: StringU64(65), upper: StringU64(1) }),
                                     nonce: None,
                                     receipt_chain_hash: None,
                                     delegate: Some(PublicKey(CompressedPubKey::from_address("B62qkCnM6zx4tHTy8E2A1VKdcrgUAeydV7kjemLXRjDUk8YQ61f5SD6").unwrap())),
@@ -553,24 +553,24 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                             preconditions: Preconditions {
                                 network: NetworkPreconditions {
                                     snarked_ledger_hash: Some(Field(Fp::from_str("8205019").unwrap())),
-                                    blockchain_length: Some(RangeCondition { lower: 4294967295, upper: 3 }),
-                                    min_window_density: Some(RangeCondition { lower: 1, upper: 1377887 }),
-                                    total_currency: Some(RangeCondition { lower: 1, upper: 18446744073709551615 }),
-                                    global_slot_since_genesis: Some(RangeCondition { lower: 1378969044, upper: 0 }),
+                                    blockchain_length: Some(RangeCondition { lower: StringU32(4294967295), upper: StringU32(3) }),
+                                    min_window_density: Some(RangeCondition { lower: StringU32(1), upper: StringU32(1377887) }),
+                                    total_currency: Some(RangeCondition { lower: StringU64(1), upper: StringU64(18446744073709551615) }),
+                                    global_slot_since_genesis: Some(RangeCondition { lower: StringU32(1378969044), upper: StringU32(0) }),
                                     staking_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: Some(Field(Fp::from_str("1134108913283026455365465700560468162381293165458480311928069693885691063685").unwrap())),
-                                            total_currency: Some(RangeCondition { lower: 30129300470, upper: 2835200861991394646 }),
+                                            total_currency: Some(RangeCondition { lower: StringU64(30129300470), upper: StringU64(2835200861991394646) }),
                                         },
                                         seed: Some(Field(Fp::from_str("0").unwrap())),
                                         start_checkpoint: Some(Field(Fp::from_str("0").unwrap())),
                                         lock_checkpoint: Some(Field(Fp::from_str("17963724373401885134953161134596414033").unwrap())),
-                                        epoch_length: Some(RangeCondition { lower: 857183953, upper: 14 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(857183953), upper: StringU32(14) }),
                                     },
                                     next_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: None,
-                                            total_currency: Some(RangeCondition { lower: 492790850673, upper: 88380204 }),
+                                            total_currency: Some(RangeCondition { lower: StringU64(492790850673), upper: StringU64(88380204) }),
                                         },
                                         seed: Some(Field(Fp::from_str("19257690991050116128398028603031492277042752941393613080353486321748437392288").unwrap())),
                                         start_checkpoint: Some(Field(Fp::from_str("20664131102619957971634997109326932262688408766753233557709363628705464753436").unwrap())),
@@ -664,7 +664,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                 network: NetworkPreconditions {
                                     snarked_ledger_hash: Some(Field(Fp::from_str("17832250625107159026622621").unwrap())),
                                     blockchain_length: None,
-                                    min_window_density: Some(RangeCondition { lower: 1622547766, upper: 12483700 }),
+                                    min_window_density: Some(RangeCondition { lower: StringU32(1622547766), upper: StringU32(12483700) }),
                                     total_currency: None,
                                     global_slot_since_genesis: None,
                                     staking_epoch_data: EpochData {
@@ -680,17 +680,17 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                     next_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: None,
-                                            total_currency: Some(RangeCondition { lower: 5492, upper: 9240 }),
+                                            total_currency: Some(RangeCondition { lower: StringU64(5492), upper: StringU64(9240) }),
                                         },
                                         seed: None,
                                         start_checkpoint: None,
                                         lock_checkpoint: Some(Field(Fp::from_str("23620217203579031836388864172183398476037989218729185450324161327256194641491").unwrap())),
-                                        epoch_length: Some(RangeCondition { lower: 3, upper: 14 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(3), upper: StringU32(14) }),
                                     },
                                 },
                                 account: AccountPreconditions {
                                     balance: None,
-                                    nonce: Some(RangeCondition { lower: 131981827, upper: 0 }),
+                                    nonce: Some(RangeCondition { lower: StringU32(131981827), upper: StringU32(0) }),
                                     receipt_chain_hash: Some(Field(Fp::from_str("12611067225855484915935185642780160742344057998944763254977936423282972300986").unwrap())),
                                     delegate: None,
                                     state: [None, None, None, None, None, None, None, None],
@@ -698,7 +698,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                     proved_state: None,
                                     is_new: None,
                                 },
-                                valid_while: Some(RangeCondition { lower: 0, upper: 11083 }),
+                                valid_while: Some(RangeCondition { lower: StringU32(0), upper: StringU32(11083) }),
                             },
                             use_full_commitment: true,
                             implicit_account_creation_fee: false,
@@ -768,13 +768,13 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                 network: NetworkPreconditions {
                                     snarked_ledger_hash: Some(Field(Fp::from_str("21780810669622180198827412605752019112694213974273572536627080129337651111000").unwrap())),
                                     blockchain_length: None,
-                                    min_window_density: Some(RangeCondition { lower: 1, upper: 4294967295 }),
-                                    total_currency: Some(RangeCondition { lower: 1, upper: 791419 }),
-                                    global_slot_since_genesis: Some(RangeCondition { lower: 1592950278, upper: 0 }),
+                                    min_window_density: Some(RangeCondition { lower: StringU32(1), upper: StringU32(4294967295) }),
+                                    total_currency: Some(RangeCondition { lower: StringU64(1), upper: StringU64(791419) }),
+                                    global_slot_since_genesis: Some(RangeCondition { lower: StringU32(1592950278), upper: StringU32(0) }),
                                     staking_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: Some(Field(Fp::from_str("0").unwrap())),
-                                            total_currency: Some(RangeCondition { lower: 54317587316106, upper: 2 }),
+                                            total_currency: Some(RangeCondition { lower: StringU64(54317587316106), upper: StringU64(2) }),
                                         },
                                         seed: None,
                                         start_checkpoint: Some(Field(Fp::from_str("1").unwrap())),
@@ -794,7 +794,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                 },
                                 account: AccountPreconditions {
                                     balance: None,
-                                    nonce: Some(RangeCondition { lower: 2, upper: 1441884673 }),
+                                    nonce: Some(RangeCondition { lower: StringU32(2), upper: StringU32(1441884673) }),
                                     receipt_chain_hash: None,
                                     delegate: Some(PublicKey(CompressedPubKey::from_address("B62qqUYQSrFYwGzLauwLWHUi6dN7TQQcCPs32zu3Ts6Vd3VxwPjEJvq").unwrap())),
                                     state: [Some(Field(Fp::from_str("18918325975863313496709857743978177716638145595943124736161520517413057154437").unwrap())), Some(Field(Fp::from_str("312624389692019").unwrap())), None, Some(Field(Fp::from_str("2718746757160").unwrap())), None, None, None, Some(Field(Fp::from_str("1").unwrap()))],
@@ -900,10 +900,10 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                             preconditions: Preconditions {
                                 network: NetworkPreconditions {
                                     snarked_ledger_hash: Some(Field(Fp::from_str("24970569756830890907032583414011800560825949545614573312036245161921365580155").unwrap())),
-                                    blockchain_length: Some(RangeCondition { lower: 1832279324, upper: 15 }),
+                                    blockchain_length: Some(RangeCondition { lower: StringU32(1832279324), upper: StringU32(15) }),
                                     min_window_density: None,
-                                    total_currency: Some(RangeCondition { lower: 1108052, upper: 121104388238 }),
-                                    global_slot_since_genesis: Some(RangeCondition { lower: 1, upper: 1 }),
+                                    total_currency: Some(RangeCondition { lower: StringU64(1108052), upper: StringU64(121104388238) }),
+                                    global_slot_since_genesis: Some(RangeCondition { lower: StringU32(1), upper: StringU32(1) }),
                                     staking_epoch_data: EpochData {
                                         ledger: EpochLedger {
                                             hash: Some(Field(Fp::from_str("1").unwrap())),
@@ -912,7 +912,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                         seed: Some(Field(Fp::from_str("1069664032282738273837302310296469895222139999747098872502886640413086011037").unwrap())),
                                         start_checkpoint: Some(Field(Fp::from_str("2206947745596275636271014387481303219667876497705740677468373873041316013377").unwrap())),
                                         lock_checkpoint: Some(Field(Fp::from_str("13894592038331160844841226371684122072072682417678163406966544621591962919540").unwrap())),
-                                        epoch_length: Some(RangeCondition { lower: 1, upper: 1 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(1), upper: StringU32(1) }),
                                     },
                                     next_epoch_data: EpochData {
                                         ledger: EpochLedger {
@@ -922,12 +922,12 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                         seed: None,
                                         start_checkpoint: Some(Field(Fp::from_str("11103193587320135865201097212279431597669221538126176806032109027788707580455").unwrap())),
                                         lock_checkpoint: None,
-                                        epoch_length: Some(RangeCondition { lower: 48486, upper: 218 }),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(48486), upper: StringU32(218) }),
                                     },
                                 },
                                 account: AccountPreconditions {
-                                    balance: Some(RangeCondition { lower: 866, upper: 0 }),
-                                    nonce: Some(RangeCondition { lower: 5321269, upper: 2 }),
+                                    balance: Some(RangeCondition { lower: StringU64(866), upper: StringU64(0) }),
+                                    nonce: Some(RangeCondition { lower: StringU32(5321269), upper: StringU32(2) }),
                                     receipt_chain_hash: Some(Field(Fp::from_str("2886782260929269424992032700419650791772721097705349472210579774432180382123").unwrap())),
                                     delegate: Some(PublicKey(CompressedPubKey::from_address("B62qkGP6ayDU7uByoSCiGnavpJNvEtqSAZB2TVozmRqo4fVUu3DF3es").unwrap())),
                                     state: [None, Some(Field(Fp::from_str("1").unwrap())), None, Some(Field(Fp::from_str("0").unwrap())), None, Some(Field(Fp::from_str("481675703").unwrap())), Some(Field(Fp::from_str("880259374099972146003142351257535").unwrap())), None],
@@ -935,7 +935,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                                     proved_state: None,
                                     is_new: Some(false),
                                 },
-                                valid_while: Some(RangeCondition { lower: 1028632684, upper: 0 }),
+                                valid_while: Some(RangeCondition { lower: StringU32(1028632684), upper: StringU32(0) }),
                             },
                             use_full_commitment: false,
                             implicit_account_creation_fee: false,

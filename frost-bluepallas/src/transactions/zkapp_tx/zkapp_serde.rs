@@ -6,7 +6,7 @@ use crate::{
         from_base58_check, to_base58_check, Base58Error, MEMO_VERSION_BYTE, TOKEN_ID_VERSION_BYTE,
     },
     transactions::{
-        zkapp_tx::{Field, PublicKey, TokenId},
+        zkapp_tx::{Field, PublicKey, StringU32, StringU64, TokenId},
         MEMO_BYTES,
     },
 };
@@ -164,6 +164,48 @@ impl<'de> Deserialize<'de> for TokenId {
 
         let fp = Fp::from_le_bytes_mod_order(&decoded);
         Ok(TokenId(Field(fp)))
+    }
+}
+
+// --------------- StringU32 serde wrapper ---------------
+impl Serialize for StringU32 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.0.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for StringU32 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let value = s.parse::<u32>().map_err(serde::de::Error::custom)?;
+        Ok(StringU32(value))
+    }
+}
+
+// --------------- StringU64 serde wrapper ---------------
+impl Serialize for StringU64 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.0.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for StringU64 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let value = s.parse::<u64>().map_err(serde::de::Error::custom)?;
+        Ok(StringU64(value))
     }
 }
 
@@ -739,6 +781,48 @@ mod tests {
                 .to_string(),
             "3392518251768960475377392625298437850623664973002200885669375116181514017494",
             "Second update verification key hash mismatch"
+        );
+
+        assert_round_trip(&zkapp_command);
+    }
+
+    #[test]
+    fn test_serde_update_state() {
+        let input_str = include_str!("../../../tests/data/update-state.json");
+        let zkapp_command = deserialize_and_validate_zkapp(input_str);
+
+        assert_eq!(
+            zkapp_command.account_updates.len(),
+            1,
+            "Expected 1 account update"
+        );
+
+        assert_round_trip(&zkapp_command);
+    }
+
+    #[test]
+    fn test_serde_deploy_contract() {
+        let input_str = include_str!("../../../tests/data/deploy-contract.json");
+        let zkapp_command = deserialize_and_validate_zkapp(input_str);
+
+        assert!(
+            zkapp_command.account_updates.len() >= 2,
+            "Expected at least 2 account updates"
+        );
+
+        let acc_update = &zkapp_command.account_updates[1];
+
+        let verification_key = acc_update
+            .body
+            .update
+            .verification_key
+            .as_ref()
+            .expect("Expected verification key in the deploy contract account update");
+
+        assert_eq!(
+            verification_key.hash.to_string(),
+            "2010110611498654222290872571229236120731116169718877623624844022104051925959",
+            "Verification key hash mismatch"
         );
 
         assert_round_trip(&zkapp_command);

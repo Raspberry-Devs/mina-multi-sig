@@ -215,19 +215,19 @@ impl Packable for ActionState {
     }
 }
 
-impl Packable for RangeCondition<UInt32> {
+impl Packable for RangeCondition<StringU32> {
     fn pack(&self) -> PackedInput {
         PackedInput::new()
-            .append_u32(self.lower)
-            .append_u32(self.upper)
+            .append_u32(self.lower.0)
+            .append_u32(self.upper.0)
     }
 }
 
-impl Packable for RangeCondition<UInt64> {
+impl Packable for RangeCondition<StringU64> {
     fn pack(&self) -> PackedInput {
         PackedInput::new()
-            .append_u64(self.lower)
-            .append_u64(self.upper)
+            .append_u64(self.lower.0)
+            .append_u64(self.upper.0)
     }
 }
 
@@ -619,21 +619,21 @@ impl Emptiable for TimingData {
     }
 }
 
-impl Emptiable for RangeCondition<UInt32> {
+impl Emptiable for RangeCondition<StringU32> {
     fn empty_roi() -> PackedInput {
         Self {
-            lower: UInt32::MIN,
-            upper: UInt32::MAX,
+            lower: StringU32(u32::MIN),
+            upper: StringU32(u32::MAX),
         }
         .pack()
     }
 }
 
-impl Emptiable for RangeCondition<UInt64> {
+impl Emptiable for RangeCondition<StringU64> {
     fn empty_roi() -> PackedInput {
         Self {
-            lower: UInt64::MIN,
-            upper: UInt64::MAX,
+            lower: StringU64(u64::MIN),
+            upper: StringU64(u64::MAX),
         }
         .pack()
     }
