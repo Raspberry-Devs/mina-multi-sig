@@ -30,7 +30,7 @@ lazy_static.workspace = true
 serde_json.workspace = true
 insta.workspace = true
 hex.workspace = true
-rand_chacha = "0.3"
+rand_chacha = "0.9"
 bs58 = "0.5.1"
 reqwest = { workspace = true, features = ["blocking"] }
 # Use test-utils feature as dev dependency, this enables sharing test vectors
