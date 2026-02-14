@@ -29,7 +29,7 @@ regex = "1.11.1"
 reqwest = { version = "0.12.12", default-features = false, features = ["rustls-tls"] }
 serde = "1.0.204"
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-serdect = "0.3.0"
+serdect = "0.4.2"
 snow = "0.9.6"
 stable-eyre = "0.2"
 tempfile = "3.16.0"
