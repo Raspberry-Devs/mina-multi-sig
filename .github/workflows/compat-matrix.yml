@@ -1,0 +1,29 @@
+name: Compatibility Matrix
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-test:
+    name: build-and-test (${{ matrix.os }}, ${{ matrix.rust_toolchain }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust_toolchain: [stable, beta]
+        os: [ubuntu-latest, macos-latest]
+    env:
+      RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust toolchain
+        run: rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
