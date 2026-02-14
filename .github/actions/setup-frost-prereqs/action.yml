@@ -1,0 +1,21 @@
+name: Setup FROST Prerequisites
+description: Install mkcert and frostd on GitHub-hosted runners
+
+runs:
+  using: composite
+  steps:
+    - name: Install mkcert (Ubuntu)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mkcert
+
+    - name: Install mkcert (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: brew install mkcert
+
+    - name: Install frostd
+      shell: bash
+      run: cargo install --git https://github.com/ZcashFoundation/frost-zcash-demo.git --locked frostd

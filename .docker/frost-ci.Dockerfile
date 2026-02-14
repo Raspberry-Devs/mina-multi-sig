@@ -2,6 +2,7 @@ FROM ubuntu:22.04
 
 # Avoid interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
+ARG RUST_VERSION=1.92.0
 
 # Install system dependencies
 # curl - Download tools and Rust installer
@@ -20,7 +21,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust programming language and toolchain
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION} \
+    && /root/.cargo/bin/rustup component add rustfmt clippy
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install mkcert for generating local TLS certificates (required by frostd server)
