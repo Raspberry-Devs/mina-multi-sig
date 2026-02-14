@@ -13,6 +13,8 @@
 //! verify it with the `signer`'s verify method. We do not use `signer` at all in our
 //! implementation. We do use `hasher` which provides the hash functions used by `signer` and our
 //! implementation of `frost-core`.
+#![warn(rustdoc::broken_intra_doc_links)]
+#![warn(rustdoc::bare_urls)]
 #![no_std]
 
 #[macro_use]
