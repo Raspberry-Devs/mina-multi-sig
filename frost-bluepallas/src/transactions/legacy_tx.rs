@@ -15,7 +15,8 @@ use crate::{
     transactions::{MEMO_BYTES, MEMO_HEADER_BYTES},
 };
 
-/// Copied from https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs
+/// Copied from
+/// <https://github.com/o1-labs/proof-systems/blob/master/signer/tests/transaction.rs>.
 const TAG_BITS: usize = 3;
 const PAYMENT_TX_TAG: [bool; TAG_BITS] = [false, false, false];
 const DELEGATION_TX_TAG: [bool; TAG_BITS] = [false, false, true];

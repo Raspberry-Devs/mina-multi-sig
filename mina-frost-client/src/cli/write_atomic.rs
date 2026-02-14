@@ -2,7 +2,7 @@
 Write files atomically.
 
 This is based on
-https://github.com/Blobfolio/write_atomic/blob/7d9965784cca5b3d54adf8a312323f096223f13d/src/lib.rs
+<https://github.com/Blobfolio/write_atomic/blob/7d9965784cca5b3d54adf8a312323f096223f13d/src/lib.rs>
 but uses the tempfile `persist()` function, which by default creates files with
 reduced permissions.
 */

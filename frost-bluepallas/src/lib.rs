@@ -1,5 +1,5 @@
 //! Information sharing:
-//! https://github.com/o1-labs/proof-systems defines tools for interfacing with the mina blockchain
+//! <https://github.com/o1-labs/proof-systems> defines tools for interfacing with the mina blockchain
 //! (pretty sure that) the actual internals of the mina blockchain such as signature verification for
 //! contracts with the `signature` permission happens through the OCaml implementation.
 //!
@@ -205,8 +205,9 @@ impl Ciphersuite for BluePallas {
         Ok(frost_core::Challenge::from_scalar(scalar))
     }
 
-    /// This performs the same functionality as [`pre_commitment_sign`], but instead only negates commitments because the coordinator is not able to receive any nonces
-    /// Naturally, this is called by the coordinator in the [`aggregate`] function
+    /// This performs the same functionality as [`Self::pre_commitment_sign`], but instead only
+    /// negates commitments because the coordinator is not able to receive any nonces.
+    /// Naturally, this is called by the coordinator in the [`crate::aggregate`] function.
     fn pre_commitment_aggregate<'a>(
         signing_package: &'a frost_core::SigningPackage<Self>,
         binding_factor_list: &'a BindingFactorList<Self>,
