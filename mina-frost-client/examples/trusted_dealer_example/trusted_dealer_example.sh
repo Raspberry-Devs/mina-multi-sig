@@ -11,9 +11,9 @@ HELPERS_DIR="$SCRIPT_DIR/../helpers"
 cd "$SCRIPT_DIR"
 
 # Source helpers
-# shellcheck source=mina-frost-client/examples/helpers/file_generation.sh
+# shellcheck source=file_generation.sh
 source "$HELPERS_DIR/file_generation.sh"
-# shellcheck source=mina-frost-client/examples/helpers/use_frost_client.sh
+# shellcheck source=use_frost_client.sh
 source "$HELPERS_DIR/use_frost_client.sh"
 
 # Setup

@@ -9,7 +9,7 @@ SIGNATURE_PATH="$SCRIPT_DIR/../signing_example/generated/signature.json"
 OUTPUT_PATH="$GENERATED_DIR/out.json"
 
 cd "$SCRIPT_DIR" || exit
-# shellcheck source=mina-frost-client/examples/helpers/use_frost_client.sh
+# shellcheck source=use_frost_client.sh
 source "$HELPERS_DIR/use_frost_client.sh"
 
 # Clean generated directory

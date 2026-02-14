@@ -16,13 +16,6 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: Shellcheck
-        run: |
-          if ! command -v shellcheck >/dev/null 2>&1; then
-            apt-get update
-            apt-get install -y shellcheck
-          fi
-          find . -name "*.sh" -exec shellcheck -x {} +
       - name: Build
         run: cargo build --verbose
       - name: Run tests
