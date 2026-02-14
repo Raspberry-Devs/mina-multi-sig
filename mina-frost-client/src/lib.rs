@@ -1,3 +1,6 @@
+#![warn(rustdoc::broken_intra_doc_links)]
+#![warn(rustdoc::bare_urls)]
+
 pub mod api;
 pub mod cipher;
 pub mod cli;

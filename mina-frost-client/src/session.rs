@@ -311,8 +311,8 @@ impl<C: Ciphersuite> DKGSessionState<C> {
     /// Handle a Msg received from a participant.
     ///
     /// This should be called for new Msgs until [`Self::has_round1_packages`]
-    /// returns true, and after the SigningPackage is sent to the participants,
-    /// it should be called for new Msgs until [`Self::has_round2_packages`]
+    /// returns true, and after sending Round 2 packages to participants, it
+    /// should be called for new Msgs until [`Self::has_round2_packages`]
     /// returns true.
     pub fn recv(&mut self, msg: Msg, self_identifier: Identifier<C>) -> Result<(), Box<dyn Error>> {
         match self {
