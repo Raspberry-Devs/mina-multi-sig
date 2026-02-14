@@ -15,30 +15,18 @@ env:
 jobs:
   test-frost-examples:
     runs-on: ubuntu-latest
-    container:
-      # @TODO: Once PR 76 is merged change the image to frost-ci:latest
-      # (it will only be created after merge to main)
-      image: ghcr.io/raspberry-devs/mina-multi-sig/frost-ci:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      # Add Cargo caching for speed boost
-      - name: Cache Cargo build artifacts
-        uses: actions/cache@v3
+      - uses: dtolnay/rust-toolchain@master
         with:
-          path: |
-            /root/.cargo/registry/index/
-            /root/.cargo/registry/cache/
-            /root/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-container-${{ hashFiles('mina-frost-client/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-container-
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: client-commands-stable
+      - name: Install example prerequisites
+        uses: ./.github/actions/setup-frost-prereqs
 
       # Pre-build once instead of building for each example
       - name: Build mina-frost-client (release mode)

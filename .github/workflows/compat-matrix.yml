@@ -14,15 +14,20 @@ jobs:
     name: build-and-test (${{ matrix.os }}, ${{ matrix.rust_toolchain }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         rust_toolchain: [stable, beta]
         os: [ubuntu-latest, macos-latest]
-    env:
-      RUSTUP_TOOLCHAIN: ${{ matrix.rust_toolchain }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install Rust toolchain
-        run: rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust_toolchain }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.rust_toolchain }}-${{ matrix.os }}
+      - name: Install test prerequisites
+        uses: ./.github/actions/setup-frost-prereqs
       - name: Build
         run: cargo build --verbose
       - name: Run tests
