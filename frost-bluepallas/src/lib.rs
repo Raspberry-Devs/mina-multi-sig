@@ -17,7 +17,6 @@
 #![warn(rustdoc::bare_urls)]
 #![no_std]
 
-#[macro_use]
 extern crate alloc;
 
 use alloc::{borrow::Cow, collections::BTreeMap};
@@ -37,20 +36,17 @@ pub type Error = frost_core::Error<BluePallas>;
 
 use crate::{
     hasher::{hash_to_array, hash_to_scalar, message_hash},
-    mina_compat::{translate_pk, PallasMessage},
     negate::NegateY,
+    pallas_message::{translate_pk, PallasMessage},
     round1::SigningNonces,
 };
 
-mod base58;
 pub mod errors;
-pub mod graphql;
 pub mod hasher;
 pub mod keys;
-pub mod mina_compat;
 mod negate;
+pub mod pallas_message;
 pub mod signing_utilities;
-pub mod transactions;
 
 /// PallasScalarField implements the FROST field interface for the Pallas scalar field
 #[derive(Clone, Copy)]
@@ -196,8 +192,9 @@ impl Ciphersuite for BluePallas {
             translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let rx = R.into_affine().x;
 
-        // Attempt to derive the message as a TransactionEnvelope first, if that fails treat it as raw bytes
-        let msg = PallasMessage::new(message.to_vec());
+        // Parse a pre-encoded PallasMessage when available, otherwise fall back to raw bytes.
+        let msg = PallasMessage::deserialize(message)
+            .unwrap_or_else(|_| PallasMessage::new(message.to_vec()));
         let network_id = msg.network_id();
         let is_legacy = msg.is_legacy();
 

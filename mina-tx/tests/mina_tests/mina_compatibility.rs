@@ -3,11 +3,11 @@ use ark_ff::fields::PrimeField;
 use ark_ff::BigInteger;
 use frost_bluepallas::{
     hasher::message_hash,
-    mina_compat::{translate_pk, translate_sig, PallasMessage},
-    transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
+    pallas_message::{translate_pk, translate_sig, PallasMessage},
     PallasGroup,
 };
 use frost_core::{Ciphersuite, Group};
+use mina_tx::{legacy_tx::LegacyTransaction, TransactionEnvelope};
 
 use mina_hasher::Hashable;
 use mina_signer::{CurvePoint, NetworkId, PubKey, Signer};
@@ -36,7 +36,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
             16,
         ),
     );
-    let fr_msg = tx.serialize()?;
+    let fr_msg = tx.to_pallas_message().serialize();
 
     let (fr_sig, fr_pk) = generate_signature_random(&fr_msg, rng)?;
 
@@ -56,7 +56,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
 
     let mina_pk = translate_pk(&fr_pk)?;
     let mina_sig = translate_sig(&fr_sig)?;
-    let mina_msg = PallasMessage::new(tx.serialize().unwrap());
+    let mina_msg = tx.to_pallas_message();
 
     assert_eq!(
         mina_sig.rx,
@@ -150,7 +150,7 @@ fn roi_mina_tx() {
 
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
 
-    let msg = PallasMessage::new(tx_env.serialize().unwrap());
+    let msg = tx_env.to_pallas_message();
     assert_eq!(
         msg.to_roinput(),
         tx.to_roinput(),
@@ -199,7 +199,7 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
     // We want to now deserialize into a transaction
     let tx: LegacyTransaction = serde_json::from_str(json).unwrap();
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
-    let msg = tx_env.serialize().unwrap();
+    let msg = tx_env.to_pallas_message().serialize();
 
     for _ in 0..64 {
         let rng = rand_core::OsRng;

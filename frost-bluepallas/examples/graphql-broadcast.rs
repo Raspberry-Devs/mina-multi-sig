@@ -15,20 +15,17 @@
 use std::{fs, path::PathBuf};
 
 use ark_ff::PrimeField;
-use frost_bluepallas::{
-    mina_compat::{PubKeySer, Sig, TransactionSignature},
-    signing_utilities::generate_signature_from_sk,
-    transactions::{
-        legacy_tx::LegacyTransaction,
-        zkapp_tx::{
-            AccountUpdate, AccountUpdateBody, Actions, Authorization, AuthorizationKind,
-            BalanceChange, Events, FeePayer, FeePayerBody, MayUseToken, Preconditions, PublicKey,
-            TokenId, Update, ZKAppCommand,
-        },
-        TransactionEnvelope, MEMO_BYTES,
-    },
-};
+use frost_bluepallas::signing_utilities::generate_signature_from_sk;
 use mina_signer::{CompressedPubKey, Keypair, NetworkId, PubKey};
+use mina_tx::{
+    legacy_tx::LegacyTransaction,
+    zkapp_tx::{
+        AccountUpdate, AccountUpdateBody, Actions, Authorization, AuthorizationKind, BalanceChange,
+        Events, FeePayer, FeePayerBody, MayUseToken, Preconditions, PublicKey, TokenId, Update,
+        ZKAppCommand,
+    },
+    PubKeySer, Sig, TransactionEnvelope, TransactionSignature, MEMO_BYTES,
+};
 use rand_chacha::ChaCha20Rng;
 use rand_core::SeedableRng;
 
@@ -148,15 +145,16 @@ fn build_zkapp_tx(from: &CompressedPubKey) -> TransactionEnvelope {
 
 fn sign_envelope(envelope: TransactionEnvelope, keypair: &Keypair) -> TransactionSignature {
     let signing_key =
-        frost_bluepallas::mina_compat::translate_minask(keypair).expect("valid keypair");
+        frost_bluepallas::pallas_message::translate_minask(keypair).expect("valid keypair");
 
-    let msg = envelope.serialize().expect("serialize envelope");
+    let msg = envelope.to_pallas_message().serialize();
 
     let (frost_sig, _vk) =
         generate_signature_from_sk(&msg, &signing_key, ChaCha20Rng::from_seed([0u8; 32]))
             .expect("FROST signing succeeds");
 
-    let mina_sig = frost_bluepallas::mina_compat::translate_sig(&frost_sig).expect("translate sig");
+    let mina_sig =
+        frost_bluepallas::pallas_message::translate_sig(&frost_sig).expect("translate sig");
 
     let sig = Sig {
         field: mina_sig.rx.into_bigint(),

@@ -2,7 +2,7 @@
 
 use crate::{
     errors::BluePallasError,
-    mina_compat::Sig,
+    signatures::Sig,
     transactions::{
         legacy_tx::LegacyTransaction,
         network_id::NetworkIdEnvelope,
@@ -15,6 +15,7 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
+use frost_bluepallas::pallas_message::PallasMessage;
 use mina_hasher::Hashable;
 use mina_signer::NetworkId;
 use serde::{Deserialize, Serialize};
@@ -134,6 +135,10 @@ impl TransactionEnvelope {
         self.kind.is_legacy()
     }
 
+    pub fn to_pallas_message(&self) -> PallasMessage {
+        PallasMessage::from_parts(self.to_roinput(), self.network_id(), self.is_legacy())
+    }
+
     pub fn to_graphql_query_json(&self, signature: Sig) -> Result<String, serde_json::Error> {
         match &self.kind {
             TransactionKind::ZkApp(zkapp) => {
@@ -157,6 +162,12 @@ impl TransactionEnvelope {
                 }
             }
         }
+    }
+}
+
+impl From<&TransactionEnvelope> for PallasMessage {
+    fn from(value: &TransactionEnvelope) -> Self {
+        value.to_pallas_message()
     }
 }
 

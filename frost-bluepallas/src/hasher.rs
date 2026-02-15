@@ -6,7 +6,7 @@ use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
 use mina_signer::{BaseField, NetworkId, PubKey, ScalarField};
 
-use crate::{errors::BluePallasError, mina_compat::PallasMessage, PallasScalarField};
+use crate::{errors::BluePallasError, pallas_message::PallasMessage, PallasScalarField};
 
 /// This is a Hashable interface for an array of bytes
 /// This allows us to provide a easy-to-read interface for hashing FROST elements in H1, H3, H4, H5

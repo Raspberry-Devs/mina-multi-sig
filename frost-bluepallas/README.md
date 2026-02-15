@@ -107,8 +107,8 @@ let (frost_sig, frost_vk) = frost::signing_utilities::sign_from_packages(
 )?;
 
 // Convert to Mina format for verification
-let mina_sig = frost_bluepallas::mina_compat::translate_sig(&frost_sig)?;
-let mina_vk = frost_bluepallas::mina_compat::translate_pk(&frost_vk)?;
+let mina_sig = frost_bluepallas::pallas_message::translate_sig(&frost_sig)?;
+let mina_vk = frost_bluepallas::pallas_message::translate_pk(&frost_vk)?;
 
 // Verify with Mina signer
 let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
@@ -146,8 +146,8 @@ cargo run --example mina-sign-tx
 ### Utilities
 
 - `frost::signing_utilities::sign_from_packages()` - Complete signing process helper
-- `frost::mina_compat::translate_sig()` - Convert FROST to Mina signature format
-- `frost::mina_compat::translate_pk()` - Convert FROST to Mina public key format
+- `frost::pallas_message::translate_sig()` - Convert FROST to Mina signature format
+- `frost::pallas_message::translate_pk()` - Convert FROST to Mina public key format
 
 ## Network Configuration
 

@@ -5,7 +5,7 @@ use frost_core::{
     Ciphersuite,
 };
 
-use frost_bluepallas::{mina_compat::translate_pk, BluePallas};
+use frost_bluepallas::{pallas_message::translate_pk, BluePallas};
 
 /// Additional information about a group, derived from the key packages.
 #[derive(Debug, Clone)]
