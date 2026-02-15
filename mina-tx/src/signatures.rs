@@ -1,8 +1,5 @@
 use alloc::{string::String, vec::Vec};
-use ark_ec::{AffineRepr, CurveGroup};
-use ark_ff::{BigInt, PrimeField};
-use frost_bluepallas::{pallas_message::translate_pk, BluePallas};
-use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
+use ark_ff::BigInt;
 use mina_signer::pubkey::PubKey;
 use serde::{
     ser::{SerializeStruct, Serializer},
@@ -11,7 +8,6 @@ use serde::{
 
 use crate::{
     base58::{to_base58_check, SIGNATURE_VERSION_BYTE, SIGNATURE_VERSION_NUMBER},
-    errors::BluePallasError,
     transactions::{TransactionEnvelope, TransactionKind},
     zkapp_tx::SignatureInjectionResult,
 };
@@ -43,27 +39,6 @@ impl Sig {
     pub fn to_base58(&self) -> String {
         let bytes = self.to_bytes();
         to_base58_check(&bytes, SIGNATURE_VERSION_BYTE)
-    }
-}
-
-impl TryInto<Sig> for FrSig<BluePallas> {
-    type Error = BluePallasError;
-
-    fn try_into(self) -> Result<Sig, Self::Error> {
-        let x = self
-            .R()
-            .into_affine()
-            .x()
-            .ok_or_else(|| {
-                BluePallasError::InvalidSignature("Failed to convert x coordinate to bigint".into())
-            })?
-            .into_bigint();
-        let z: Scalar<BluePallas> = *self.z();
-
-        Ok(Sig {
-            field: x,
-            scalar: z.into_bigint(),
-        })
     }
 }
 
@@ -120,16 +95,6 @@ impl From<PubKey> for PubKeySer {
     }
 }
 
-impl TryFrom<VerifyingKey<BluePallas>> for PubKeySer {
-    type Error = BluePallasError;
-
-    fn try_from(vk: VerifyingKey<BluePallas>) -> Result<Self, Self::Error> {
-        translate_pk(&vk)
-            .map(|pub_key| PubKeySer { pubKey: pub_key })
-            .map_err(|e| BluePallasError::InvalidPublicKey(e.to_string()))
-    }
-}
-
 impl Serialize for PubKeySer {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -169,27 +134,6 @@ pub struct TransactionSignature {
 }
 
 impl TransactionSignature {
-    pub fn from_frost_signature(
-        public_key: VerifyingKey<BluePallas>,
-        signature: FrSig<BluePallas>,
-        payload: TransactionEnvelope,
-    ) -> Result<(Self, Option<SignatureInjectionResult>), BluePallasError> {
-        let pubkey: PubKeySer = public_key.try_into()?;
-        let signature: Sig = signature.try_into()?;
-        Ok(Self::new_with_zkapp_injection(pubkey, signature, payload))
-    }
-
-    pub fn from_frost_signature_bytes(
-        public_key: VerifyingKey<BluePallas>,
-        signature_bytes: &[u8],
-        payload: TransactionEnvelope,
-    ) -> Result<(Self, Option<SignatureInjectionResult>), BluePallasError> {
-        let signature = FrSig::<BluePallas>::deserialize(signature_bytes)
-            .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
-
-        Self::from_frost_signature(public_key, signature, payload)
-    }
-
     pub fn new_with_zkapp_injection(
         public_key: PubKeySer,
         signature: Sig,

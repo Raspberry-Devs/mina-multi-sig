@@ -1,6 +1,7 @@
 extern crate alloc;
 
 pub mod base58;
+pub mod bluepallas_compat;
 pub mod errors;
 pub mod graphql;
 pub mod signatures;
