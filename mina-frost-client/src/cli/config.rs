@@ -1,3 +1,5 @@
+#![allow(unused_assignments)]
+
 use core::str;
 use std::{
     collections::BTreeMap,
@@ -90,6 +92,7 @@ pub struct CommunicationKey {
 
 /// A FROST group the user belongs to.
 #[derive(Clone, Debug, Serialize, Deserialize, Zeroize)]
+#[allow(unused_assignments)]
 pub struct Group<C: Ciphersuite> {
     #[serde(skip)]
     pub _phantom: PhantomData<C>,
@@ -111,6 +114,7 @@ pub struct Group<C: Ciphersuite> {
     /// The default server the participants are using, if any.
     pub server_url: Option<String>,
     /// The group participants, keyed by hex-encoded identifier
+    #[allow(unused_assignments)]
     #[zeroize(skip)]
     pub participant: BTreeMap<String, Participant>,
 }

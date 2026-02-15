@@ -1,3 +1,5 @@
+#![allow(unused_assignments)]
+
 use std::rc::Rc;
 
 use crate::cipher::{PrivateKey, PublicKey};
@@ -6,6 +8,7 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// Configuration for the participant in the FROST signing protocol.
 #[derive(Clone, Zeroize)]
+#[allow(unused_assignments)]
 pub struct Config<C: Ciphersuite> {
     /// Key package to use.
     pub key_package: KeyPackage<C>,
@@ -33,6 +36,7 @@ pub struct Config<C: Ciphersuite> {
     // using `fn()` would preclude using closures and using generics would
     // require a lot of code change for something simple.
     #[allow(clippy::type_complexity)]
+    #[allow(unused_assignments)]
     #[zeroize(skip)]
     pub comm_coordinator_pubkey_getter: Option<Rc<dyn Fn(&PublicKey) -> Option<PublicKey>>>,
 }
