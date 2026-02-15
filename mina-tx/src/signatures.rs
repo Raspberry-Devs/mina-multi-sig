@@ -169,6 +169,27 @@ pub struct TransactionSignature {
 }
 
 impl TransactionSignature {
+    pub fn from_frost_signature(
+        public_key: VerifyingKey<BluePallas>,
+        signature: FrSig<BluePallas>,
+        payload: TransactionEnvelope,
+    ) -> Result<(Self, Option<SignatureInjectionResult>), BluePallasError> {
+        let pubkey: PubKeySer = public_key.try_into()?;
+        let signature: Sig = signature.try_into()?;
+        Ok(Self::new_with_zkapp_injection(pubkey, signature, payload))
+    }
+
+    pub fn from_frost_signature_bytes(
+        public_key: VerifyingKey<BluePallas>,
+        signature_bytes: &[u8],
+        payload: TransactionEnvelope,
+    ) -> Result<(Self, Option<SignatureInjectionResult>), BluePallasError> {
+        let signature = FrSig::<BluePallas>::deserialize(signature_bytes)
+            .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
+
+        Self::from_frost_signature(public_key, signature, payload)
+    }
+
     pub fn new_with_zkapp_injection(
         public_key: PubKeySer,
         signature: Sig,

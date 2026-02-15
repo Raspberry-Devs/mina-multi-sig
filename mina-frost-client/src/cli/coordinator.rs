@@ -5,10 +5,8 @@ use crate::{
 use eyre::Context;
 use eyre::OptionExt;
 use frost_bluepallas::{errors::BluePallasError, BluePallas};
-use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};
-use mina_tx::{
-    network_id::NetworkIdEnvelope, PubKeySer, Sig, TransactionEnvelope, TransactionSignature,
-};
+use frost_core::{keys::PublicKeyPackage, Ciphersuite, VerifyingKey};
+use mina_tx::{network_id::NetworkIdEnvelope, TransactionEnvelope, TransactionSignature};
 use reqwest::Url;
 use std::{
     collections::HashMap,
@@ -242,13 +240,9 @@ pub fn save_signature(
     transaction: TransactionEnvelope,
     vk: VerifyingKey<BluePallas>,
 ) -> Result<(), Box<dyn Error>> {
-    // Read signature from bytes
-    let signature: Sig = Signature::<BluePallas>::deserialize(&signature_bytes)?.try_into()?;
-
-    let pubkey: PubKeySer = vk.try_into()?;
-
     let (transaction_signature, warnings_opt) =
-        TransactionSignature::new_with_zkapp_injection(pubkey, signature, transaction);
+        TransactionSignature::from_frost_signature_bytes(vk, &signature_bytes, transaction)
+            .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
 
     // If there are any warnings during the creation of the transaction signature, print them out
     if let Some(warnings) = warnings_opt {
