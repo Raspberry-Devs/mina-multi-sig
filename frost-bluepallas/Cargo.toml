@@ -30,6 +30,7 @@ lazy_static.workspace = true
 serde_json.workspace = true
 insta.workspace = true
 hex.workspace = true
+proptest = "1.6.0"
 rand_chacha = "0.3"
 bs58 = "0.5.1"
 reqwest = { workspace = true, features = ["blocking"] }
