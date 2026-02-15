@@ -22,7 +22,7 @@ This implementation allows multiple parties to collaboratively generate signatur
 - **Mina Compatibility**: Signatures are fully compatible with Mina Protocol's signature verification
 - **Trusted Dealer Setup**: Generate key shares from a single master key
 - **Distributed Key Generation (DKG)**: Generate keys collaboratively without a trusted dealer
-- **Transaction Signing**: Direct support for signing Mina transactions
+- **Mina Interop Helpers**: Convert FROST keys/signatures into Mina-compatible formats
 - **Network Support**: Compatible with both Mainnet and Testnet
 
 ## Mina Protocol Compatibility
@@ -48,10 +48,7 @@ frost-bluepallas = { git = "https://github.com/Raspberry-Devs/mina-multi-sig" }
 ### Basic Usage with Trusted Dealer
 
 ```rust
-use frost_bluepallas::{self as frost, hasher::set_network_testnet};
-
-// Set network (TESTNET)
-set_network_testnet()?;
+use frost_bluepallas as frost;
 
 // Generate key shares using trusted dealer
 let max_signers = 5;
@@ -71,18 +68,18 @@ let (signature, verifying_key) = frost::signing_utilities::sign_from_packages(
     message,
     shares,
     pubkey_package,
-    rng,
+    &mut rng,
 )?;
 ```
 
 ### Signing Mina Transactions
 
 ```rust
-use frost_bluepallas::transactions::LegacyTransaction;
-use mina_signer::{PubKey, NetworkId::TESTNET};
+use frost_bluepallas as frost;
+use mina_tx::{bluepallas_compat::*, legacy_tx::LegacyTransaction, TransactionEnvelope};
+use mina_signer::{NetworkId, PubKey};
 
 // Create a Mina transaction
-// Generate tx
 let tx = LegacyTransaction::new_payment(
     mina_keypair.public.clone(),
     recipient_pubkey,
@@ -92,11 +89,8 @@ let tx = LegacyTransaction::new_payment(
 )
 .set_memo_str("Hello Mina x FROST from the Rasp")
 .unwrap();
-let tx = TransactionEnvelope::new_legacy(TESTNET, tx);
-
-
-// Convert transaction to signable message
-let message = tx.translate_msg();
+let tx = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+let message = tx.to_pallas_message().serialize();
 
 // Sign with FROST (using existing shares and pubkey_package)
 let (frost_sig, frost_vk) = frost::signing_utilities::sign_from_packages(
@@ -120,14 +114,12 @@ assert!(ctx.verify(&mina_sig, &mina_vk, &tx));
 The `examples/` directory contains several usage examples:
 
 - `dkg.rs` - Distributed Key Generation example
-- `mina-sign-tx.rs` - Sign a Mina transaction with FROST
 - `mina-gen-pubkey.rs` - Generate Mina-compatible key pairs
 
 Run examples with:
 
 ```bash
 cargo run --example dkg
-cargo run --example mina-sign-tx
 ```
 
 ## API Documentation
@@ -151,19 +143,9 @@ cargo run --example mina-sign-tx
 
 ## Network Configuration
 
-Set the network ID before signing:
-
-```rust
-use frost_bluepallas::hasher::{set_network_mainnet, set_network_testnet};
-
-// For Testnet
-set_network_testnet()?;
-
-// For Mainnet
-set_network_mainnet()?;
-```
-
-The network ID affects the domain separation in signatures, so signatures generated for one network will not verify on another.
+For Mina transaction signing, the network is carried in
+`mina_tx::TransactionEnvelope` and passed into the `PallasMessage` conversion.
+Use `NetworkId::TESTNET` or `NetworkId::MAINNET` when building the envelope.
 
 ## Testing
 
