@@ -5,9 +5,9 @@ edition = "2021"
 rust-version = "1.92"
 
 [dependencies]
-frost-bluepallas = { path = "../frost-bluepallas" }
-frost-core.workspace = true
-ark-ec.workspace = true
+frost-bluepallas = { path = "../frost-bluepallas", optional = true }
+frost-core = { workspace = true, optional = true }
+ark-ec = { workspace = true, optional = true }
 mina-curves.workspace = true
 mina-hasher.workspace = true
 mina-signer.workspace = true
@@ -30,4 +30,5 @@ reqwest = { workspace = true, features = ["blocking"] }
 
 [features]
 default = []
+frost-compat = ["dep:frost-bluepallas", "dep:frost-core", "dep:ark-ec"]
 test-utils = []

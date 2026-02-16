@@ -243,8 +243,7 @@ pub fn save_signature(
     vk: VerifyingKey<BluePallas>,
 ) -> Result<(), Box<dyn Error>> {
     let (transaction_signature, warnings_opt) =
-        TransactionSignature::from_frost_signature_bytes(vk, &signature_bytes, transaction)
-            .map_err(|e| MinaTxError::DeSerializationError(e.to_string()))?;
+        TransactionSignature::from_frost_signature_bytes(vk, &signature_bytes, transaction)?;
 
     // If there are any warnings during the creation of the transaction signature, print them out
     if let Some(warnings) = warnings_opt {

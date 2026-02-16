@@ -1,3 +1,4 @@
+// Used to prevent warning on `comm_participant_pubkey_getter` field due to zeroize(skip) macro
 #![allow(unused_assignments)]
 
 use std::rc::Rc;
@@ -22,7 +23,6 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 /// Currently supports HTTP mode for communication between participants.
 /// Future versions may support additional communication protocols.
 #[derive(Clone, Zeroize)]
-#[allow(unused_assignments)]
 pub struct Config {
     /// IP to connect to (HTTP mode).
     pub ip: String,
@@ -42,7 +42,6 @@ pub struct Config {
     // using `fn()` would preclude using closures and using generics would
     // require a lot of code change for something simple.
     #[allow(clippy::type_complexity)]
-    #[allow(unused_assignments)]
     #[zeroize(skip)]
     pub comm_participant_pubkey_getter: Option<Rc<dyn Fn(&PublicKey) -> Option<PublicKey>>>,
 

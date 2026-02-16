@@ -15,7 +15,7 @@ path = "src/main.rs"
 
 [dependencies]
 frost-bluepallas = { path = "../frost-bluepallas" }
-mina-tx = { path = "../mina-tx" }
+mina-tx = { path = "../mina-tx", features = ["frost-compat"] }
 
 async-trait = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
