@@ -29,6 +29,9 @@ pub enum MinaTxError {
     /// Invalid ZKApp Command structure
     InvalidZkAppCommand(String),
 
+    /// Unable to save signature to output file or stdout
+    SaveSignatureError(String),
+
     /// Unknown transaction type during deserialization
     UnknownTransactionType(String),
 }
@@ -48,6 +51,9 @@ impl fmt::Display for MinaTxError {
             }
             MinaTxError::InvalidZkAppCommand(msg) => {
                 write!(f, "Invalid ZKApp command: {}", msg)
+            }
+            MinaTxError::SaveSignatureError(msg) => {
+                write!(f, "Failed to save signature: {}", msg)
             }
             MinaTxError::UnknownTransactionType(msg) => {
                 write!(f, "Unknown transaction type: {}", msg)

@@ -4,9 +4,11 @@ use crate::{
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::{errors::BluePallasError, BluePallas};
+use frost_bluepallas::BluePallas;
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, VerifyingKey};
-use mina_tx::{network_id::NetworkIdEnvelope, TransactionEnvelope, TransactionSignature};
+use mina_tx::{
+    errors::MinaTxError, network_id::NetworkIdEnvelope, TransactionEnvelope, TransactionSignature,
+};
 use reqwest::Url;
 use std::{
     collections::HashMap,
@@ -35,7 +37,7 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
 
     // Save signature to the specified path or stdout
     save_signature(signature_path, bytes, transaction, vk)
-        .map_err(|e| BluePallasError::SaveSignatureError(e.to_string()))?;
+        .map_err(|e| MinaTxError::SaveSignatureError(e.to_string()))?;
 
     Ok(())
 }
@@ -242,7 +244,7 @@ pub fn save_signature(
 ) -> Result<(), Box<dyn Error>> {
     let (transaction_signature, warnings_opt) =
         TransactionSignature::from_frost_signature_bytes(vk, &signature_bytes, transaction)
-            .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
+            .map_err(|e| MinaTxError::DeSerializationError(e.to_string()))?;
 
     // If there are any warnings during the creation of the transaction signature, print them out
     if let Some(warnings) = warnings_opt {
@@ -253,7 +255,7 @@ pub fn save_signature(
     }
 
     let output_str = serde_json::to_string_pretty(&transaction_signature)
-        .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
+        .map_err(|e| MinaTxError::DeSerializationError(e.to_string()))?;
 
     if signature_path == "-" {
         println!("{}", output_str);
