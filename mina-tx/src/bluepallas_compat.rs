@@ -12,13 +12,13 @@ use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::Hashable;
 
 use crate::{
-    errors::BluePallasError,
+    errors::MinaTxError,
     signatures::{PubKeySer, Sig, TransactionSignature},
     transactions::TransactionEnvelope,
 };
 
 impl TryInto<Sig> for FrSig<BluePallas> {
-    type Error = BluePallasError;
+    type Error = MinaTxError;
 
     fn try_into(self) -> Result<Sig, Self::Error> {
         let x = self
@@ -26,7 +26,7 @@ impl TryInto<Sig> for FrSig<BluePallas> {
             .into_affine()
             .x()
             .ok_or_else(|| {
-                BluePallasError::InvalidSignature("Failed to convert x coordinate to bigint".into())
+                MinaTxError::InvalidSignature("Failed to convert x coordinate to bigint".into())
             })?
             .into_bigint();
         let z: Scalar<BluePallas> = *self.z();
@@ -39,12 +39,12 @@ impl TryInto<Sig> for FrSig<BluePallas> {
 }
 
 impl TryFrom<VerifyingKey<BluePallas>> for PubKeySer {
-    type Error = BluePallasError;
+    type Error = MinaTxError;
 
     fn try_from(vk: VerifyingKey<BluePallas>) -> Result<Self, Self::Error> {
         translate_pk(&vk)
             .map(|pub_key| PubKeySer { pubKey: pub_key })
-            .map_err(|e| BluePallasError::InvalidPublicKey(e.to_string()))
+            .map_err(|e| MinaTxError::InvalidPublicKey(e.to_string()))
     }
 }
 
@@ -65,7 +65,7 @@ impl TransactionSignature {
         public_key: VerifyingKey<BluePallas>,
         signature: FrSig<BluePallas>,
         payload: TransactionEnvelope,
-    ) -> Result<(Self, Option<crate::zkapp_tx::SignatureInjectionResult>), BluePallasError> {
+    ) -> Result<(Self, Option<crate::zkapp_tx::SignatureInjectionResult>), MinaTxError> {
         let pubkey: PubKeySer = public_key.try_into()?;
         let signature: Sig = signature.try_into()?;
         Ok(Self::new_with_zkapp_injection(pubkey, signature, payload))
@@ -75,9 +75,9 @@ impl TransactionSignature {
         public_key: VerifyingKey<BluePallas>,
         signature_bytes: &[u8],
         payload: TransactionEnvelope,
-    ) -> Result<(Self, Option<crate::zkapp_tx::SignatureInjectionResult>), BluePallasError> {
+    ) -> Result<(Self, Option<crate::zkapp_tx::SignatureInjectionResult>), MinaTxError> {
         let signature = FrSig::<BluePallas>::deserialize(signature_bytes)
-            .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
+            .map_err(|e| MinaTxError::DeSerializationError(e.to_string()))?;
 
         Self::from_frost_signature(public_key, signature, payload)
     }

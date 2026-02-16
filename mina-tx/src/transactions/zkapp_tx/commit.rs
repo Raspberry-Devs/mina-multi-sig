@@ -12,7 +12,7 @@ use mina_poseidon::{
 use mina_signer::NetworkId;
 
 use crate::{
-    errors::{BluePallasError, BluePallasResult},
+    errors::{MinaTxError, MinaTxResult},
     transactions::zkapp_tx::{
         constants::{self, ZkAppBodyPrefix, DUMMY_HASH},
         packing::{Packable, PackedInput},
@@ -28,9 +28,9 @@ use crate::{
 /// Validates call depths and authorization kinds before computing the commitment.
 /// Returns two Fp elements, representing the accountUpdates commitment and the overall commitment respectively.
 /// Overall commitment includes memo, fee payer, and account updates commitments.
-pub(crate) fn zk_commit(tx: &ZKAppCommand, network: &NetworkId) -> BluePallasResult<(Fp, Fp)> {
+pub(crate) fn zk_commit(tx: &ZKAppCommand, network: &NetworkId) -> MinaTxResult<(Fp, Fp)> {
     if !is_call_depth_valid(tx) {
-        return Err(Box::new(BluePallasError::InvalidZkAppCommand(
+        return Err(Box::new(MinaTxError::InvalidZkAppCommand(
             "Call depths are not valid".to_string(),
         )));
     }
@@ -115,7 +115,7 @@ impl From<ZKAppCommand> for CallForest {
 ///  - tree_hash = hash_account_update(account_update)
 ///  - node_hash = hash_with_prefix("MinaAcctUpdateNode", [tree_hash, calls])
 ///  - stack_hash = hash_with_prefix("MinaAcctUpdateCons", [node_hash, stack_hash])
-fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResult<Fp> {
+fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> MinaTxResult<Fp> {
     let mut stack_hash = constants::EMPTY_STACK_HASH;
 
     // iterate in reverse (last -> first)
@@ -133,7 +133,7 @@ fn call_forest_hash(forest: &CallForest, network: &NetworkId) -> BluePallasResul
     Ok(stack_hash)
 }
 
-fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
+fn memo_hash(tx: &ZKAppCommand) -> MinaTxResult<Fp> {
     let memo_bytes = tx.memo;
 
     // Convert bytes to bits (little-endian bit order within each byte)
@@ -148,15 +148,12 @@ fn memo_hash(tx: &ZKAppCommand) -> BluePallasResult<Fp> {
     hash_with_prefix(constants::ZK_APP_MEMO, &packed_fields)
 }
 
-fn hash_fee_payer(fee: FeePayer, network: &NetworkId) -> BluePallasResult<Fp> {
+fn hash_fee_payer(fee: FeePayer, network: &NetworkId) -> MinaTxResult<Fp> {
     let fee_account_update = AccountUpdate::from(fee);
     hash_account_update(&fee_account_update, network)
 }
 
-fn hash_account_update(
-    account_update: &AccountUpdate,
-    network: &NetworkId,
-) -> BluePallasResult<Fp> {
+fn hash_account_update(account_update: &AccountUpdate, network: &NetworkId) -> MinaTxResult<Fp> {
     // Check that account update is valid
     assert_account_update_authorization_kind(account_update)?;
 
@@ -169,7 +166,7 @@ fn hash_account_update(
 // ---------------------------------- Low Level Hashing Functions ----------------------------------
 // -------------------------------------------------------------------------------------------------
 
-pub(crate) fn hash_noinput(prefix: &str) -> BluePallasResult<Fp> {
+pub(crate) fn hash_noinput(prefix: &str) -> MinaTxResult<Fp> {
     let mut sponge = ArithmeticSponge::<
         Fp,
         PlonkSpongeConstantsKimchi,
@@ -179,7 +176,7 @@ pub(crate) fn hash_noinput(prefix: &str) -> BluePallasResult<Fp> {
     Ok(sponge.squeeze())
 }
 
-pub(crate) fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp> {
+pub(crate) fn hash_with_prefix(prefix: &str, data: &[Fp]) -> MinaTxResult<Fp> {
     let mut sponge = ArithmeticSponge::<
         Fp,
         PlonkSpongeConstantsKimchi,
@@ -197,23 +194,21 @@ pub(crate) fn hash_with_prefix(prefix: &str, data: &[Fp]) -> BluePallasResult<Fp
 // ---------------------------------------- Utils --------------------------------------------------
 // -------------------------------------------------------------------------------------------------
 
-fn assert_account_update_authorization_kind(
-    account_update: &AccountUpdate,
-) -> BluePallasResult<()> {
+fn assert_account_update_authorization_kind(account_update: &AccountUpdate) -> MinaTxResult<()> {
     let authorization_kind = &account_update.body.authorization_kind;
     let is_signed = authorization_kind.is_signed;
     let is_proved = authorization_kind.is_proved;
     let verification_key_hash = authorization_kind.verification_key_hash;
 
     if is_proved && is_signed {
-        return Err(Box::new(BluePallasError::InvalidZkAppCommand(
+        return Err(Box::new(MinaTxError::InvalidZkAppCommand(
             "Invalid authorization kind: Only one of `isProved` and `isSigned` may be true."
                 .to_string(),
         )));
     }
 
     if !is_proved && verification_key_hash != *DUMMY_HASH {
-        return Err(Box::new(BluePallasError::InvalidZkAppCommand(
+        return Err(Box::new(MinaTxError::InvalidZkAppCommand(
             format!(
                 "Invalid authorization kind: If `isProved` is false, verification key hash must be {}, got {}",
                 *DUMMY_HASH,
@@ -260,14 +255,14 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     true
 }
 
-pub(crate) fn param_to_field(param: &str) -> Result<Fp, BluePallasError> {
+pub(crate) fn param_to_field(param: &str) -> Result<Fp, MinaTxError> {
     const DEFAULT: [u8; 32] = *b"********************\0\0\0\0\0\0\0\0\0\0\0\0";
 
     let param_bytes = param.as_bytes();
     let len = param_bytes.len();
 
     if len > DEFAULT.len() {
-        return Err(BluePallasError::InvalidZkAppCommand(format!(
+        return Err(MinaTxError::InvalidZkAppCommand(format!(
             "must be {} byte maximum",
             DEFAULT.len()
         )));
@@ -277,7 +272,7 @@ pub(crate) fn param_to_field(param: &str) -> Result<Fp, BluePallasError> {
     fp[..len].copy_from_slice(param_bytes);
 
     Fp::from_random_bytes(&fp).ok_or_else(|| {
-        BluePallasError::InvalidZkAppCommand("Failed to convert parameter to field".to_string())
+        MinaTxError::InvalidZkAppCommand("Failed to convert parameter to field".to_string())
     })
 }
 

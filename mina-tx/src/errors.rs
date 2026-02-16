@@ -1,40 +1,24 @@
 //! Error types for the frost-bluepallas library
 
-use alloc::{boxed::Box, string::String};
-use core::{error, fmt, result::Result};
+use alloc::string::String;
+use core::{error, fmt};
 
-// TODO: Replace with BluePallasError within
-pub type BluePallasResult<T> = Result<T, Box<dyn error::Error>>;
+pub type MinaTxResult<T> = Result<T, Box<dyn error::Error>>;
 
 /// Error enum for frost-bluepallas operations
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum BluePallasError {
-    /// Network ID has not been set for the current thread
-    NetworkIdNotSet,
-
-    /// Participant ID must be non-zero
-    NonZeroParticipantID,
-
+pub enum MinaTxError {
     /// Serialization operation failed
     SerializationError(String),
 
     /// Deserialization operation failed
     DeSerializationError(String),
 
-    /// Invalid commitment provided
-    InvalidCommitment(String),
-
     /// Invalid Signature provided
     InvalidSignature(String),
 
     /// Invalid Public Key
     InvalidPublicKey(String),
-
-    /// No messages have been provided for signing
-    NoMessageProvided,
-
-    /// Saving Signature failed
-    SaveSignatureError(String),
 
     /// Invalid Memo provided
     InvalidMemo(String),
@@ -49,61 +33,45 @@ pub enum BluePallasError {
     UnknownTransactionType(String),
 }
 
-impl fmt::Display for BluePallasError {
+impl fmt::Display for MinaTxError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            BluePallasError::NetworkIdNotSet => {
-                write!(f, "NetworkId not set. Call set_network_id() first.")
-            }
-            BluePallasError::NonZeroParticipantID => write!(f, "Participant ID should be nonzero"),
-            BluePallasError::SerializationError(msg) => write!(f, "Serialization error: {}", msg),
-            BluePallasError::DeSerializationError(msg) => {
+            MinaTxError::SerializationError(msg) => write!(f, "Serialization error: {}", msg),
+            MinaTxError::DeSerializationError(msg) => {
                 write!(f, "Deserialization error: {}", msg)
             }
-            BluePallasError::InvalidCommitment(msg) => write!(f, "Invalid commitment: {}", msg),
-            BluePallasError::InvalidSignature(msg) => write!(f, "Invalid signature: {}", msg),
-            BluePallasError::InvalidPublicKey(msg) => write!(f, "Invalid public key: {}", msg),
-            BluePallasError::NoMessageProvided => {
-                write!(f, "No messages have been provided for signing")
-            }
-            BluePallasError::SaveSignatureError(msg) => {
-                write!(f, "Failed to save signature: {}", msg)
-            }
-            BluePallasError::InvalidMemo(msg) => write!(f, "Invalid memo: {}", msg),
-            BluePallasError::MemoSerializationError(msg) => {
+            MinaTxError::InvalidSignature(msg) => write!(f, "Invalid signature: {}", msg),
+            MinaTxError::InvalidPublicKey(msg) => write!(f, "Invalid public key: {}", msg),
+            MinaTxError::InvalidMemo(msg) => write!(f, "Invalid memo: {}", msg),
+            MinaTxError::MemoSerializationError(msg) => {
                 write!(f, "Memo serialization error: {}", msg)
             }
-            BluePallasError::InvalidZkAppCommand(msg) => {
+            MinaTxError::InvalidZkAppCommand(msg) => {
                 write!(f, "Invalid ZKApp command: {}", msg)
             }
-            BluePallasError::UnknownTransactionType(msg) => {
+            MinaTxError::UnknownTransactionType(msg) => {
                 write!(f, "Unknown transaction type: {}", msg)
             }
         }
     }
 }
 
-impl error::Error for BluePallasError {}
+impl error::Error for MinaTxError {}
 
 // Convenience constructors
-impl BluePallasError {
+impl MinaTxError {
     /// Create a serialization error with a custom message
     pub fn serialization_error(message: impl Into<String>) -> Self {
-        BluePallasError::SerializationError(message.into())
+        MinaTxError::SerializationError(message.into())
     }
 
     /// Create a deserialization error with a custom message
     pub fn deserialization_error(message: impl Into<String>) -> Self {
-        BluePallasError::DeSerializationError(message.into())
-    }
-
-    /// Create an invalid commitment error with a custom message
-    pub fn invalid_commitment(message: impl Into<String>) -> Self {
-        BluePallasError::InvalidCommitment(message.into())
+        MinaTxError::DeSerializationError(message.into())
     }
 
     /// Create an invalid memo error with a custom message
     pub fn invalid_memo(message: impl Into<String>) -> Self {
-        BluePallasError::InvalidMemo(message.into())
+        MinaTxError::InvalidMemo(message.into())
     }
 }
