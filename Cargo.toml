@@ -32,7 +32,7 @@ serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 serdect = "0.4.2"
 snow = "0.9.6"
 stable-eyre = "0.2"
-tempfile = "3.16.0"
+tempfile = "3.25.0"
 thiserror = "2.0.11"
 tokio = "1.42"
 toml = "1.0.1"
