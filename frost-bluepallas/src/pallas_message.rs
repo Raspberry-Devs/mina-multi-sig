@@ -19,9 +19,9 @@ pub struct PallasMessage {
     /// The ROInput to be hashed.
     pub(crate) input: ROInput,
     /// The network ID for domain string selection during hashing.
-    pub network_id: NetworkId,
+    network_id: NetworkId,
     /// Whether legacy hashing mode should be used.
-    pub is_legacy: bool,
+    is_legacy: bool,
 }
 
 impl PallasMessage {
@@ -34,25 +34,13 @@ impl PallasMessage {
         }
     }
 
-    /// Create a new `PallasMessage` from raw bytes.
-    ///
-    /// This constructor treats input bytes as opaque payload and defaults to
-    /// TESTNET legacy hashing.
-    pub fn new(input: Vec<u8>) -> Self {
-        Self {
-            input: ROInput::new().append_bytes(&input),
-            network_id: NetworkId::TESTNET,
-            is_legacy: true,
-        }
-    }
-
     /// Serialize this message to bytes for transport/signing.
     pub fn serialize(&self) -> Vec<u8> {
         let roi_bytes = self.input.serialize();
         let mut out = Vec::with_capacity(7 + roi_bytes.len());
         out.push(PALLAS_MESSAGE_VERSION);
         out.push(self.network_id.clone() as u8);
-        out.push(if self.is_legacy { 1 } else { 0 });
+        out.push(u8::from(self.is_legacy));
         out.extend_from_slice(&(roi_bytes.len() as u32).to_le_bytes());
         out.extend_from_slice(&roi_bytes);
         out
@@ -172,8 +160,8 @@ mod tests {
         let bytes = message.serialize();
         let decoded = PallasMessage::deserialize(&bytes).expect("deserialize should succeed");
 
-        assert_eq!(decoded.network_id, NetworkId::MAINNET);
-        assert!(!decoded.is_legacy);
+        assert_eq!(decoded.network_id(), NetworkId::MAINNET);
+        assert!(!decoded.is_legacy());
         assert_eq!(decoded.input, message.input);
     }
 }

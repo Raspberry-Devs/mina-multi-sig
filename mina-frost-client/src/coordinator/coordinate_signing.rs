@@ -6,6 +6,7 @@ use frost_core::{
     self, keys::PublicKeyPackage, round1::SigningCommitments, Ciphersuite, Identifier,
     SigningPackage,
 };
+use mina_tx::TransactionEnvelope;
 
 use super::comms::http::HTTPComms;
 use super::comms::Comms;
@@ -62,8 +63,16 @@ pub async fn coordinate_signing(
     };
 
     // Aggregate signatures using frost_bluepallas modified behaviour
-    let group_signature =
-        frost_bluepallas::aggregate(&signing_package, &signatures, &config.public_key_package);
+    let group_signature = {
+        let transaction = TransactionEnvelope::deserialize(signing_package.message())?;
+        let pallas_message_bytes = transaction.to_pallas_message().serialize();
+        let signing_package_for_crypto = SigningPackage::new(commitments, &pallas_message_bytes);
+        frost_bluepallas::aggregate(
+            &signing_package_for_crypto,
+            &signatures,
+            &config.public_key_package,
+        )
+    };
 
     let signature_bytes_result = match group_signature {
         Ok(signature) => signature.serialize(),

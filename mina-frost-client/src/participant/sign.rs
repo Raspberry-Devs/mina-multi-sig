@@ -5,6 +5,7 @@ use super::comms::http::HTTPComms;
 use super::comms::Comms;
 
 use frost_bluepallas::BluePallas;
+use mina_tx::TransactionEnvelope;
 use rand::thread_rng;
 use std::io::{BufRead, Write};
 use zeroize::Zeroizing;
@@ -40,9 +41,16 @@ pub async fn sign(
         .await?;
 
     let signing_package = round_2_config.signing_package.first().unwrap();
+    let transaction = TransactionEnvelope::deserialize(signing_package.message())?;
+    let pallas_message_bytes = transaction.to_pallas_message().serialize();
+    let signing_package_for_crypto = frost_core::SigningPackage::new(
+        signing_package.signing_commitments().clone(),
+        &pallas_message_bytes,
+    );
 
     // Use frost_bluepallas modified sign behaviour
-    let signature = frost_bluepallas::round2::sign(signing_package, &nonces, key_package)?;
+    let signature =
+        frost_bluepallas::round2::sign(&signing_package_for_crypto, &nonces, key_package)?;
 
     comms
         .send_signature_share(*key_package.identifier(), signature)

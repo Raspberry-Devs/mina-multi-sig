@@ -17,11 +17,11 @@ use crate::{
     transactions::TransactionEnvelope,
 };
 
-impl TryInto<Sig> for FrSig<BluePallas> {
+impl TryFrom<FrSig<BluePallas>> for Sig {
     type Error = MinaTxError;
 
-    fn try_into(self) -> Result<Sig, Self::Error> {
-        let x = self
+    fn try_from(value: FrSig<BluePallas>) -> Result<Sig, Self::Error> {
+        let x = value
             .R()
             .into_affine()
             .x()
@@ -29,7 +29,7 @@ impl TryInto<Sig> for FrSig<BluePallas> {
                 MinaTxError::InvalidSignature("Failed to convert x coordinate to bigint".into())
             })?
             .into_bigint();
-        let z: Scalar<BluePallas> = *self.z();
+        let z: Scalar<BluePallas> = *value.z();
 
         Ok(Sig {
             field: x,

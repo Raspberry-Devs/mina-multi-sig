@@ -2,7 +2,6 @@ pub mod http;
 
 use async_trait::async_trait;
 use eyre::eyre;
-use frost_bluepallas::pallas_message::PallasMessage;
 use mina_tx::TransactionEnvelope;
 
 use crate::api::SendSigningPackageArgs;
@@ -66,28 +65,23 @@ pub trait Comms<C: Ciphersuite> {
             return Ok(());
         }
 
-        let transaction_bytes = signing_package
+        let payload_bytes = signing_package
             .signing_package
             .first()
             .ok_or_else(|| eyre!("No signing package found"))?
             .message();
 
-        if let Ok(transaction) = TransactionEnvelope::deserialize(transaction_bytes) {
-            writeln!(
-                output,
-                "Message to be signed (json):\n{}\nDo you want to sign it? (y/n)\n",
-                transaction
-            )?;
-        } else if let Ok(message) = PallasMessage::deserialize(transaction_bytes) {
-            writeln!(
-                output,
-                "Message to be signed (PallasMessage): network={:?}, legacy={}\nDo you want to sign it? (y/n)\n",
-                message.network_id(),
-                message.is_legacy()
-            )?;
-        } else {
-            return Err(eyre!("failed to decode signing payload").into());
-        }
+        let transaction = TransactionEnvelope::deserialize(payload_bytes).map_err(|err| {
+            eyre!(
+                "failed to decode signing payload as TransactionEnvelope: {err}. \
+                 expected coordinator payload format is serialized TransactionEnvelope JSON bytes"
+            )
+        })?;
+        writeln!(
+            output,
+            "Message to be signed (json):\n{}\nDo you want to sign it? (y/n)\n",
+            transaction
+        )?;
 
         let mut sign_it = String::new();
         input.read_line(&mut sign_it)?;

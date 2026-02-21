@@ -192,9 +192,9 @@ impl Ciphersuite for BluePallas {
             translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let rx = R.into_affine().x;
 
-        // Parse a pre-encoded PallasMessage when available, otherwise fall back to raw bytes.
+        // Challenge input must be an explicitly encoded PallasMessage.
         let msg = PallasMessage::deserialize(message)
-            .unwrap_or_else(|_| PallasMessage::new(message.to_vec()));
+            .map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let network_id = msg.network_id();
         let is_legacy = msg.is_legacy();
 

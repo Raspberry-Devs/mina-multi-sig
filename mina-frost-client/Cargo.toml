@@ -46,6 +46,7 @@ postcard = { workspace = true }
 regex.workspace = true
 lazy_static.workspace = true
 mina-signer.workspace = true
+mina-hasher.workspace = true
 ark-ff.workspace = true
 frost-bluepallas = { path = "../frost-bluepallas", features = ["test-utils"] }
 mina-tx = { path = "../mina-tx", features = ["test-utils"] }

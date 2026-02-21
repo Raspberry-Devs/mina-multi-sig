@@ -1727,6 +1727,7 @@ dependencies = [
  "hex",
  "itertools 0.14.0",
  "lazy_static",
+ "mina-hasher",
  "mina-signer",
  "mina-tx",
  "postcard",

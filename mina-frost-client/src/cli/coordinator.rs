@@ -73,7 +73,7 @@ pub(crate) async fn run(
 
     let network_id: NetworkIdEnvelope = network.try_into()?;
     let transaction = load_transaction(&message, network_id, &mut output, &mut input)?;
-    let message_bytes = transaction.to_pallas_message().serialize();
+    let message_bytes = transaction.serialize()?;
 
     // Setup coordinator configuration
     let params = CoordinatorSetupParams {
