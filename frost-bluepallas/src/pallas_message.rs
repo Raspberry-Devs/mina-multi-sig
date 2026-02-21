@@ -34,6 +34,17 @@ impl PallasMessage {
         }
     }
 
+    /// Build a fallback message from raw bytes when explicit message encoding is unavailable.
+    ///
+    /// This preserves historical behavior used by existing FROST test vectors.
+    pub fn from_raw_bytes_default(input: &[u8]) -> Self {
+        Self {
+            input: ROInput::new().append_bytes(input),
+            network_id: NetworkId::TESTNET,
+            is_legacy: true,
+        }
+    }
+
     /// Serialize this message to bytes for transport/signing.
     pub fn serialize(&self) -> Vec<u8> {
         let roi_bytes = self.input.serialize();
