@@ -6,11 +6,13 @@ use frost_core::{
     self, keys::PublicKeyPackage, round1::SigningCommitments, Ciphersuite, Identifier,
     SigningPackage,
 };
-use mina_tx::TransactionEnvelope;
+use mina_tx::{pallas_message::PallasMessage, TransactionEnvelope};
 
 use super::comms::http::HTTPComms;
 use super::comms::Comms;
 use super::config::Config;
+
+type BluePallasSuite = BluePallas<PallasMessage>;
 
 #[derive(Debug, PartialEq)]
 pub struct ParticipantsConfig<C: Ciphersuite> {
@@ -23,11 +25,11 @@ pub struct ParticipantsConfig<C: Ciphersuite> {
 // sends the signing package, and aggregates the signatures.
 // It returns the final aggregated signature as a byte vector.
 pub async fn coordinate_signing(
-    config: &Config<BluePallas>,
+    config: &Config<BluePallasSuite>,
     reader: &mut impl BufRead,
     logger: &mut impl Write,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let mut comms: Box<dyn Comms<BluePallas>> = Box::new(HTTPComms::new(config)?);
+    let mut comms: Box<dyn Comms<BluePallasSuite>> = Box::new(HTTPComms::new(config)?);
 
     // Round 1 - Get commitments
     let commitments_list = comms

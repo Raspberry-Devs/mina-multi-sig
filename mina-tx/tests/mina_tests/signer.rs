@@ -1,13 +1,14 @@
 #![allow(clippy::needless_borrows_for_generic_args)]
 #![cfg(test)]
 
-use frost_bluepallas::{
-    pallas_message::{translate_minask, translate_pk, PallasMessage},
-    signing_utilities,
-};
+use frost_bluepallas::signing_utilities;
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, NetworkId, PubKey, Signer};
-use mina_tx::{legacy_tx::LegacyTransaction, TransactionEnvelope};
+use mina_tx::{
+    legacy_tx::LegacyTransaction,
+    pallas_message::{translate_minask, translate_pk, PallasMessage},
+    TransactionEnvelope,
+};
 
 #[test]
 fn signer_test_raw() {
@@ -43,15 +44,19 @@ fn signer_test_raw() {
     let fr_sk =
         translate_minask(&kp).expect("failed to translate mina keypair to frost signing key");
 
-    let (sig, vk) = signing_utilities::generate_signature_from_sk(&msg, &fr_sk, rand_core::OsRng)
-        .expect("failed to generate FROST signature");
+    let (sig, vk) = signing_utilities::generate_signature_from_sk::<PallasMessage, _>(
+        &msg,
+        &fr_sk,
+        rand_core::OsRng,
+    )
+    .expect("failed to generate FROST signature");
 
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::pallas_message::translate_sig(&sig)
+    let mina_sig = mina_tx::pallas_message::translate_sig(&sig)
         .expect("failed to translate FROST signature to Mina signature");
 
     // Convert verifying key to Mina format
-    let mina_vk = frost_bluepallas::pallas_message::translate_pk(&vk)
+    let mina_vk = mina_tx::pallas_message::translate_pk(&vk)
         .expect("failed to translate FROST verifying key to Mina public key");
 
     // Verify that vk from FROST and Mina matches
@@ -76,13 +81,14 @@ fn sign_mina_tx() {
     // Use trusted dealer to setup public and packages
     let max_signers = 5;
     let min_signers = 3;
-    let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
-        max_signers,
-        min_signers,
-        frost_bluepallas::keys::IdentifierList::Default,
-        &mut rng,
-    )
-    .expect("Failed to generate key shares");
+    let (shares, pubkey_package) =
+        frost_bluepallas::keys::generate_with_dealer::<PallasMessage, _>(
+            max_signers,
+            min_signers,
+            frost_bluepallas::keys::IdentifierList::Default,
+            &mut rng,
+        )
+        .expect("Failed to generate key shares");
 
     // Convert pubkey package to Mina format
 
@@ -103,13 +109,18 @@ fn sign_mina_tx() {
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
     let msg = tx_env.to_pallas_message().serialize();
-    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
-        .expect("Failed to sign message with FROST");
+    let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
+        &msg,
+        shares,
+        pubkey_package,
+        &mut rng,
+    )
+    .expect("Failed to sign message with FROST");
 
     // Verify the signature
-    let mina_sig = frost_bluepallas::pallas_message::translate_sig(&sig)
+    let mina_sig = mina_tx::pallas_message::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::pallas_message::translate_pk(&vk)
+    let mina_vk = mina_tx::pallas_message::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer
@@ -132,13 +143,14 @@ fn sign_mina_tx_mainnet() {
     // Use trusted dealer to setup public and packages
     let max_signers = 3;
     let min_signers = 2;
-    let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
-        max_signers,
-        min_signers,
-        frost_bluepallas::keys::IdentifierList::Default,
-        &mut rng,
-    )
-    .expect("Failed to generate key shares");
+    let (shares, pubkey_package) =
+        frost_bluepallas::keys::generate_with_dealer::<PallasMessage, _>(
+            max_signers,
+            min_signers,
+            frost_bluepallas::keys::IdentifierList::Default,
+            &mut rng,
+        )
+        .expect("Failed to generate key shares");
 
     // Create a transaction for mainnet
     let tx = LegacyTransaction::new_payment(
@@ -157,16 +169,21 @@ fn sign_mina_tx_mainnet() {
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(network_id.clone(), tx);
     let msg = tx_env.to_pallas_message().serialize();
-    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
-        .expect("Failed to sign message with FROST");
+    let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
+        &msg,
+        shares,
+        pubkey_package,
+        &mut rng,
+    )
+    .expect("Failed to sign message with FROST");
 
     let _chall = frost_bluepallas::BluePallas::challenge(sig.R(), &vk, &msg)
         .expect("Expect challenge to calculate");
 
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::pallas_message::translate_sig(&sig)
+    let mina_sig = mina_tx::pallas_message::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::pallas_message::translate_pk(&vk)
+    let mina_vk = mina_tx::pallas_message::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with MAINNET
@@ -183,13 +200,14 @@ fn transaction_json_deser_with_mina_sign() {
     // Use trusted dealer to setup public and packages
     let max_signers = 5;
     let min_signers = 3;
-    let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
-        max_signers,
-        min_signers,
-        frost_bluepallas::keys::IdentifierList::Default,
-        &mut rng,
-    )
-    .expect("Failed to generate key shares");
+    let (shares, pubkey_package) =
+        frost_bluepallas::keys::generate_with_dealer::<PallasMessage, _>(
+            max_signers,
+            min_signers,
+            frost_bluepallas::keys::IdentifierList::Default,
+            &mut rng,
+        )
+        .expect("Failed to generate key shares");
 
     // Convert pubkey package to Mina format
 
@@ -218,13 +236,18 @@ fn transaction_json_deser_with_mina_sign() {
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
     let msg = tx_env.to_pallas_message().serialize();
 
-    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
-        .expect("Failed to sign message with FROST");
+    let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
+        &msg,
+        shares,
+        pubkey_package,
+        &mut rng,
+    )
+    .expect("Failed to sign message with FROST");
 
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::pallas_message::translate_sig(&sig)
+    let mina_sig = mina_tx::pallas_message::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::pallas_message::translate_pk(&vk)
+    let mina_vk = mina_tx::pallas_message::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with TESTNET
@@ -253,13 +276,14 @@ fn sign_mina_delegation_tx() {
     // Use trusted dealer to setup public and packages
     let max_signers = 5;
     let min_signers = 3;
-    let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
-        max_signers,
-        min_signers,
-        frost_bluepallas::keys::IdentifierList::Default,
-        &mut rng,
-    )
-    .expect("Failed to generate key shares");
+    let (shares, pubkey_package) =
+        frost_bluepallas::keys::generate_with_dealer::<PallasMessage, _>(
+            max_signers,
+            min_signers,
+            frost_bluepallas::keys::IdentifierList::Default,
+            &mut rng,
+        )
+        .expect("Failed to generate key shares");
 
     // Create a delegation transaction
     let tx = LegacyTransaction::new_delegation(
@@ -277,13 +301,18 @@ fn sign_mina_delegation_tx() {
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
     let msg = tx_env.to_pallas_message().serialize();
-    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
-        .expect("Failed to sign message with FROST");
+    let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
+        &msg,
+        shares,
+        pubkey_package,
+        &mut rng,
+    )
+    .expect("Failed to sign message with FROST");
 
     // Verify the signature
-    let mina_sig = frost_bluepallas::pallas_message::translate_sig(&sig)
+    let mina_sig = mina_tx::pallas_message::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::pallas_message::translate_pk(&vk)
+    let mina_vk = mina_tx::pallas_message::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer
@@ -311,13 +340,14 @@ fn delegation_json_deser_with_mina_sign() {
     // Use trusted dealer to setup public and packages
     let max_signers = 5;
     let min_signers = 3;
-    let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
-        max_signers,
-        min_signers,
-        frost_bluepallas::keys::IdentifierList::Default,
-        &mut rng,
-    )
-    .expect("Failed to generate key shares");
+    let (shares, pubkey_package) =
+        frost_bluepallas::keys::generate_with_dealer::<PallasMessage, _>(
+            max_signers,
+            min_signers,
+            frost_bluepallas::keys::IdentifierList::Default,
+            &mut rng,
+        )
+        .expect("Failed to generate key shares");
 
     // Create a delegation transaction
     let tx = LegacyTransaction::new_delegation(
@@ -342,13 +372,18 @@ fn delegation_json_deser_with_mina_sign() {
     // Now sign the deserialized transaction
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
     let msg = tx_env.to_pallas_message().serialize();
-    let (sig, vk) = signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
-        .expect("Failed to sign message with FROST");
+    let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
+        &msg,
+        shares,
+        pubkey_package,
+        &mut rng,
+    )
+    .expect("Failed to sign message with FROST");
 
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::pallas_message::translate_sig(&sig)
+    let mina_sig = mina_tx::pallas_message::translate_sig(&sig)
         .expect("Failed to translate FROST signature to Mina signature");
-    let mina_vk = frost_bluepallas::pallas_message::translate_pk(&vk)
+    let mina_vk = mina_tx::pallas_message::translate_pk(&vk)
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with TESTNET
@@ -391,18 +426,19 @@ fn test_zkapp_tx_mina_signer_compatibility() {
         // Use trusted dealer to setup public and packages
         let max_signers = 5;
         let min_signers = 3;
-        let (shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
-            max_signers,
-            min_signers,
-            frost_bluepallas::keys::IdentifierList::Default,
-            &mut rng,
-        )
-        .unwrap_or_else(|_| {
-            panic!(
-                "Failed to generate key shares for test: {}",
-                test_vector.name
+        let (shares, pubkey_package) =
+            frost_bluepallas::keys::generate_with_dealer::<PallasMessage, _>(
+                max_signers,
+                min_signers,
+                frost_bluepallas::keys::IdentifierList::Default,
+                &mut rng,
             )
-        });
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Failed to generate key shares for test: {}",
+                    test_vector.name
+                )
+            });
 
         // Create transaction envelope with the ZkApp command
         let tx_env = TransactionEnvelope::new_zkapp(
@@ -412,17 +448,21 @@ fn test_zkapp_tx_mina_signer_compatibility() {
         let msg = tx_env.to_pallas_message().serialize();
 
         // Generate FROST signature
-        let (sig, vk) =
-            signing_utilities::sign_from_packages(&msg, shares, pubkey_package, &mut rng)
-                .unwrap_or_else(|_| {
-                    panic!(
-                        "Failed to sign message with FROST for test: {}",
-                        test_vector.name
-                    )
-                });
+        let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
+            &msg,
+            shares,
+            pubkey_package,
+            &mut rng,
+        )
+        .unwrap_or_else(|_| {
+            panic!(
+                "Failed to sign message with FROST for test: {}",
+                test_vector.name
+            )
+        });
 
         // Convert signature to Mina format
-        let mina_sig = frost_bluepallas::pallas_message::translate_sig(&sig).unwrap_or_else(|_| {
+        let mina_sig = mina_tx::pallas_message::translate_sig(&sig).unwrap_or_else(|_| {
             panic!(
                 "Failed to translate FROST signature to Mina signature for test: {}",
                 test_vector.name
@@ -430,7 +470,7 @@ fn test_zkapp_tx_mina_signer_compatibility() {
         });
 
         // Convert verifying key to Mina format
-        let mina_vk = frost_bluepallas::pallas_message::translate_pk(&vk).unwrap_or_else(|_| {
+        let mina_vk = mina_tx::pallas_message::translate_pk(&vk).unwrap_or_else(|_| {
             panic!(
                 "Failed to translate FROST verifying key to Mina public key for test: {}",
                 test_vector.name

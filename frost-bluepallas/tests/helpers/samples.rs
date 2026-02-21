@@ -5,16 +5,23 @@ use std::collections::BTreeMap;
 use frost_bluepallas::{
     keys::{
         dkg::{round1, round2},
-        KeyPackage, PublicKeyPackage, SecretShare, SigningShare, VerifiableSecretSharingCommitment,
-        VerifyingShare,
+        SigningShare, VerifiableSecretSharingCommitment, VerifyingShare,
     },
-    round1::{NonceCommitment, SigningCommitments, SigningNonces},
-    round2::SignatureShare,
-    Field, Signature, SigningPackage, VerifyingKey,
+    round1::NonceCommitment,
+    Field, VerifyingKey,
 };
 use frost_core::{round1::Nonce, Ciphersuite, Element, Group, Scalar};
+use mina_tx::pallas_message::PallasMessage;
 
-type C = frost_bluepallas::BluePallas;
+type C = frost_bluepallas::BluePallas<PallasMessage>;
+type SigningNonces = frost_bluepallas::round1::SigningNonces<PallasMessage>;
+type SigningCommitments = frost_bluepallas::round1::SigningCommitments<PallasMessage>;
+type SigningPackage = frost_bluepallas::SigningPackage<PallasMessage>;
+type SignatureShare = frost_bluepallas::round2::SignatureShare<PallasMessage>;
+type SecretShare = frost_bluepallas::keys::SecretShare<PallasMessage>;
+type KeyPackage = frost_bluepallas::keys::KeyPackage<PallasMessage>;
+type PublicKeyPackage = frost_bluepallas::keys::PublicKeyPackage<PallasMessage>;
+type Signature = frost_bluepallas::Signature<PallasMessage>;
 
 fn element1() -> Element<C> {
     <C as Ciphersuite>::Group::generator()
@@ -108,7 +115,7 @@ pub fn public_key_package() -> PublicKeyPackage {
 }
 
 /// Generate a sample round1::SecretPackage.
-pub fn round1_secret_package() -> round1::SecretPackage {
+pub fn round1_secret_package() -> round1::SecretPackage<PallasMessage> {
     let identifier = 42u16.try_into().unwrap();
     let coefficients = vec![scalar1(), scalar1()];
     let min_signers = 2;
@@ -128,7 +135,7 @@ pub fn round1_secret_package() -> round1::SecretPackage {
 }
 
 /// Generate a sample round1::Package.
-pub fn round1_package() -> round1::Package {
+pub fn round1_package() -> round1::Package<PallasMessage> {
     let serialized_signature = Signature::new(element1(), scalar1()).serialize().unwrap();
     let signature = Signature::deserialize(&serialized_signature).unwrap();
 
@@ -140,7 +147,7 @@ pub fn round1_package() -> round1::Package {
 }
 
 /// Generate a sample round1::SecretPackage.
-pub fn round2_secret_package() -> round2::SecretPackage {
+pub fn round2_secret_package() -> round2::SecretPackage<PallasMessage> {
     let identifier = 42u16.try_into().unwrap();
     let serialized_element = <C as Ciphersuite>::Group::serialize(&element1()).unwrap();
     let commitment =
@@ -159,7 +166,7 @@ pub fn round2_secret_package() -> round2::SecretPackage {
 }
 
 /// Generate a sample round2::Package.
-pub fn round2_package() -> round2::Package {
+pub fn round2_package() -> round2::Package<PallasMessage> {
     let serialized_scalar = <<C as Ciphersuite>::Group as Group>::Field::serialize(&scalar1());
     let signing_share = SigningShare::deserialize(serialized_scalar.as_ref()).unwrap();
 

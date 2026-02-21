@@ -30,5 +30,5 @@ reqwest = { workspace = true, features = ["blocking"] }
 
 [features]
 default = []
-frost-compat = ["dep:frost-bluepallas", "dep:frost-core", "dep:ark-ec"]
+frost-bluepallas-compat = ["dep:frost-bluepallas", "dep:frost-core", "dep:ark-ec"]
 test-utils = []

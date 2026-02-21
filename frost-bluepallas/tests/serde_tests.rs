@@ -3,14 +3,17 @@
 mod helpers;
 
 use frost_bluepallas::{
-    keys::{
-        dkg::{round1, round2},
-        KeyPackage, PublicKeyPackage, SecretShare,
-    },
-    round1::SigningCommitments,
-    round2::SignatureShare,
-    SigningPackage, CONTEXT_STRING,
+    keys::dkg::{round1, round2},
+    CONTEXT_STRING,
 };
+use mina_tx::pallas_message::PallasMessage;
+
+type SigningCommitments = frost_bluepallas::round1::SigningCommitments<PallasMessage>;
+type SigningPackage = frost_bluepallas::SigningPackage<PallasMessage>;
+type SignatureShare = frost_bluepallas::round2::SignatureShare<PallasMessage>;
+type SecretShare = frost_bluepallas::keys::SecretShare<PallasMessage>;
+type KeyPackage = frost_bluepallas::keys::KeyPackage<PallasMessage>;
+type PublicKeyPackage = frost_bluepallas::keys::PublicKeyPackage<PallasMessage>;
 
 //TODO make the invalid jsons as similar to the valid one as possible (excpet for its difference
 //from the valid one)
@@ -525,7 +528,8 @@ fn check_round1_package_serialization() {
     let json = serde_json::to_string_pretty(&round1_package).unwrap();
     println!("{}", json);
 
-    let decoded_round1_package: round1::Package = serde_json::from_str(&json).unwrap();
+    let decoded_round1_package: round1::Package<PallasMessage> =
+        serde_json::from_str(&json).unwrap();
     assert!(round1_package == decoded_round1_package);
 
     let json = r#"{
@@ -538,11 +542,12 @@ fn check_round1_package_serialization() {
       ],
       "proof_of_knowledge": "0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000016f2d9b29370b85bfd6584c1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2a"
     }"#;
-    let decoded_round1_package: round1::Package = serde_json::from_str(json).unwrap();
+    let decoded_round1_package: round1::Package<PallasMessage> =
+        serde_json::from_str(json).unwrap();
     assert!(round1_package == decoded_round1_package);
 
     let invalid_json = "{}";
-    assert!(serde_json::from_str::<round1::Package>(invalid_json).is_err());
+    assert!(serde_json::from_str::<round1::Package<PallasMessage>>(invalid_json).is_err());
 
     // Invalid field
     let invalid_json = r#"{
@@ -555,7 +560,7 @@ fn check_round1_package_serialization() {
         ],
         "foo": "5866666666666666666666666666666666666666666666666666666666666666498d4e9311420c903913a56c94a694b8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0a"
       }"#;
-    assert!(serde_json::from_str::<round1::Package>(invalid_json).is_err());
+    assert!(serde_json::from_str::<round1::Package<PallasMessage>>(invalid_json).is_err());
 
     // Missing field
     let invalid_json = r#"{
@@ -567,7 +572,7 @@ fn check_round1_package_serialization() {
           "5866666666666666666666666666666666666666666666666666666666666666"
         ]
       }"#;
-    assert!(serde_json::from_str::<round1::Package>(invalid_json).is_err());
+    assert!(serde_json::from_str::<round1::Package<PallasMessage>>(invalid_json).is_err());
 
     // Extra field
     let invalid_json = r#"{
@@ -581,7 +586,7 @@ fn check_round1_package_serialization() {
         "proof_of_knowledge": "5866666666666666666666666666666666666666666666666666666666666666498d4e9311420c903913a56c94a694b8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0a",
         "extra": 1
       }"#;
-    assert!(serde_json::from_str::<round1::Package>(invalid_json).is_err());
+    assert!(serde_json::from_str::<round1::Package<PallasMessage>>(invalid_json).is_err());
 }
 
 #[test]
@@ -591,7 +596,8 @@ fn check_round2_package_serialization() {
     let json = serde_json::to_string_pretty(&round2_package).unwrap();
     println!("{}", json);
 
-    let decoded_round2_package: round2::Package = serde_json::from_str(&json).unwrap();
+    let decoded_round2_package: round2::Package<PallasMessage> =
+        serde_json::from_str(&json).unwrap();
     assert!(round2_package == decoded_round2_package);
 
     let json = r#"{
@@ -601,11 +607,12 @@ fn check_round2_package_serialization() {
       },
       "signing_share": "0100000016f2d9b29370b85bfd6584c1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2a"
     }"#;
-    let decoded_round2_package: round2::Package = serde_json::from_str(json).unwrap();
+    let decoded_round2_package: round2::Package<PallasMessage> =
+        serde_json::from_str(json).unwrap();
     assert!(round2_package == decoded_round2_package);
 
     let invalid_json = "{}";
-    assert!(serde_json::from_str::<round2::Package>(invalid_json).is_err());
+    assert!(serde_json::from_str::<round2::Package<PallasMessage>>(invalid_json).is_err());
 
     // Invalid field
     let invalid_json = r#"{
@@ -615,7 +622,7 @@ fn check_round2_package_serialization() {
         },
         "foo": "498d4e9311420c903913a56c94a694b8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0a"
       }"#;
-    assert!(serde_json::from_str::<round2::Package>(invalid_json).is_err());
+    assert!(serde_json::from_str::<round2::Package<PallasMessage>>(invalid_json).is_err());
 
     // Missing field
     let invalid_json = r#"{
@@ -624,7 +631,7 @@ fn check_round2_package_serialization() {
           "ciphersuite": "FROST-ED25519-SHA512-v1"
         }
       }"#;
-    assert!(serde_json::from_str::<round2::Package>(invalid_json).is_err());
+    assert!(serde_json::from_str::<round2::Package<PallasMessage>>(invalid_json).is_err());
 
     // Extra field
     let invalid_json = r#"{
@@ -635,5 +642,5 @@ fn check_round2_package_serialization() {
         "signing_share": "498d4e9311420c903913a56c94a694b8aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa0a",
         "extra": 1
       }"#;
-    assert!(serde_json::from_str::<round2::Package>(invalid_json).is_err());
+    assert!(serde_json::from_str::<round2::Package<PallasMessage>>(invalid_json).is_err());
 }

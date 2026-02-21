@@ -5,21 +5,23 @@ use super::comms::http::HTTPComms;
 use super::comms::Comms;
 
 use frost_bluepallas::BluePallas;
-use mina_tx::TransactionEnvelope;
+use mina_tx::{pallas_message::PallasMessage, TransactionEnvelope};
 use rand::thread_rng;
 use std::io::{BufRead, Write};
 use zeroize::Zeroizing;
+
+type BluePallasSuite = BluePallas<PallasMessage>;
 
 /// Implementation of the participation in the FROST protocol.
 /// This function handles the signing process for a participant.
 /// The signing process needs to be started by a coordinator first.
 pub async fn sign(
-    config: Config<BluePallas>,
+    config: Config<BluePallasSuite>,
     input: &mut impl BufRead,
     logger: &mut impl Write,
     yes: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut comms: Box<dyn Comms<BluePallas>> = Box::new(HTTPComms::new(&config)?);
+    let mut comms: Box<dyn Comms<BluePallasSuite>> = Box::new(HTTPComms::new(&config)?);
 
     // Round 1
 

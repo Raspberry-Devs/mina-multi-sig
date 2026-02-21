@@ -1,13 +1,17 @@
-use frost::keys::{KeyPackage, SecretShare};
-use frost::round1::{SigningCommitments, SigningNonces};
-use frost::round2::SignatureShare;
-use frost::{Identifier, SigningPackage};
 use frost_bluepallas as frost;
-use frost_bluepallas::pallas_message::PallasMessage;
 use mina_hasher::ROInput;
 use mina_signer::NetworkId;
+use mina_tx::pallas_message::PallasMessage;
 use rand::rngs::ThreadRng;
 use std::collections::BTreeMap;
+
+type Identifier = frost::Identifier<PallasMessage>;
+type SecretShare = frost::keys::SecretShare<PallasMessage>;
+type KeyPackage = frost::keys::KeyPackage<PallasMessage>;
+type SigningCommitments = frost::round1::SigningCommitments<PallasMessage>;
+type SigningNonces = frost::round1::SigningNonces<PallasMessage>;
+type SignatureShare = frost::round2::SignatureShare<PallasMessage>;
+type SigningPackage = frost::SigningPackage<PallasMessage>;
 
 pub fn key_package(shares: &BTreeMap<Identifier, SecretShare>) -> BTreeMap<Identifier, KeyPackage> {
     let mut key_packages: BTreeMap<_, _> = BTreeMap::new();

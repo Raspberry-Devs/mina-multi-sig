@@ -1,10 +1,11 @@
 extern crate alloc;
 
 pub mod base58;
-#[cfg(feature = "frost-compat")]
+#[cfg(feature = "frost-bluepallas-compat")]
 pub mod bluepallas_compat;
 pub mod errors;
 pub mod graphql;
+pub mod pallas_message;
 pub mod signatures;
 pub mod transactions;
 

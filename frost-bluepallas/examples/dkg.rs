@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
 use frost_bluepallas as frost;
+use mina_tx::pallas_message::PallasMessage;
+
+type Identifier = frost::Identifier<PallasMessage>;
 
 #[allow(clippy::needless_borrows_for_generic_args)]
 fn main() {
@@ -27,9 +30,13 @@ fn main() {
     // In practice, each participant will perform this on their own environments.
     for participant_index in 1..=max_signers {
         let participant_identifier = participant_index.try_into().expect("should be nonzero");
-        let (round1_secret_package, round1_package) =
-            frost::keys::dkg::part1(participant_identifier, max_signers, min_signers, &mut rng)
-                .unwrap();
+        let (round1_secret_package, round1_package) = frost::keys::dkg::part1::<PallasMessage, _>(
+            participant_identifier,
+            max_signers,
+            min_signers,
+            &mut rng,
+        )
+        .unwrap();
 
         // Store the participant's secret package for later use.
         // In practice each participant will store it in their own environment.
@@ -42,7 +49,7 @@ fn main() {
             if receiver_participant_index == participant_index {
                 continue;
             }
-            let receiver_participant_identifier: frost::Identifier = receiver_participant_index
+            let receiver_participant_identifier: Identifier = receiver_participant_index
                 .try_into()
                 .expect("should be nonzero");
             received_round1_packages
@@ -75,7 +82,8 @@ fn main() {
             .unwrap();
         let round1_packages = &received_round1_packages[&participant_identifier];
         let (round2_secret_package, round2_packages) =
-            frost::keys::dkg::part2(round1_secret_package, round1_packages).unwrap();
+            frost::keys::dkg::part2::<PallasMessage>(round1_secret_package, round1_packages)
+                .unwrap();
 
         // Store the participant's secret package for later use.
         // In practice each participant will store it in their own environment.
@@ -117,9 +125,12 @@ fn main() {
         let round1_packages = &received_round1_packages[&participant_identifier];
         let round2_packages = &received_round2_packages[&participant_identifier];
         // ANCHOR: dkg_part3
-        let (key_package, pubkey_package) =
-            frost::keys::dkg::part3(round2_secret_package, round1_packages, round2_packages)
-                .unwrap();
+        let (key_package, pubkey_package) = frost::keys::dkg::part3::<PallasMessage>(
+            round2_secret_package,
+            round1_packages,
+            round2_packages,
+        )
+        .unwrap();
 
         // ANCHOR_END: dkg_part3
         key_packages.insert(participant_identifier, key_package);

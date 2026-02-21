@@ -1,3 +1,5 @@
+use mina_tx::pallas_message::PallasMessage;
+type Suite = frost_bluepallas::BluePallas<PallasMessage>;
 use frost_bluepallas::*;
 use lazy_static::lazy_static;
 use rand_core::SeedableRng;
@@ -5,14 +7,14 @@ use serde_json::Value;
 
 #[test]
 fn check_zero_key_fails() {
-    frost_core::tests::ciphersuite_generic::check_zero_key_fails::<BluePallas>();
+    frost_core::tests::ciphersuite_generic::check_zero_key_fails::<Suite>();
 }
 
 #[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_sign_with_dkg() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-    frost_core::tests::ciphersuite_generic::check_sign_with_dkg::<BluePallas, _>(rng);
+    frost_core::tests::ciphersuite_generic::check_sign_with_dkg::<Suite, _>(rng);
 }
 
 #[test]
@@ -24,7 +26,7 @@ fn check_dkg_part1_fails_with_invalid_signers_min_signers() {
     let error = Error::InvalidMinSigners;
 
     frost_core::tests::ciphersuite_generic::check_sign_with_dealer_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -35,10 +37,10 @@ fn check_dkg_part1_fails_with_min_signers_greater_than_max() {
 
     let min_signers = 3;
     let max_signers = 2;
-    let error: frost_core::Error<BluePallas> = Error::InvalidMinSigners;
+    let error: frost_core::Error<Suite> = Error::InvalidMinSigners;
 
     frost_core::tests::ciphersuite_generic::check_sign_with_dealer_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -52,7 +54,7 @@ fn check_dkg_part1_fails_with_invalid_signers_max_signers() {
     let error = Error::InvalidMaxSigners;
 
     frost_core::tests::ciphersuite_generic::check_sign_with_dealer_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -61,23 +63,21 @@ fn check_dkg_part1_fails_with_invalid_signers_max_signers() {
 fn check_rts() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
 
-    frost_core::tests::repairable::check_rts::<BluePallas, _>(rng);
+    frost_core::tests::repairable::check_rts::<Suite, _>(rng);
 }
 
 #[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_refresh_shares_with_dealer() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-    frost_core::tests::refresh::check_refresh_shares_with_dealer::<BluePallas, _>(rng);
+    frost_core::tests::refresh::check_refresh_shares_with_dealer::<Suite, _>(rng);
 }
 
 #[test]
 fn check_refresh_shares_with_dealer_serialisation() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
 
-    frost_core::tests::refresh::check_refresh_shares_with_dealer_serialisation::<BluePallas, _>(
-        rng,
-    );
+    frost_core::tests::refresh::check_refresh_shares_with_dealer_serialisation::<Suite, _>(rng);
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn check_refresh_shares_with_dealer_fails_with_invalid_public_key_package() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
 
     frost_core::tests::refresh::check_refresh_shares_with_dealer_fails_with_invalid_public_key_package::<
-        BluePallas,
+        Suite,
         _,
     >(rng);
 }
@@ -101,7 +101,7 @@ fn check_refresh_shares_with_dealer_fails_with_invalid_max_signers() {
     let error = Error::InvalidMaxSigners;
 
     frost_core::tests::refresh::check_refresh_shares_with_dealer_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(&identifiers, error, rng);
 }
@@ -118,7 +118,7 @@ fn check_refresh_shares_with_dealer_fails_with_invalid_identifier() {
     let error = Error::UnknownIdentifier;
 
     frost_core::tests::refresh::check_refresh_shares_with_dealer_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(&identifiers, error, rng);
 }
@@ -127,14 +127,14 @@ fn check_refresh_shares_with_dealer_fails_with_invalid_identifier() {
 #[test]
 fn check_refresh_shares_with_dkg() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-    frost_core::tests::refresh::check_refresh_shares_with_dkg::<BluePallas, _>(rng);
+    frost_core::tests::refresh::check_refresh_shares_with_dkg::<Suite, _>(rng);
 }
 
 #[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_sign_with_dealer() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-    frost_core::tests::ciphersuite_generic::check_sign_with_dealer::<BluePallas, _>(rng);
+    frost_core::tests::ciphersuite_generic::check_sign_with_dealer::<Suite, _>(rng);
 }
 
 #[test]
@@ -146,7 +146,7 @@ fn check_sign_with_dealer_fails_with_invalid_min_signers() {
     let error = Error::InvalidMinSigners;
 
     frost_core::tests::ciphersuite_generic::check_sign_with_dealer_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -157,10 +157,10 @@ fn check_sign_with_dealer_fails_with_min_signers_greater_than_max() {
 
     let min_signers = 3;
     let max_signers = 2;
-    let error: frost_core::Error<BluePallas> = Error::InvalidMinSigners;
+    let error: frost_core::Error<Suite> = Error::InvalidMinSigners;
 
     frost_core::tests::ciphersuite_generic::check_sign_with_dealer_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -174,7 +174,7 @@ fn check_sign_with_dealer_fails_with_invalid_max_signers() {
     let error = Error::InvalidMaxSigners;
 
     frost_core::tests::ciphersuite_generic::check_sign_with_dealer_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -184,7 +184,7 @@ fn check_sign_with_dealer_fails_with_invalid_max_signers() {
 #[test]
 fn check_share_generation_pallas_poseidon() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-    frost_core::tests::ciphersuite_generic::check_share_generation::<BluePallas, _>(rng);
+    frost_core::tests::ciphersuite_generic::check_share_generation::<Suite, _>(rng);
 }
 
 #[test]
@@ -196,7 +196,7 @@ fn check_share_generation_fails_with_invalid_min_signers() {
     let error = Error::InvalidMinSigners;
 
     frost_core::tests::ciphersuite_generic::check_share_generation_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -207,10 +207,10 @@ fn check_share_generation_fails_with_min_signers_greater_than_max() {
 
     let min_signers = 3;
     let max_signers = 2;
-    let error: frost_core::Error<BluePallas> = Error::InvalidMinSigners;
+    let error: frost_core::Error<Suite> = Error::InvalidMinSigners;
 
     frost_core::tests::ciphersuite_generic::check_share_generation_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -224,7 +224,7 @@ fn check_share_generation_fails_with_invalid_max_signers() {
     let error = Error::InvalidMaxSigners;
 
     frost_core::tests::ciphersuite_generic::check_share_generation_fails_with_invalid_signers::<
-        BluePallas,
+        Suite,
         _,
     >(min_signers, max_signers, error, rng);
 }
@@ -240,28 +240,28 @@ lazy_static! {
 
 #[test]
 fn check_sign_with_test_vectors() {
-    frost_core::tests::vectors::check_sign_with_test_vectors::<BluePallas>(&VECTORS);
+    frost_core::tests::vectors::check_sign_with_test_vectors::<Suite>(&VECTORS);
 }
 
 #[test]
 fn check_sign_with_test_vectors_with_big_identifiers() {
-    frost_core::tests::vectors::check_sign_with_test_vectors::<BluePallas>(&VECTORS_BIG_IDENTIFIER);
+    frost_core::tests::vectors::check_sign_with_test_vectors::<Suite>(&VECTORS_BIG_IDENTIFIER);
 }
 
 #[test]
 fn check_error_culprit() {
-    frost_core::tests::ciphersuite_generic::check_error_culprit::<BluePallas>();
+    frost_core::tests::ciphersuite_generic::check_error_culprit::<Suite>();
 }
 
 #[test]
 fn check_identifier_derivation() {
-    frost_core::tests::ciphersuite_generic::check_identifier_derivation::<BluePallas>();
+    frost_core::tests::ciphersuite_generic::check_identifier_derivation::<Suite>();
 }
 
 // Explicit test which is used in a documentation snippet
 #[test]
 #[allow(unused_variables)]
-fn check_identifier_generation() -> Result<(), Error> {
+fn check_identifier_generation() -> Result<(), Error<PallasMessage>> {
     // ANCHOR: dkg_identifier
     let participant_identifier = Identifier::try_from(7u16)?;
     let participant_identifier = Identifier::derive("alice@example.com".as_bytes())?;
@@ -273,23 +273,17 @@ fn check_identifier_generation() -> Result<(), Error> {
 fn check_sign_with_dealer_and_identifiers() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
 
-    frost_core::tests::ciphersuite_generic::check_sign_with_dealer_and_identifiers::<BluePallas, _>(
-        rng,
-    );
+    frost_core::tests::ciphersuite_generic::check_sign_with_dealer_and_identifiers::<Suite, _>(rng);
 }
 
 #[test]
 fn check_sign_with_missing_identifier() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-    frost_core::tests::ciphersuite_generic::check_sign_with_missing_identifier::<BluePallas, _>(
-        rng,
-    );
+    frost_core::tests::ciphersuite_generic::check_sign_with_missing_identifier::<Suite, _>(rng);
 }
 
 #[test]
 fn check_sign_with_incorrect_commitments() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-    frost_core::tests::ciphersuite_generic::check_sign_with_incorrect_commitments::<BluePallas, _>(
-        rng,
-    );
+    frost_core::tests::ciphersuite_generic::check_sign_with_incorrect_commitments::<Suite, _>(rng);
 }

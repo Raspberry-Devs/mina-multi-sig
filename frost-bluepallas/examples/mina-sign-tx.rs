@@ -1,22 +1,21 @@
 use ark_ff::{BigInt, PrimeField};
-use frost_bluepallas::Error;
 use frost_core::Ciphersuite;
 use mina_signer::{Keypair, PubKey, Signer};
 use mina_tx::{
-    legacy_tx::LegacyTransaction, PubKeySer, Sig, TransactionEnvelope, TransactionSignature,
+    legacy_tx::LegacyTransaction,
+    pallas_message::{translate_minask, translate_sig, PallasMessage},
+    PubKeySer, Sig, TransactionEnvelope, TransactionSignature,
 };
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Private key in hex format
     let private_key_hex = "35dcca7620128d240cc3319c83dc6402ad439038361ba853af538a4cea3ddabc";
-    let mina_keypair =
-        Keypair::from_hex(private_key_hex).map_err(|_| Error::DeserializationError)?;
+    let mina_keypair = Keypair::from_hex(private_key_hex)?;
 
     println!("Private key: {:?}", mina_keypair.secret);
 
     let recipient_pubkey =
-        PubKey::from_address("B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1")
-            .map_err(|_| Error::DeserializationError)?;
+        PubKey::from_address("B62qkcvM4DZE7k23ZHMLt1uaMVcixuxxuyz1XNJNCLkFbitDdUHxWs1")?;
 
     // Generate tx
     let tx = LegacyTransaction::new_payment(
@@ -37,23 +36,19 @@ fn main() -> Result<(), Error> {
     );
 
     //let tx = tx.set_memo_str("Hello World!");
-    let signing_key = frost_bluepallas::pallas_message::translate_minask(&mina_keypair)
-        .map_err(|_| Error::DeserializationError)?;
+    let signing_key = translate_minask(&mina_keypair)?;
 
     let msg = tx.to_pallas_message().serialize();
 
     // Sign the transaction with FROST
-    let (sig, vk) = frost_bluepallas::signing_utilities::generate_signature_from_sk(
-        &msg,
-        &signing_key,
-        rand_core::OsRng,
-    )
-    .map_err(|_| Error::MalformedSignature)?;
+    let (sig, vk) = frost_bluepallas::signing_utilities::generate_signature_from_sk::<
+        PallasMessage,
+        _,
+    >(&msg, &signing_key, rand_core::OsRng)?;
 
     // Print out signature and verifying key
     // Convert signature to Mina format
-    let mina_sig = frost_bluepallas::pallas_message::translate_sig(&sig)
-        .map_err(|_| Error::DeserializationError)?;
+    let mina_sig = translate_sig(&sig)?;
     // Print transaction as json
 
     // Convert signature to big ints
@@ -75,7 +70,7 @@ fn main() -> Result<(), Error> {
 
     println!("Transaction Signature: {}", out);
 
-    let chall = frost_bluepallas::BluePallas::challenge(sig.R(), &vk, &msg)?;
+    let chall = frost_bluepallas::BluePallas::<PallasMessage>::challenge(sig.R(), &vk, &msg)?;
     println!("Challenge: {:?}", chall);
 
     let mut ctx = mina_signer::create_legacy(mina_signer::NetworkId::TESTNET);
