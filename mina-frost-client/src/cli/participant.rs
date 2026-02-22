@@ -1,10 +1,9 @@
 use std::error::Error;
 use std::rc::Rc;
 
+use crate::BluePallasSuite;
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::BluePallas;
-use mina_tx::pallas_message::PallasMessage;
 use reqwest::Url;
 
 use frost_core::keys::KeyPackage;
@@ -15,8 +14,6 @@ use super::{args::Command, config::Config as ConfigFile};
 use crate::cli::config::{Group, Participant};
 use crate::participant::sign;
 use crate::participant::Config as ParticipantConfig;
-
-type BluePallasSuite = BluePallas<PallasMessage>;
 
 /// CLI entry point for participant signing
 pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {

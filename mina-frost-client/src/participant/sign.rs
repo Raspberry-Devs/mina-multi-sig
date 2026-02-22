@@ -4,13 +4,11 @@ use super::comms::http::HTTPComms;
 
 use super::comms::Comms;
 
-use frost_bluepallas::BluePallas;
-use mina_tx::{pallas_message::PallasMessage, TransactionEnvelope};
+use crate::BluePallasSuite;
+use mina_tx::TransactionEnvelope;
 use rand::thread_rng;
 use std::io::{BufRead, Write};
 use zeroize::Zeroizing;
-
-type BluePallasSuite = BluePallas<PallasMessage>;
 
 /// Implementation of the participation in the FROST protocol.
 /// This function handles the signing process for a participant.

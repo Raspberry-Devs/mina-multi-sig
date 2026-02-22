@@ -1,14 +1,12 @@
 use std::{error::Error, marker::PhantomData};
 
+use crate::BluePallasSuite;
 use frost_core::{
     keys::{KeyPackage, PublicKeyPackage},
     Ciphersuite,
 };
 
-use frost_bluepallas::BluePallas;
-use mina_tx::pallas_message::{translate_pk, PallasMessage};
-
-type BluePallasSuite = BluePallas<PallasMessage>;
+use mina_tx::pallas_message::translate_pk;
 
 /// Additional information about a group, derived from the key packages.
 #[derive(Debug, Clone)]

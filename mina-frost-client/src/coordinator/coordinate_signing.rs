@@ -1,18 +1,16 @@
 use std::collections::BTreeMap;
 use std::io::{BufRead, Write};
 
-use frost_bluepallas::BluePallas;
 use frost_core::{
     self, keys::PublicKeyPackage, round1::SigningCommitments, Ciphersuite, Identifier,
     SigningPackage,
 };
-use mina_tx::{pallas_message::PallasMessage, TransactionEnvelope};
+use mina_tx::TransactionEnvelope;
 
 use super::comms::http::HTTPComms;
 use super::comms::Comms;
 use super::config::Config;
-
-type BluePallasSuite = BluePallas<PallasMessage>;
+use crate::BluePallasSuite;
 
 #[derive(Debug, PartialEq)]
 pub struct ParticipantsConfig<C: Ciphersuite> {

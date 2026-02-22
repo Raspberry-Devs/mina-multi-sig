@@ -1,12 +1,9 @@
 use std::error::Error;
 
 use clap::Parser;
-use frost_bluepallas::BluePallas;
 use mina_frost_client::cli;
 use mina_frost_client::cli::args::{Args, Command};
-use mina_tx::pallas_message::PallasMessage;
-
-type BluePallasSuite = BluePallas<PallasMessage>;
+use mina_frost_client::BluePallasSuite;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

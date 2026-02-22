@@ -1,14 +1,13 @@
 use crate::{
     cipher::PublicKey,
     coordinator::{coordinate_signing, Config as CoordinatorConfig},
+    BluePallasSuite,
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::BluePallas;
 use frost_core::{keys::PublicKeyPackage, Ciphersuite, VerifyingKey};
 use mina_tx::{
-    errors::MinaTxError, network_id::NetworkIdEnvelope, pallas_message::PallasMessage,
-    TransactionEnvelope, TransactionSignature,
+    errors::MinaTxError, network_id::NetworkIdEnvelope, TransactionEnvelope, TransactionSignature,
 };
 use reqwest::Url;
 use std::{
@@ -21,8 +20,6 @@ use std::{
 
 use super::args::Command;
 use super::config::Config as ConfigFile;
-
-type BluePallasSuite = BluePallas<PallasMessage>;
 
 /// This is the BluePallas/BluePallas specific run command for the coordinator which will save the output
 /// of the signing session into a Mina-specific transaction.
