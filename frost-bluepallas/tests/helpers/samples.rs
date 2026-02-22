@@ -13,15 +13,10 @@ use frost_bluepallas::{
 use frost_core::{round1::Nonce, Ciphersuite, Element, Group, Scalar};
 use mina_tx::pallas_message::PallasMessage;
 
-type C = frost_bluepallas::BluePallas<PallasMessage>;
-type SigningNonces = frost_bluepallas::round1::SigningNonces<PallasMessage>;
-type SigningCommitments = frost_bluepallas::round1::SigningCommitments<PallasMessage>;
-type SigningPackage = frost_bluepallas::SigningPackage<PallasMessage>;
-type SignatureShare = frost_bluepallas::round2::SignatureShare<PallasMessage>;
-type SecretShare = frost_bluepallas::keys::SecretShare<PallasMessage>;
-type KeyPackage = frost_bluepallas::keys::KeyPackage<PallasMessage>;
-type PublicKeyPackage = frost_bluepallas::keys::PublicKeyPackage<PallasMessage>;
-type Signature = frost_bluepallas::Signature<PallasMessage>;
+use super::types::{
+    KeyPackage, PublicKeyPackage, SecretShare, Signature, SignatureShare, SigningCommitments,
+    SigningNonces, SigningPackage, Suite as C,
+};
 
 fn element1() -> Element<C> {
     <C as Ciphersuite>::Group::generator()

@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 
 pub mod samples;
+pub mod types;
 
 use frost_bluepallas::BluePallas;
 use mina_signer::{NetworkId, Signer};

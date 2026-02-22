@@ -6,14 +6,10 @@ use frost_bluepallas::{
     keys::dkg::{round1, round2},
     CONTEXT_STRING,
 };
+use helpers::types::{
+    KeyPackage, PublicKeyPackage, SecretShare, SignatureShare, SigningCommitments, SigningPackage,
+};
 use mina_tx::pallas_message::PallasMessage;
-
-type SigningCommitments = frost_bluepallas::round1::SigningCommitments<PallasMessage>;
-type SigningPackage = frost_bluepallas::SigningPackage<PallasMessage>;
-type SignatureShare = frost_bluepallas::round2::SignatureShare<PallasMessage>;
-type SecretShare = frost_bluepallas::keys::SecretShare<PallasMessage>;
-type KeyPackage = frost_bluepallas::keys::KeyPackage<PallasMessage>;
-type PublicKeyPackage = frost_bluepallas::keys::PublicKeyPackage<PallasMessage>;
 
 //TODO make the invalid jsons as similar to the valid one as possible (excpet for its difference
 //from the valid one)

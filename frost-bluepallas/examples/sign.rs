@@ -3,10 +3,9 @@ use std::collections::BTreeMap;
 use frost_bluepallas as frost;
 use mina_tx::pallas_message::PallasMessage;
 
-type Identifier = frost::Identifier<PallasMessage>;
-type KeyPackage = frost::keys::KeyPackage<PallasMessage>;
-type SigningNonces = frost::round1::SigningNonces<PallasMessage>;
-type SigningCommitments = frost::round1::SigningCommitments<PallasMessage>;
+#[path = "_shared/types.rs"]
+mod types;
+use types::{Identifier, KeyPackage, SigningCommitments, SigningNonces};
 
 #[allow(clippy::needless_borrows_for_generic_args)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {

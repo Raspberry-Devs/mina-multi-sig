@@ -3,7 +3,9 @@ use std::collections::BTreeMap;
 use frost_bluepallas as frost;
 use mina_tx::pallas_message::PallasMessage;
 
-type Identifier = frost::Identifier<PallasMessage>;
+#[path = "_shared/types.rs"]
+mod types;
+use types::Identifier;
 
 #[allow(clippy::needless_borrows_for_generic_args)]
 fn main() {
