@@ -11,7 +11,7 @@ use serde::{
 };
 
 use crate::{
-    errors::BluePallasError,
+    errors::MinaTxError,
     transactions::{MEMO_BYTES, MEMO_HEADER_BYTES},
 };
 
@@ -192,19 +192,19 @@ impl fmt::Display for LegacyTransaction {
 }
 
 impl LegacyTransaction {
-    pub fn get_memo_string(&self) -> Result<String, BluePallasError> {
+    pub fn get_memo_string(&self) -> Result<String, MinaTxError> {
         // Drops header bytes and uses length byte to extract memo
         let memo_len = self.memo[1] as usize;
 
         // Ensure the declared memo length does not exceed the available memo payload bytes.
         if memo_len > MEMO_BYTES - MEMO_HEADER_BYTES {
-            return Err(BluePallasError::MemoSerializationError(
+            return Err(MinaTxError::MemoSerializationError(
                 "Invalid memo length byte".to_string(),
             ));
         }
 
         String::from_utf8(self.memo[MEMO_HEADER_BYTES..MEMO_HEADER_BYTES + memo_len].to_vec())
-            .map_err(|e| BluePallasError::MemoSerializationError(e.to_string()))
+            .map_err(|e| MinaTxError::MemoSerializationError(e.to_string()))
     }
 
     pub fn new_payment(from: PubKey, to: PubKey, amount: u64, fee: u64, nonce: u32) -> Self {
@@ -255,10 +255,10 @@ impl LegacyTransaction {
         self
     }
 
-    pub fn set_memo_str(mut self, memo: &str) -> Result<Self, BluePallasError> {
+    pub fn set_memo_str(mut self, memo: &str) -> Result<Self, MinaTxError> {
         // Prevent overflow
         if memo.len() > MEMO_BYTES - MEMO_HEADER_BYTES || memo.len() > u8::MAX as usize {
-            return Err(BluePallasError::invalid_memo("Memo exceeds maximum length"));
+            return Err(MinaTxError::invalid_memo("Memo exceeds maximum length"));
         }
 
         self.memo[0] = 0x01;
@@ -649,7 +649,7 @@ mod tests {
         );
         if let Err(e) = res {
             match e {
-                BluePallasError::InvalidMemo(_) => {}
+                MinaTxError::InvalidMemo(_) => {}
                 other => panic!("Unexpected error variant: {:?}", other),
             }
         }

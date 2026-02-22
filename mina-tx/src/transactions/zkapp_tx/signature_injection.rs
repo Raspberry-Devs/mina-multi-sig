@@ -11,7 +11,7 @@ use alloc::{
 };
 use mina_signer::pubkey::PubKey;
 
-use crate::mina_compat::Sig;
+use crate::signatures::Sig;
 
 use super::{AccountUpdate, ZKAppCommand};
 

@@ -5,13 +5,12 @@
 //! server. through the mina-frost-client. Finally we read the generated signature and verify that it
 //! agrees with the group public key according to the `mina-signer` crate
 
-use frost_bluepallas::mina_compat::TransactionSignature;
-use frost_bluepallas::transactions::TransactionEnvelope;
-use frost_bluepallas::transactions::TransactionKind;
 use lazy_static::lazy_static;
 use mina_signer::PubKey;
 use mina_signer::Signature;
 use mina_signer::Signer;
+use mina_tx::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors;
+use mina_tx::{TransactionEnvelope, TransactionKind, TransactionSignature};
 use regex::Regex;
 use std::fs;
 use std::io::Result;
@@ -108,8 +107,7 @@ macro_rules! regex_match {
 
 /// Dump ZKApp transaction test vectors to files, return pathnames
 fn write_zkapp_tx_files() -> Result<Vec<String>> {
-    let test_vectors =
-        frost_bluepallas::transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors();
+    let test_vectors = get_zkapp_test_vectors();
 
     let mut paths: Vec<String> = Vec::with_capacity(test_vectors.len());
     for (index, tv) in test_vectors.into_iter().enumerate() {

@@ -4,6 +4,7 @@ mod helpers;
 
 use frost_bluepallas::SigningKey;
 use helpers::samples;
+use mina_tx::pallas_message::PallasMessage;
 use rand_core::SeedableRng;
 
 #[allow(clippy::unnecessary_literal_unwrap)]
@@ -21,7 +22,7 @@ fn check_common_traits_for_type<T: Clone + Eq + PartialEq + std::fmt::Debug>(v: 
 #[test]
 fn check_signing_key_common_traits() {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(0);
-    let signing_key = SigningKey::new(&mut rng);
+    let signing_key = SigningKey::<PallasMessage>::new(&mut rng);
     check_common_traits_for_type(signing_key);
 }
 

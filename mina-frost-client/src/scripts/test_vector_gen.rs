@@ -3,6 +3,7 @@ use frost_core::{
     keys::{IdentifierList, KeyPackage},
     round1, round2, SigningPackage,
 };
+use mina_tx::pallas_message::PallasMessage;
 use rand::SeedableRng;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -14,9 +15,13 @@ fn main() {
     let mut rng = rand::rngs::StdRng::from_seed(seed);
 
     // 1. Key Generation
-    let (shares, pubkey_package) =
-        generate_with_dealer(max_signers, min_signers, IdentifierList::Default, &mut rng)
-            .expect("Key generation failed");
+    let (shares, pubkey_package) = generate_with_dealer::<PallasMessage, _>(
+        max_signers,
+        min_signers,
+        IdentifierList::Default,
+        &mut rng,
+    )
+    .expect("Key generation failed");
 
     let mut key_packages: BTreeMap<_, _> = BTreeMap::new();
     for (id, share) in shares.iter() {
@@ -56,8 +61,12 @@ fn main() {
     }
 
     // 5. Aggregate
-    let group_signature =
-        frost_bluepallas::aggregate(&signing_package, &signature_shares, &pubkey_package).unwrap();
+    let group_signature = frost_bluepallas::aggregate::<PallasMessage>(
+        &signing_package,
+        &signature_shares,
+        &pubkey_package,
+    )
+    .unwrap();
 
     // 6. Print all values for mod.rs
     println!("// New values generated for bluepallas. Copy and paste this entire block into the get_helpers() function.");

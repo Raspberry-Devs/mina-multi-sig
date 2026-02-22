@@ -1,8 +1,8 @@
 //! This file defines the generic TransactionEnvelope structure that encapsulates all kinds of transactions that Mina supports. It is the structure that we sign using FROST.
 
 use crate::{
-    errors::BluePallasError,
-    mina_compat::Sig,
+    errors::MinaTxError,
+    signatures::Sig,
     transactions::{
         legacy_tx::LegacyTransaction,
         network_id::NetworkIdEnvelope,
@@ -85,10 +85,7 @@ impl TransactionEnvelope {
     /// Auto-detects the transaction type by attempting to parse as each type.
     /// Tries ZkApp first, then Legacy.
     /// Returns an error if parsing fails for both types.
-    pub fn from_str_network(
-        s: &str,
-        network_id: NetworkIdEnvelope,
-    ) -> Result<Self, BluePallasError> {
+    pub fn from_str_network(s: &str, network_id: NetworkIdEnvelope) -> Result<Self, MinaTxError> {
         let s = s.trim();
 
         // Try parsing as ZkApp transaction first
@@ -102,7 +99,7 @@ impl TransactionEnvelope {
         }
 
         // Neither worked, return an error
-        Err(BluePallasError::UnknownTransactionType(
+        Err(MinaTxError::UnknownTransactionType(
             "Unable to parse transaction. Expected a valid legacy transaction or ZkApp transaction JSON.".to_string()
         ))
     }
@@ -183,7 +180,7 @@ mod tests {
     use mina_signer::Keypair;
 
     use crate::{
-        errors::BluePallasError, transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors,
+        errors::MinaTxError, transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors,
     };
 
     use super::*;
@@ -192,7 +189,7 @@ mod tests {
     fn test_transaction_envelope_serialization_roundtrip() {
         let private_key_hex = "35dcca7620128d240cc3319c83dc6402ad439038361ba853af538a4cea3ddabc";
         let mina_keypair = Keypair::from_hex(private_key_hex)
-            .map_err(|_| BluePallasError::InvalidSignature("Failed to parse keypair".into()))
+            .map_err(|_| MinaTxError::InvalidSignature("Failed to parse keypair".into()))
             .unwrap();
 
         let legacy_tx = LegacyTransaction::new_payment(

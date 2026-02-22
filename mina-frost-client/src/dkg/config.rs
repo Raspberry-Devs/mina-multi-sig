@@ -1,3 +1,6 @@
+// Used to prevent warning on `comm_participant_pubkey_getter` field due to zeroize(skip) macro
+#![allow(unused_assignments)]
+
 use std::rc::Rc;
 
 use crate::cipher::{PrivateKey, PublicKey};

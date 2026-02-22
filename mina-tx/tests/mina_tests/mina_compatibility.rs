@@ -1,13 +1,13 @@
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::fields::PrimeField;
 use ark_ff::BigInteger;
-use frost_bluepallas::{
-    hasher::message_hash,
-    mina_compat::{translate_pk, translate_sig, PallasMessage},
-    transactions::{legacy_tx::LegacyTransaction, TransactionEnvelope},
-    PallasGroup,
-};
+use frost_bluepallas::{BluePallas, PallasGroup};
 use frost_core::{Ciphersuite, Group};
+use mina_tx::{
+    legacy_tx::LegacyTransaction,
+    pallas_message::{message_hash, translate_pk, translate_sig, PallasMessage},
+    TransactionEnvelope,
+};
 
 use mina_hasher::Hashable;
 use mina_signer::{CurvePoint, NetworkId, PubKey, Signer};
@@ -16,6 +16,7 @@ use rand_core::SeedableRng;
 use std::ops::{Add, Neg};
 
 use frost_bluepallas::signing_utilities::generate_signature_random;
+type Suite = BluePallas<PallasMessage>;
 
 #[test]
 fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,9 +37,9 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
             16,
         ),
     );
-    let fr_msg = tx.serialize()?;
+    let fr_msg = tx.to_pallas_message().serialize();
 
-    let (fr_sig, fr_pk) = generate_signature_random(&fr_msg, rng)?;
+    let (fr_sig, fr_pk) = generate_signature_random::<PallasMessage, _>(&fr_msg, rng)?;
 
     assert!(
         fr_sig
@@ -51,12 +52,12 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         "Signature commitment y-coordinate must be even"
     );
 
-    let res = frost_bluepallas::BluePallas::verify_signature(&fr_msg, &fr_sig, &fr_pk);
+    let res = BluePallas::<PallasMessage>::verify_signature(&fr_msg, &fr_sig, &fr_pk);
     assert!(res.is_ok(), "FROST correctly verifies signature");
 
     let mina_pk = translate_pk(&fr_pk)?;
     let mina_sig = translate_sig(&fr_sig)?;
-    let mina_msg = PallasMessage::new(tx.serialize().unwrap());
+    let mina_msg = tx.to_pallas_message();
 
     assert_eq!(
         mina_sig.rx,
@@ -75,8 +76,8 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         mina_msg.clone(),
         network_id.clone(),
         true,
-    )?;
-    let chall = frost_bluepallas::BluePallas::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
+    );
+    let chall = BluePallas::<PallasMessage>::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
 
     // As of now this should be trivially true because the implementations are the same
     assert_eq!(
@@ -91,7 +92,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         ctx.verify(&mina_sig, &mina_pk, &mina_msg)
     );
 
-    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id, true)?;
+    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id, true);
 
     let sv = CurvePoint::generator()
         .mul_bigint(mina_sig.s.into_bigint())
@@ -127,13 +128,14 @@ fn roi_mina_tx() {
     // Use trusted dealer to setup public and packages
     let max_signers = 5;
     let min_signers = 3;
-    let (_shares, pubkey_package) = frost_bluepallas::keys::generate_with_dealer(
-        max_signers,
-        min_signers,
-        frost_bluepallas::keys::IdentifierList::Default,
-        rng,
-    )
-    .expect("Failed to generate key shares");
+    let (_shares, pubkey_package) =
+        frost_bluepallas::keys::generate_with_dealer::<PallasMessage, _>(
+            max_signers,
+            min_signers,
+            frost_bluepallas::keys::IdentifierList::Default,
+            rng,
+        )
+        .expect("Failed to generate key shares");
 
     let tx = LegacyTransaction::new_payment(
         translate_pk(pubkey_package.verifying_key())
@@ -150,7 +152,7 @@ fn roi_mina_tx() {
 
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
 
-    let msg = PallasMessage::new(tx_env.serialize().unwrap());
+    let msg = tx_env.to_pallas_message();
     assert_eq!(
         msg.to_roinput(),
         tx.to_roinput(),
@@ -164,8 +166,11 @@ fn frost_even_commitment() {
     for i in 0..256 {
         let rng = rand_chacha::ChaChaRng::seed_from_u64(i);
         let fr_msg = b"Test message for FROST even commitment".to_vec();
-        let (fr_sig, _fr_pk) =
-            generate_signature_random(&fr_msg, rng).expect("Failed to generate signature");
+        let (fr_sig, _fr_pk): (
+            frost_core::Signature<Suite>,
+            frost_core::VerifyingKey<Suite>,
+        ) = generate_signature_random::<PallasMessage, _>(&fr_msg, rng)
+            .expect("Failed to generate signature");
 
         // Ensure the signature commitment y-coordinate is even
         assert!(
@@ -199,7 +204,7 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
     // We want to now deserialize into a transaction
     let tx: LegacyTransaction = serde_json::from_str(json).unwrap();
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
-    let msg = tx_env.serialize().unwrap();
+    let msg = tx_env.to_pallas_message().serialize();
 
     for _ in 0..64 {
         let rng = rand_core::OsRng;

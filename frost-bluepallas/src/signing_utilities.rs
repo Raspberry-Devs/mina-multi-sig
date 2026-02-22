@@ -2,16 +2,30 @@
 
 use alloc::collections::BTreeMap;
 
-use crate::{self as frost};
+use crate::{BluePallas, ChallengeMessage};
 use rand_core::{CryptoRng, RngCore};
 
+type SignResult<M> = Result<
+    (
+        frost_core::Signature<BluePallas<M>>,
+        frost_core::VerifyingKey<BluePallas<M>>,
+    ),
+    frost_core::Error<BluePallas<M>>,
+>;
+
 /// Helper function to sign a message using existing key packages
-pub fn sign_from_packages<R: RngCore + CryptoRng>(
+pub fn sign_from_packages<M, R: RngCore + CryptoRng>(
     message: &[u8],
-    shares: BTreeMap<frost::Identifier, frost::keys::SecretShare>,
-    pubkey_package: frost::keys::PublicKeyPackage,
+    shares: BTreeMap<
+        frost_core::Identifier<BluePallas<M>>,
+        frost_core::keys::SecretShare<BluePallas<M>>,
+    >,
+    pubkey_package: frost_core::keys::PublicKeyPackage<BluePallas<M>>,
     mut rng: R,
-) -> Result<(frost::Signature, frost::VerifyingKey), frost::Error> {
+) -> SignResult<M>
+where
+    M: ChallengeMessage,
+{
     let min_signers = pubkey_package.verifying_shares().len().min(3);
 
     // Verifies the secret shares from the dealer and store them in a BTreeMap.
@@ -20,7 +34,7 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
     let mut key_packages: BTreeMap<_, _> = BTreeMap::new();
 
     for (identifier, secret_share) in shares {
-        let key_package = frost::keys::KeyPackage::try_from(secret_share)?;
+        let key_package = frost_core::keys::KeyPackage::try_from(secret_share)?;
         key_packages.insert(identifier, key_package);
     }
 
@@ -33,12 +47,13 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
 
     // In practice, each iteration of this loop will be executed by its respective participant.
     for participant_index in 1..=min_signers {
-        let participant_identifier = frost::Identifier::try_from(participant_index as u16)
-            .map_err(|_| frost::Error::MalformedIdentifier)?;
+        let participant_identifier = frost_core::Identifier::try_from(participant_index as u16)
+            .map_err(|_| frost_core::Error::MalformedIdentifier)?;
         let key_package = &key_packages[&participant_identifier];
         // Generate one (1) nonce and one SigningCommitments instance for each
         // participant, up to _threshold_.
-        let (nonces, commitments) = frost::round1::commit(key_package.signing_share(), &mut rng);
+        let (nonces, commitments) =
+            frost_core::round1::commit(key_package.signing_share(), &mut rng);
         // In practice, the nonces must be kept by the participant to use in the
         // next round, while the commitment must be sent to the coordinator
         // (or to every other participant if there is no coordinator) using
@@ -51,7 +66,7 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
     // - decide what message to sign
     // - take one (unused) commitment per signing participant
     let mut signature_shares = BTreeMap::new();
-    let signing_package = frost::SigningPackage::new(commitments_map, message);
+    let signing_package = frost_core::SigningPackage::new(commitments_map, message);
 
     ////////////////////////////////////////////////////////////////////////////
     // Round 2: each participant generates their signature share
@@ -64,7 +79,7 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
         let nonces = &nonces_map[participant_identifier];
 
         // Each participant generates their signature share.
-        let signature_share = frost::round2::sign(&signing_package, nonces, key_package)?;
+        let signature_share = frost_core::round2::sign(&signing_package, nonces, key_package)?;
 
         // In practice, the signature share must be sent to the Coordinator
         // using an authenticated channel.
@@ -77,7 +92,8 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
     ////////////////////////////////////////////////////////////////////////////
 
     // Aggregate (also verifies the signature shares)
-    let group_signature = frost::aggregate(&signing_package, &signature_shares, &pubkey_package)?;
+    let group_signature =
+        frost_core::aggregate(&signing_package, &signature_shares, &pubkey_package)?;
     let pk = pubkey_package.verifying_key();
 
     Ok((group_signature, *pk))
@@ -85,16 +101,19 @@ pub fn sign_from_packages<R: RngCore + CryptoRng>(
 
 /// Helper function which uses FROST to generate a signature, message and verifying key to use in tests.
 /// This uses trusted dealer rather than DKG
-pub fn generate_signature_random<R: RngCore + CryptoRng>(
+pub fn generate_signature_random<M, R: RngCore + CryptoRng>(
     message: &[u8],
     mut rng: R,
-) -> Result<(frost::Signature, frost::VerifyingKey), frost::Error> {
+) -> SignResult<M>
+where
+    M: ChallengeMessage,
+{
     let max_signers = 5;
     let min_signers = 3;
-    let (shares, pubkey_package) = frost::keys::generate_with_dealer(
+    let (shares, pubkey_package) = frost_core::keys::generate_with_dealer(
         max_signers,
         min_signers,
-        frost::keys::IdentifierList::Default,
+        frost_core::keys::IdentifierList::Default,
         &mut rng,
     )?;
 
@@ -103,18 +122,21 @@ pub fn generate_signature_random<R: RngCore + CryptoRng>(
 
 /// Helper function which splits an existing signing key into FROST shares and generates a signature.
 /// This uses the split function to create shares from a single signing key.
-pub fn generate_signature_from_sk<R: RngCore + CryptoRng>(
+pub fn generate_signature_from_sk<M, R: RngCore + CryptoRng>(
     message: &[u8],
-    signing_key: &frost::SigningKey,
+    signing_key: &frost_core::SigningKey<BluePallas<M>>,
     mut rng: R,
-) -> Result<(frost::Signature, frost::VerifyingKey), frost::Error> {
+) -> SignResult<M>
+where
+    M: ChallengeMessage,
+{
     let max_signers = 5;
     let min_signers = 3;
-    let (shares, pubkey_package) = frost::keys::split(
+    let (shares, pubkey_package) = frost_core::keys::split(
         signing_key,
         max_signers,
         min_signers,
-        frost::keys::IdentifierList::Default,
+        frost_core::keys::IdentifierList::Default,
         &mut rng,
     )?;
 

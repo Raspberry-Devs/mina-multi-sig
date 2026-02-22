@@ -8,7 +8,7 @@ use lazy_static::lazy_static;
 use mina_hasher::Fp;
 use mina_signer::NetworkId;
 
-use crate::{errors::BluePallasError, transactions::zkapp_tx::Field};
+use crate::{errors::MinaTxError, transactions::zkapp_tx::Field};
 
 pub const TXN_VERSION_CURRENT: u32 = 3; // Used in Emptiable
 
@@ -17,7 +17,7 @@ pub const TXN_VERSION_CURRENT: u32 = 3; // Used in Emptiable
 lazy_static! {
     pub static ref DUMMY_HASH: Field = Field::from(
         Fp::from_bigint(BigInt::from_str(DUMMY_HASH_STR).unwrap())
-            .ok_or(BluePallasError::InvalidZkAppCommand(
+            .ok_or(MinaTxError::InvalidZkAppCommand(
                 "Failed to convert dummy hash to Fp".to_string()
             ),)
             .unwrap()

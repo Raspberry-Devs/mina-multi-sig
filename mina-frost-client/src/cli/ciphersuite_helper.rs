@@ -1,11 +1,12 @@
 use std::{error::Error, marker::PhantomData};
 
+use crate::BluePallasSuite;
 use frost_core::{
     keys::{KeyPackage, PublicKeyPackage},
     Ciphersuite,
 };
 
-use frost_bluepallas::{mina_compat::translate_pk, BluePallas};
+use mina_tx::pallas_message::translate_pk;
 
 /// Additional information about a group, derived from the key packages.
 #[derive(Debug, Clone)]
@@ -56,7 +57,7 @@ where
         encoded_public_key_package: &[u8],
     ) -> Result<GroupInfo, Box<dyn Error>> {
         let key_package: KeyPackage<C> = postcard::from_bytes(encoded_key_package)?;
-        let public_key_package: PublicKeyPackage<BluePallas> =
+        let public_key_package: PublicKeyPackage<BluePallasSuite> =
             postcard::from_bytes(encoded_public_key_package)?;
         let hex_verifying_key = hex::encode(public_key_package.verifying_key().serialize()?);
         let mina_verifying_key = translate_pk(public_key_package.verifying_key())?.into_address();

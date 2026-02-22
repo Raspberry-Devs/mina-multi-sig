@@ -1,16 +1,14 @@
 use crate::{
     cipher::PublicKey,
     coordinator::{coordinate_signing, Config as CoordinatorConfig},
+    BluePallasSuite,
 };
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::{
-    errors::BluePallasError,
-    mina_compat::{PubKeySer, Sig, TransactionSignature},
-    transactions::{network_id::NetworkIdEnvelope, TransactionEnvelope},
-    BluePallas,
+use frost_core::{keys::PublicKeyPackage, Ciphersuite, VerifyingKey};
+use mina_tx::{
+    errors::MinaTxError, network_id::NetworkIdEnvelope, TransactionEnvelope, TransactionSignature,
 };
-use frost_core::{keys::PublicKeyPackage, Ciphersuite, Signature, VerifyingKey};
 use reqwest::Url;
 use std::{
     collections::HashMap,
@@ -35,18 +33,18 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
         panic!("invalid Command");
     };
 
-    let (bytes, message, vk) = run(args).await?;
+    let (bytes, transaction, vk) = run(args).await?;
 
     // Save signature to the specified path or stdout
-    save_signature(signature_path, bytes, &message, vk)
-        .map_err(|e| BluePallasError::SaveSignatureError(e.to_string()))?;
+    save_signature(signature_path, bytes, transaction, vk)
+        .map_err(|e| MinaTxError::SaveSignatureError(e.to_string()))?;
 
     Ok(())
 }
 
 pub(crate) async fn run(
     args: &Command,
-) -> Result<(Vec<u8>, Vec<u8>, VerifyingKey<BluePallas>), Box<dyn Error>> {
+) -> Result<(Vec<u8>, TransactionEnvelope, VerifyingKey<BluePallasSuite>), Box<dyn Error>> {
     // Note, we duplicate pattern matching code here and in run(), but given that there is no way to pass a Command::Coordinator type
     // to this function, we must instead repeat the check again
     // The alternative is to create a struct which contains the same parameters, not worth it for only one use
@@ -68,56 +66,50 @@ pub(crate) async fn run(
 
     // Load and validate configuration
     let (user_config, group_config, public_key_package) =
-        load_coordinator_config::<BluePallas>(config_path, &group_id)?;
+        load_coordinator_config::<BluePallasSuite>(config_path, &group_id)?;
 
     // Parse signers from command line arguments
-    let signers = parse_signers::<BluePallas>(&signers, &group_config)?;
+    let signers = parse_signers::<BluePallasSuite>(&signers, &group_config)?;
+
+    let network_id: NetworkIdEnvelope = network.try_into()?;
+    let transaction = load_transaction(&message, network_id, &mut output, &mut input)?;
+    let message_bytes = transaction.serialize()?;
 
     // Setup coordinator configuration
     let params = CoordinatorSetupParams {
         user_config: &user_config,
         group_config: &group_config,
         server_url,
-        message_path: message,
-        output: &mut output,
-        input: &mut input,
-        network_id: network.try_into()?,
+        message: message_bytes,
     };
 
     let coordinator_config =
-        setup_coordinator_config::<BluePallas>(public_key_package.clone(), signers, params)?;
+        setup_coordinator_config::<BluePallasSuite>(public_key_package.clone(), signers, params)?;
 
     // Execute signing
     let signature_bytes = coordinate_signing(&coordinator_config, &mut input, &mut output).await?;
 
-    // Get first message (only one is expected)
-    let msg_bytes = coordinator_config.message.clone();
-
     Ok((
         signature_bytes,
-        msg_bytes,
+        transaction,
         *public_key_package.verifying_key(),
     ))
 }
 
-// Read message from the provided file or stdin
-pub fn read_message(
-    message_path: &String,
+fn load_transaction(
+    message_path: &str,
     network_id: NetworkIdEnvelope,
     output: &mut dyn Write,
     input: &mut dyn BufRead,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<TransactionEnvelope, Box<dyn Error>> {
     // If no message paths are provided, read from stdin
-    let loaded_message = if *message_path == "-" || message_path.is_empty() {
+    if message_path == "-" || message_path.is_empty() {
         writeln!(output, "The message to be signed (json string)")?;
-        load_transaction_from_stdin(input, network_id)?
+        load_transaction_from_stdin(input, network_id)
     } else {
-        eprintln!("Reading message from {}...", &message_path);
-        load_transaction_from_json(message_path, network_id)?
-    };
-    let message = loaded_message.serialize()?;
-
-    Ok(message)
+        eprintln!("Reading message from {}...", message_path);
+        load_transaction_from_json(message_path, network_id)
+    }
 }
 
 // Avoid clippy warnings about complex return types
@@ -178,10 +170,7 @@ struct CoordinatorSetupParams<'a, C: Ciphersuite> {
     user_config: &'a ConfigFile<C>,
     group_config: &'a crate::cli::config::Group<C>,
     server_url: Option<String>,
-    message_path: String,
-    output: &'a mut dyn Write,
-    input: &'a mut dyn BufRead,
-    network_id: NetworkIdEnvelope,
+    message: Vec<u8>,
 }
 
 /// Setup coordinator configuration for signing
@@ -209,18 +198,12 @@ fn setup_coordinator_config<C: Ciphersuite>(
         Url::parse(&format!("https://{}", server_url)).wrap_err("error parsing server-url")?;
 
     let num_signers = signers.len() as u16;
-    let message = read_message(
-        &params.message_path,
-        params.network_id,
-        params.output,
-        params.input,
-    )?;
 
     let coordinator_config = CoordinatorConfig {
         signers,
         num_signers,
         public_key_package,
-        message,
+        message: params.message,
         ip: server_url_parsed
             .host_str()
             .ok_or_eyre("host missing in URL")?
@@ -256,18 +239,11 @@ fn setup_coordinator_config<C: Ciphersuite>(
 pub fn save_signature(
     signature_path: &str,
     signature_bytes: Vec<u8>,
-    message: &[u8],
-    vk: VerifyingKey<BluePallas>,
+    transaction: TransactionEnvelope,
+    vk: VerifyingKey<BluePallasSuite>,
 ) -> Result<(), Box<dyn Error>> {
-    // Read signature from bytes
-    let signature: Sig = Signature::<BluePallas>::deserialize(&signature_bytes)?.try_into()?;
-
-    let tx = TransactionEnvelope::deserialize(message)?;
-
-    let pubkey: PubKeySer = vk.try_into()?;
-
     let (transaction_signature, warnings_opt) =
-        TransactionSignature::new_with_zkapp_injection(pubkey, signature, tx);
+        TransactionSignature::from_frost_signature_bytes(vk, &signature_bytes, transaction)?;
 
     // If there are any warnings during the creation of the transaction signature, print them out
     if let Some(warnings) = warnings_opt {
@@ -278,7 +254,7 @@ pub fn save_signature(
     }
 
     let output_str = serde_json::to_string_pretty(&transaction_signature)
-        .map_err(|e| BluePallasError::DeSerializationError(e.to_string()))?;
+        .map_err(|e| MinaTxError::DeSerializationError(e.to_string()))?;
 
     if signature_path == "-" {
         println!("{}", output_str);

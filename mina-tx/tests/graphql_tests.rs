@@ -5,9 +5,9 @@
 //! and asserts the result matches the corresponding golden GraphQL JSON file.
 //!
 //! To regenerate the golden files after an intentional format change:
-//!   cargo run --example graphql-broadcast -- --output-dir frost-bluepallas/tests/data/graphql
+//!   cargo run --example graphql-broadcast -- --output-dir mina-tx/tests/data/graphql
 
-use frost_bluepallas::mina_compat::TransactionSignature;
+use mina_tx::TransactionSignature;
 
 const TEST_DATA_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/graphql");
 

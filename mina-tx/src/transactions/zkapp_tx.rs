@@ -428,8 +428,9 @@ pub type VerificationKeyHash = Field;
 pub type ReceiptChainHash = Field;
 pub type TransactionVersion = UInt32;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub enum AuthRequired {
+    #[default]
     None,
     Either,
     Proof,
@@ -460,12 +461,6 @@ impl AuthRequired {
             signature_necessary,
             signature_sufficient,
         }
-    }
-}
-
-impl Default for AuthRequired {
-    fn default() -> Self {
-        Self::None
     }
 }
 

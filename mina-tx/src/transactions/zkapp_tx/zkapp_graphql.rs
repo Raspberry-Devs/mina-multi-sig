@@ -47,7 +47,7 @@ pub struct SendZkappInput<'a> {
 ///
 /// # Example
 /// ```ignore
-/// use frost_bluepallas::transactions::zkapp_tx::{ZKAppCommand, zkapp_graphql::build_send_zkapp_mutation};
+/// use mina_tx::zkapp_tx::{ZKAppCommand, zkapp_graphql::build_send_zkapp_mutation};
 ///
 /// let zkapp_command: ZKAppCommand = /* ... */;
 /// let request = build_send_zkapp_mutation(&zkapp_command);

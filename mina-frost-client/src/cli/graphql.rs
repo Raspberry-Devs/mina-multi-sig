@@ -1,5 +1,5 @@
 use super::args::Command;
-use frost_bluepallas::mina_compat::TransactionSignature;
+use mina_tx::TransactionSignature;
 use std::fs;
 
 // ------------------------------------------------------------
