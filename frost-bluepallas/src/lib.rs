@@ -80,7 +80,7 @@ impl Field for PallasScalarField {
         Self::serialize(scalar)
     }
 
-    // Parse the canonical 32-byte big-endian form back into a field element,
+    // Parse the scalar from compressed form
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
         let scalar = <Self::Scalar as CanonicalDeserialize>::deserialize_compressed(&buf[..])
             .map_err(|_| FieldError::MalformedScalar)?;

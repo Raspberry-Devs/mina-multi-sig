@@ -62,7 +62,7 @@ frost-core (v3.0.0-rc.0)        -- Generic FROST protocol engine
 
 #### 2.3 Mina Compatibility Requirements
 
-- **Y-coordinate evenness**: Mina's Schnorr signature scheme requires the group commitment's y-coordinate to be even. The `pre_commitment_sign` and `pre_commitment_aggregate` hooks enforce this by conditionally negating nonces and commitments.
+- **Y-coordinate evenness**: Mina's Schnorr signature scheme requires the group commitment's y-coordinate to be even. The `pre_commitment_sign` and `pre_commitment_aggregate` hooks enforce this by conditionally negating nonces and commitments. This is so that generated signatures are inline with the [specification](https://github.com/MinaProtocol/mina/blob/develop/docs/specs/signatures/description.md).
 - **Poseidon hashing**: All FROST hash functions (H1, H3, H4, H5, HDKG, HID) use Poseidon via `mina-hasher::create_legacy`.
 - **Challenge computation**: Uses `message_hash()` which constructs a Poseidon hash over `(transaction_input || pub_key_x || pub_key_y || rx)` with a Mina network-specific domain string.
 - **H2 is intentionally unimplemented**: The standard FROST H2 (used for challenge computation) is replaced by the Mina-specific challenge path. Calling H2 will panic.
@@ -84,7 +84,7 @@ frost-core (v3.0.0-rc.0)        -- Generic FROST protocol engine
 | `serde` / `serde_json` | 1.0 | Serialization framework | Medium -- data interchange |
 | `sha2` | 0.10 | SHA-256 (used in bs58 checksum, not core signing) | Low |
 
-**Note on `frost-core` version**: The project uses `frost-core` 3.0.0-rc.0, a release candidate. Several integration tests are marked `#[ignore]` due to an upstream bug ([frost-core issue #1015](https://github.com/ZcashFoundation/frost/issues/1015): "signature share verification bug"). This affects `check_sign_with_dkg`, `check_sign_with_dealer`, `check_refresh_shares_with_dealer`, and `check_refresh_shares_with_dkg`.
+**Note on `frost-core` version**: The project uses `frost-core` 3.0.0-rc.0, a release candidate. Several integration tests are marked `#[ignore]` due to an upstream bug ([frost-core issue #1015](https://github.com/ZcashFoundation/frost/issues/1015): "signature share verification bug"). This affects `check_sign_with_dkg`, `check_sign_with_dealer`, `check_refresh_shares_with_dealer`, and `check_refresh_shares_with_dkg`. We intend on upgrading to 3.0.0 as soon as it is released and will not release the tool into production until we do.
 
 **Note on `mina-*` dependencies**: These are sourced from `o1-labs/proof-systems` via git tag `0.3.0`. They are not published to crates.io. The audit team may wish to review the specific commit referenced in `Cargo.lock` for known issues.
 
@@ -192,10 +192,10 @@ The `pre_commitment_sign` and `pre_commitment_aggregate` hooks both:
 2. Convert to affine coordinates and check `y.into_bigint().is_even()`
 3. If odd, negate all nonces/commitments
 
-**Key questions**:
-- Is the parity check (`is_even()`) applied to the correct representation of the y-coordinate?
-- Are both hooks guaranteed to make the same decision for the same signing package? A mismatch between signer and coordinator would produce an invalid signature.
-- Does the negation in `NegateY` for `SigningNonces` (scalar negation) correctly correspond to the negation in `NegateY` for `SigningCommitments` (point negation)?
+**Key concerns**:
+- Parity check (`is_even()`) is applied to the correct representation of the y-coordinate.
+- Hooks are consistent for the same signing package.
+- Negation in `NegateY` for `SigningNonces` (scalar negation) is consistent with the negation in `NegateY` for `SigningCommitments` (point negation).
 
 #### 6.2 Challenge Computation (Critical)
 
@@ -207,30 +207,19 @@ The `ChallengeMessage::challenge()` implementation:
 3. Deserializes the message bytes back into a `PallasMessage` (with fallback)
 4. Calls `message_hash()` which constructs a Poseidon hash over `(input || pub_key_x || pub_key_y || rx)`
 
-**Key questions**:
+**Key concerns**:
 - Does the field element ordering in `message_hash()` match the ordering used by `mina-signer`?
-- Is the domain string selection (legacy vs kimchi, mainnet vs testnet) correct and consistent?
+- Is domain string selection (legacy vs kimchi, mainnet vs testnet) correct and consistent?
 - Can the `unwrap_or_else` fallback on deserialization failure lead to a challenge mismatch between signers?
 
 #### 6.3 Serialization Correctness (High)
 
 **Files**: `frost-bluepallas/src/lib.rs` (PallasScalarField, PallasGroup impls)
 
-- `PallasScalarField::serialize` uses `serialize_compressed` which produces little-endian output. The `little_endian_serialize` function returns the same result. Property-based tests confirm this. However, the comment at line 95 says "Parse the canonical 32-byte **big-endian** form" which contradicts the actual little-endian behavior. Auditors should verify which is correct.
-- `PallasGroup::Serialization` is `[u8; 96]` (3 base field elements for projective coordinates) but uses `serialize_compressed`. The comment at line 129 notes uncertainty about whether compressed serialization reduces below 96 bytes. Auditors should verify that compressed Pallas points always fit in 96 bytes and that no truncation occurs.
+- `PallasScalarField::serialize` uses `serialize_compressed` which produces little-endian output. Auditors should verify that (de)serialization is performed correctly with little-endian.
+- `PallasGroup::Serialization` is `[u8; 96]` (3 base field elements for projective coordinates) but uses `serialize_compressed`. Auditors should verify that compressed Pallas points always fit in 96 bytes and that no truncation occurs.
 
-#### 6.4 `frost-core` RC Status and Ignored Tests (High)
-
-Four integration tests are disabled with `#[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]`:
-
-- `check_sign_with_dkg`
-- `check_sign_with_dealer`
-- `check_refresh_shares_with_dealer`
-- `check_refresh_shares_with_dkg`
-
-These are core protocol correctness tests. The upstream bug affects **signature share verification**, which is a critical security check. Auditors should evaluate the impact of this bug on the overall security of the system.
-
-#### 6.5 `H2` Unimplemented Panic (Medium)
+#### 6.4 `H2` Unimplemented Panic (Medium)
 
 `H2` in `lib.rs:184` panics with `unimplemented!()`. The comment says "H2 is not implemented on purpose, please see the `challenge` function." Auditors should verify that no code path in `frost-core` can reach `H2` when the `challenge()` method is overridden via the `Ciphersuite` trait.
 
@@ -245,7 +234,6 @@ We expect the following deliverables:
    - Findings categorized by severity (Critical / High / Medium / Low / Informational)
    - Proof-of-concept exploits or demonstrations where applicable
    - Recommended remediations for each finding
-   - Assessment of the `frost-core` RC dependency risk
 2. **Code review comments** (inline annotations or GitHub PR comments)
 3. **Verification of interoperability** -- confirmation that the FROST challenge computation matches `mina-signer` for all transaction types (legacy and kimchi/zkApp)
 
@@ -309,13 +297,19 @@ frost-bluepallas/tests/snapshots/                 (11 .snap files)
 
 ### 10. Suggested Audit Focus Order
 
-Ranked by risk and cryptographic criticality:
+Ranked by risk:
 
-1. **Y-coordinate parity enforcement** (`lib.rs` pre_commitment hooks + `negate.rs`) -- incorrect parity = invalid Mina signatures
-2. **Challenge computation** (`pallas_message.rs` ChallengeMessage impl + `message_hash()`) -- incorrect challenge = forgeable or unverifiable signatures
-3. **Field/group serialization** (`lib.rs` PallasScalarField/PallasGroup impls, `deserialize.rs` tests) -- incorrect encoding = silent corruption
-4. **FROST-to-Mina type conversions** (`bluepallas_compat.rs`, `translate_pk`, `translate_sig`) -- incorrect conversion = signature/key mismatch
-5. **Hash domain separation** (`hasher.rs` + H1/H3/H4/H5/HDKG/HID in `lib.rs`) -- incorrect domain separation = collision risk
-6. **Key generation and DKG wrappers** (`keys.rs`) -- largely delegates to frost-core, but verify no custom logic introduces errors
-7. **Signing utilities** (`signing_utilities.rs`) -- helper flows, verify they compose correctly
-8. **frost-core RC dependency assessment** -- evaluate impact of known bug #1015 and RC status
+1. **Y-coordinate parity enforcement** (`lib.rs` pre_commitment hooks + `negate.rs`)
+2. **Challenge computation** (`pallas_message.rs` ChallengeMessage impl + `message_hash()`)
+3. **Field/group serialization** (`lib.rs` PallasScalarField/PallasGroup impls, `deserialize.rs` tests)
+4. **FROST-to-Mina type conversions** (`bluepallas_compat.rs`, `translate_pk`, `translate_sig`)
+5. **Hash domain separation** (`hasher.rs` + H1/H3/H4/H5/HDKG/HID in `lib.rs`)
+6. **Signing utilities** (`signing_utilities.rs`) -- helper flows, verify they compose correctly
+7. **Key generation and DKG wrappers** (`keys.rs`)
+
+### 11. Acknowledgements
+This file was created with the help of Claude Opus 4.6 but has been manually reviewed and edited.
+
+Thank you to o1Labs et al. for all the help and feedback.
+
+❤️ Raspberry Devs
