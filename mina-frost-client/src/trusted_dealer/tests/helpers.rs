@@ -1,10 +1,17 @@
-use frost::keys::{KeyPackage, SecretShare};
-use frost::round1::{SigningCommitments, SigningNonces};
-use frost::round2::SignatureShare;
-use frost::{Identifier, SigningPackage};
 use frost_bluepallas as frost;
+use mina_hasher::ROInput;
+use mina_signer::NetworkId;
+use mina_tx::pallas_message::PallasMessage;
 use rand::rngs::ThreadRng;
 use std::collections::BTreeMap;
+
+type Identifier = frost::Identifier<PallasMessage>;
+type SecretShare = frost::keys::SecretShare<PallasMessage>;
+type KeyPackage = frost::keys::KeyPackage<PallasMessage>;
+type SigningCommitments = frost::round1::SigningCommitments<PallasMessage>;
+type SigningNonces = frost::round1::SigningNonces<PallasMessage>;
+type SignatureShare = frost::round2::SignatureShare<PallasMessage>;
+type SigningPackage = frost::SigningPackage<PallasMessage>;
 
 pub fn key_package(shares: &BTreeMap<Identifier, SecretShare>) -> BTreeMap<Identifier, KeyPackage> {
     let mut key_packages: BTreeMap<_, _> = BTreeMap::new();
@@ -46,7 +53,14 @@ pub fn round_2(
     commitments_map: BTreeMap<Identifier, SigningCommitments>,
     message: &[u8],
 ) -> (SigningPackage, BTreeMap<Identifier, SignatureShare>) {
-    let signing_package = frost::SigningPackage::new(commitments_map, message);
+    // Signing input must be an explicitly encoded PallasMessage.
+    let pallas_message = PallasMessage::from_parts(
+        ROInput::new().append_bytes(message),
+        NetworkId::TESTNET,
+        true,
+    );
+    let serialized_message = pallas_message.serialize();
+    let signing_package = frost::SigningPackage::new(commitments_map, &serialized_message);
     let mut signature_shares = BTreeMap::new();
     for participant_identifier in nonces_map.keys() {
         let key_package = &key_packages[participant_identifier];

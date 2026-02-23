@@ -13,6 +13,7 @@ Besides the usual advantages of shared control over accounts, threshold signatur
 ## Repository Layout
 
 - **`frost-bluepallas/`** – A Rust crate implementing FROST for Mina's Pallas curve using the Poseidon hash function. It allows generation of signatures that are compatible with Mina nodes and includes example programs for key generation and transaction signing.
+- **`mina-tx/`** – A library for working with Mina transactions, including support for signing creating graphql querries.
 - **`mina-frost-client/`** – A demo client and utilities for running distributed key generation and signing sessions. It exposes various sub‑commands for initializing participants, running a trusted dealer or DKG, and coordinating signing rounds.
 
 ## API Documentation
@@ -21,18 +22,23 @@ Besides the usual advantages of shared control over accounts, threshold signatur
 - Other crates in the workspace are available from the rustdoc sidebar.
 
 ## Signing Workflow
+
 A document which describes a full signing workflow with the FROST tool can be read [here](SIGNING-WORKFLOW.md). This provides a comprehensive step-by-step tutorial on how to use the tool and to submit FROST-signed transactions to the Mina blockchain.
 
 Additionally, view the [transaction generation document](O1JS-WORKFLOW.md) for example scripts which specify transaction JSON generation to use in the FROST Multi-sig.
 
 ## Installation
+
 ### mina-frost-client
+
 To install `mina-frost-client` run
+
 ```bash
 cargo install --git https://github.com/Raspberry-Devs/mina-multi-sig.git --locked mina-frost-client
 ```
 
 ### frost-bluepallas
+
 To use `frost-bluepallas` as a dependency in your Rust project, add this to your `Cargo.toml`:
 
 ```toml
@@ -41,6 +47,7 @@ frost-bluepallas = { git = "https://github.com/Raspberry-Devs/mina-multi-sig.git
 ```
 
 You can also specify a exact commit on the main repository you would like to use
+
 ```toml
 [dependencies]
 frost-bluepallas = { git = "https://github.com/Raspberry-Devs/mina-multi-sig.git", rev = "commit_hash" }
@@ -149,13 +156,8 @@ cargo run --bin mina-frost-client -- participant \
   "nonce": "1",
   "memo": "Hello Mina x FROST from the Rasp",
   "valid_until": "4294967295",
-  "tag": [
-    false,
-    false,
-    false
-  ]
+  "tag": [false, false, false]
 }
-
 ```
 
 ## Contributing

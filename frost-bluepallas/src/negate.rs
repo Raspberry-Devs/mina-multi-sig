@@ -1,11 +1,11 @@
 //! Utilities for negating Y coordinates in FROST commitments using the BluePallas curve. This mimics Mina's handling of point negation.
 
-use frost_core::round1::{Nonce, NonceCommitment};
-
-use crate::{
-    round1::{SigningCommitments, SigningNonces},
-    BluePallas, SigningPackage,
+use frost_core::{
+    round1::{Nonce, NonceCommitment, SigningCommitments, SigningNonces},
+    SigningPackage,
 };
+
+use crate::{BluePallas, ChallengeMessage};
 
 /// This trait is used to negate the Y coordinate of the group commitment element with FROST
 /// This is achieved by negating all nonces and commitments produced by all participants
@@ -14,36 +14,45 @@ pub(crate) trait NegateY {
     fn negate_y(&self) -> Self;
 }
 
-impl NegateY for SigningNonces {
+impl<M> NegateY for SigningNonces<BluePallas<M>>
+where
+    M: ChallengeMessage,
+{
     fn negate_y(&self) -> Self {
         let negated_hiding = -self.hiding().to_scalar();
         let negated_binding = -self.binding().to_scalar();
         SigningNonces::from_nonces(
-            Nonce::<BluePallas>::from_scalar(negated_hiding),
-            Nonce::<BluePallas>::from_scalar(negated_binding),
+            Nonce::<BluePallas<M>>::from_scalar(negated_hiding),
+            Nonce::<BluePallas<M>>::from_scalar(negated_binding),
         )
     }
 }
 
 /// Negate the Y coordinate of the group commitment element with FROST
-impl NegateY for SigningCommitments {
+impl<M> NegateY for SigningCommitments<BluePallas<M>>
+where
+    M: ChallengeMessage,
+{
     fn negate_y(&self) -> Self {
         // Negate the commitments and serialize/deserialize roundtrip
         let negated_hiding = -self.hiding().value();
         let negated_binding = -self.binding().value();
 
         // Create a new SigningCommitments instance with the negated values
-        let negated_hiding_nonce = NoncePallas::new(negated_hiding);
-        let negated_binding_nonce = NoncePallas::new(negated_binding);
+        let negated_hiding_nonce = NoncePallas::<M>::new(negated_hiding);
+        let negated_binding_nonce = NoncePallas::<M>::new(negated_binding);
 
         SigningCommitments::new(negated_hiding_nonce, negated_binding_nonce)
     }
 }
 
-type NoncePallas = NonceCommitment<BluePallas>;
+type NoncePallas<M> = NonceCommitment<BluePallas<M>>;
 
 /// Take all commitments with a signing package and negate their Y coordinates
-impl NegateY for SigningPackage {
+impl<M> NegateY for SigningPackage<BluePallas<M>>
+where
+    M: ChallengeMessage,
+{
     fn negate_y(&self) -> Self {
         let negated_commitments = self
             .signing_commitments()
@@ -56,7 +65,9 @@ impl NegateY for SigningPackage {
 
 #[cfg(test)]
 mod tests {
-    use crate::{PallasGroup, PallasScalarField};
+    use crate::{
+        hasher::hash_to_scalar, BluePallas, ChallengeMessage, PallasGroup, PallasScalarField,
+    };
 
     use super::*;
     use alloc::collections::BTreeMap;
@@ -68,8 +79,30 @@ mod tests {
     use mina_curves::pasta::ProjectivePallas;
     use rand_core::OsRng;
 
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct TestMessage;
+
+    impl ChallengeMessage for TestMessage {
+        fn challenge(
+            _r: &frost_core::Element<BluePallas<Self>>,
+            _verifying_key: &frost_core::VerifyingKey<BluePallas<Self>>,
+            message: &[u8],
+        ) -> Result<frost_core::Challenge<BluePallas<Self>>, frost_core::Error<BluePallas<Self>>>
+        {
+            Ok(frost_core::Challenge::from_scalar(hash_to_scalar(&[
+                b"test-challenge",
+                message,
+            ])))
+        }
+    }
+
+    type Suite = BluePallas<TestMessage>;
+    type SigningNonces = frost_core::round1::SigningNonces<Suite>;
+    type SigningCommitments = frost_core::round1::SigningCommitments<Suite>;
+    type SigningPackage = frost_core::SigningPackage<Suite>;
+
     /// Helpers to extract the underlying `PallasGroup` from a `NonceCommitment<BluePallas>`.
-    fn commit_to_group(c: &NonceCommitment<BluePallas>) -> ProjectivePallas {
+    fn commit_to_group(c: &NonceCommitment<Suite>) -> ProjectivePallas {
         c.value()
     }
 
@@ -80,8 +113,8 @@ mod tests {
         let r1 = <PallasScalarField as frost_core::Field>::Scalar::rand(&mut rng);
         let r2 = <PallasScalarField as frost_core::Field>::Scalar::rand(&mut rng);
         let nonces = SigningNonces::from_nonces(
-            Nonce::<BluePallas>::from_scalar(r1),
-            Nonce::<BluePallas>::from_scalar(r2),
+            Nonce::<Suite>::from_scalar(r1),
+            Nonce::<Suite>::from_scalar(r2),
         );
 
         let neg = nonces.negate_y();
@@ -108,7 +141,7 @@ mod tests {
         // pick the group generator so we know Y ≠ 0
         let g = PallasGroup::generator();
         let g_ser = PallasGroup::serialize(&g).unwrap();
-        let comm = NonceCommitment::<BluePallas>::deserialize(&g_ser).unwrap();
+        let comm = NonceCommitment::<Suite>::deserialize(&g_ser).unwrap();
 
         let commitments = SigningCommitments::new(comm, comm);
         let neg = commitments.negate_y();
@@ -129,10 +162,10 @@ mod tests {
         // set up one participant (id = 1) with the generator commitment
         let g = PallasGroup::generator();
         let g_ser = PallasGroup::serialize(&g).unwrap();
-        let comm = NonceCommitment::<BluePallas>::deserialize(&g_ser).unwrap();
+        let comm = NonceCommitment::<Suite>::deserialize(&g_ser).unwrap();
         let single = SigningCommitments::new(comm, comm);
 
-        let mut map = BTreeMap::new();
+        let mut map: BTreeMap<frost_core::Identifier<Suite>, SigningCommitments> = BTreeMap::new();
         let participant_identifier = frost_core::Identifier::try_from(1u16).unwrap();
         map.insert(participant_identifier, single);
         let message = b"hello frost".to_vec();

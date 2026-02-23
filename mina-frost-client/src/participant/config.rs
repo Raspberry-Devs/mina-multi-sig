@@ -1,3 +1,6 @@
+// Suppress warning on `comm_coordinator_pubkey_getter` due to zeroize(skip) macro
+#![allow(unused_assignments)]
+
 use std::rc::Rc;
 
 use crate::cipher::{PrivateKey, PublicKey};

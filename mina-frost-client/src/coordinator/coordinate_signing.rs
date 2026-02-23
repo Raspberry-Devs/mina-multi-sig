@@ -1,15 +1,16 @@
 use std::collections::BTreeMap;
 use std::io::{BufRead, Write};
 
-use frost_bluepallas::BluePallas;
 use frost_core::{
     self, keys::PublicKeyPackage, round1::SigningCommitments, Ciphersuite, Identifier,
     SigningPackage,
 };
+use mina_tx::TransactionEnvelope;
 
 use super::comms::http::HTTPComms;
 use super::comms::Comms;
 use super::config::Config;
+use crate::BluePallasSuite;
 
 #[derive(Debug, PartialEq)]
 pub struct ParticipantsConfig<C: Ciphersuite> {
@@ -22,11 +23,11 @@ pub struct ParticipantsConfig<C: Ciphersuite> {
 // sends the signing package, and aggregates the signatures.
 // It returns the final aggregated signature as a byte vector.
 pub async fn coordinate_signing(
-    config: &Config<BluePallas>,
+    config: &Config<BluePallasSuite>,
     reader: &mut impl BufRead,
     logger: &mut impl Write,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let mut comms: Box<dyn Comms<BluePallas>> = Box::new(HTTPComms::new(config)?);
+    let mut comms: Box<dyn Comms<BluePallasSuite>> = Box::new(HTTPComms::new(config)?);
 
     // Round 1 - Get commitments
     let commitments_list = comms
@@ -62,8 +63,16 @@ pub async fn coordinate_signing(
     };
 
     // Aggregate signatures using frost_bluepallas modified behaviour
-    let group_signature =
-        frost_bluepallas::aggregate(&signing_package, &signatures, &config.public_key_package);
+    let group_signature = {
+        let transaction = TransactionEnvelope::deserialize(signing_package.message())?;
+        let pallas_message_bytes = transaction.to_pallas_message().serialize();
+        let signing_package_for_crypto = SigningPackage::new(commitments, &pallas_message_bytes);
+        frost_bluepallas::aggregate(
+            &signing_package_for_crypto,
+            &signatures,
+            &config.public_key_package,
+        )
+    };
 
     let signature_bytes_result = match group_signature {
         Ok(signature) => signature.serialize(),

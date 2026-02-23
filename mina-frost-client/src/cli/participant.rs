@@ -1,9 +1,9 @@
 use std::error::Error;
 use std::rc::Rc;
 
+use crate::BluePallasSuite;
 use eyre::Context;
 use eyre::OptionExt;
-use frost_bluepallas::BluePallas;
 use reqwest::Url;
 
 use frost_core::keys::KeyPackage;
@@ -33,10 +33,10 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
 
     // Load and validate configuration
     let (user_config, group_config, key_package) =
-        load_participant_config::<BluePallas>(config_path, &group)?;
+        load_participant_config::<BluePallasSuite>(config_path, &group)?;
 
     // Setup participant configuration
-    let participant_config = setup_participant_config::<BluePallas>(
+    let participant_config = setup_participant_config::<BluePallasSuite>(
         &user_config,
         &group_config,
         key_package,

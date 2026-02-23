@@ -15,6 +15,7 @@ path = "src/main.rs"
 
 [dependencies]
 frost-bluepallas = { path = "../frost-bluepallas" }
+mina-tx = { path = "../mina-tx", features = ["frost-bluepallas-compat"] }
 
 async-trait = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
@@ -45,5 +46,7 @@ postcard = { workspace = true }
 regex.workspace = true
 lazy_static.workspace = true
 mina-signer.workspace = true
+mina-hasher.workspace = true
 ark-ff.workspace = true
 frost-bluepallas = { path = "../frost-bluepallas", features = ["test-utils"] }
+mina-tx = { path = "../mina-tx", features = ["test-utils"] }

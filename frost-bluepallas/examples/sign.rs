@@ -1,13 +1,18 @@
 use std::collections::BTreeMap;
 
 use frost_bluepallas as frost;
+use mina_tx::pallas_message::PallasMessage;
+
+#[path = "_shared/types.rs"]
+mod types;
+use types::{Identifier, KeyPackage, SigningCommitments, SigningNonces};
 
 #[allow(clippy::needless_borrows_for_generic_args)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rng = rand_core::OsRng;
     let max_signers = 5;
     let min_signers = 3;
-    let (shares, pubkey_package) = frost::keys::generate_with_dealer(
+    let (shares, pubkey_package) = frost::keys::generate_with_dealer::<PallasMessage, _>(
         max_signers,
         min_signers,
         frost::keys::IdentifierList::Default,
@@ -17,15 +22,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Verifies the secret shares from the dealer and store them in a BTreeMap.
     // In practice, the KeyPackages must be sent to its respective participants
     // through a confidential and authenticated channel.
-    let mut key_packages: BTreeMap<_, _> = BTreeMap::new();
+    let mut key_packages: BTreeMap<Identifier, KeyPackage> = BTreeMap::new();
 
     for (identifier, secret_share) in shares {
-        let key_package = frost::keys::KeyPackage::try_from(secret_share)?;
+        let key_package = KeyPackage::try_from(secret_share)?;
         key_packages.insert(identifier, key_package);
     }
 
-    let mut nonces_map = BTreeMap::new();
-    let mut commitments_map = BTreeMap::new();
+    let mut nonces_map: BTreeMap<Identifier, SigningNonces> = BTreeMap::new();
+    let mut commitments_map: BTreeMap<Identifier, SigningCommitments> = BTreeMap::new();
 
     ////////////////////////////////////////////////////////////////////////////
     // Round 1: generating nonces and signing commitments for each participant
@@ -37,7 +42,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let key_package = &key_packages[&participant_identifier];
         // Generate one (1) nonce and one SigningCommitments instance for each
         // participant, up to _threshold_.
-        let (nonces, commitments) = frost::round1::commit(key_package.signing_share(), &mut rng);
+        let (nonces, commitments) =
+            frost::round1::commit::<PallasMessage, _>(key_package.signing_share(), &mut rng);
         // In practice, the nonces must be kept by the participant to use in the
         // next round, while the commitment must be sent to the coordinator
         // (or to every other participant if there is no coordinator) using
@@ -64,7 +70,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let nonces = &nonces_map[participant_identifier];
 
         // Each participant generates their signature share.
-        let signature_share = frost::round2::sign(&signing_package, nonces, key_package)?;
+        let signature_share =
+            frost::round2::sign::<PallasMessage>(&signing_package, nonces, key_package)?;
 
         // In practice, the signature share must be sent to the Coordinator
         // using an authenticated channel.
@@ -77,7 +84,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ////////////////////////////////////////////////////////////////////////////
 
     // Aggregate (also verifies the signature shares)
-    let group_signature = frost::aggregate(&signing_package, &signature_shares, &pubkey_package)?;
+    let group_signature =
+        frost::aggregate::<PallasMessage>(&signing_package, &signature_shares, &pubkey_package)?;
 
     // Check that the threshold signature can be verified by the group public
     // key (the verification key).
