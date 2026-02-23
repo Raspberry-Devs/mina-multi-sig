@@ -1770,7 +1770,7 @@ dependencies = [
  "mina-signer",
  "mina-tx",
  "postcard",
- "rand 0.8.5",
+ "rand 0.9.2",
  "rand_core 0.6.4",
  "regex",
  "reqwest",
