@@ -1,18 +1,6 @@
-//! Information sharing:
-//! <https://github.com/o1-labs/proof-systems> defines tools for interfacing with the mina blockchain
-//! (pretty sure that) the actual internals of the mina blockchain such as signature verification for
-//! contracts with the `signature` permission happens through the OCaml implementation.
-//!
-//! There are 3 relevant crates in the proof-systems, `signer` which uses `hasher` and `curves`
-//! Do not use the `pasta-curves` from crates.io. That's different implementation of pasta by the
-//! ZCash Foundation (the won't match up nicely). The above 3 crates are not on crates.io and are
-//! used directly from github.
-//!
-//! The goal is to replace the functionality of `signer` with the implementation of `frost-core`
-//! found in this file! So the tests will generate a signature with our implementation and try to
-//! verify it with the `signer`'s verify method. We do not use `signer` at all in our
-//! implementation. We do use `hasher` which provides the hash functions used by `signer` and our
-//! implementation of `frost-core`.
+//! FROST BluePallas ciphersuite implementation for the Mina protocol.
+//! This library uses the mina_hasher crate for the Poseidon hash function and mina_curves for the Pallas curve implementation,
+//! and implements the FROST signature scheme as specified in the FROST paper and the Mina protocol specifications.
 #![warn(rustdoc::broken_intra_doc_links)]
 #![warn(rustdoc::bare_urls)]
 #![no_std]
