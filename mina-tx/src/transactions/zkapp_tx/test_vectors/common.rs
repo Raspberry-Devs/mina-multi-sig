@@ -1,22 +1,12 @@
-//! Test vectors for ZkApp transaction commitment functions (Mesa hardfork)
-//!
-//! This module contains shared test data used across different commitment function tests
-//! for Mesa hardfork transactions (32 state fields).
+//! Shared types and helpers for ZkApp test vectors (both pre-Mesa and Mesa)
 
-use alloc::{string::ToString, vec::Vec};
+use alloc::vec::Vec;
 use core::str::FromStr;
 use mina_hasher::Fp;
-use mina_signer::{CompressedPubKey, NetworkId};
+use mina_signer::NetworkId;
 
+use crate::transactions::zkapp_tx::ZKAppCommand;
 use crate::transactions::TransactionEnvelope;
-
-use super::{
-    AccountPreconditions, AccountUpdate, AccountUpdateBody, ActionState, Actions, AuthRequired,
-    Authorization, AuthorizationKind, BalanceChange, EpochData, EpochLedger, Events, FeePayer,
-    FeePayerBody, Field, MayUseToken, NetworkPreconditions, Permissions, Preconditions, PublicKey,
-    RangeCondition, SetVerificationKey, StringU32, StringU64, TimingData, TokenId, TokenSymbol,
-    Update, VerificationKeyData, ZKAppCommand, ZkappUri,
-};
 
 /// Comprehensive test vector containing all data needed for commitment function tests
 #[derive(Clone)]
@@ -56,17 +46,18 @@ pub struct HashWithPrefixTestVector {
     pub expected_hash: &'static str,
 }
 
-/// Returns the main test vectors for ZkApp commitment functions (Mesa hardfork)
-pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
-    vec![]
-}
-
-/// Returns test vectors for hash_with_prefix function (Mesa hardfork)
-pub fn get_hash_with_prefix_test_vectors() -> Vec<HashWithPrefixTestVector> {
-    vec![]
-}
-
-/// Parse an expected hash string into an Fp field element
+/// Helper function to parse expected hash strings into Fp elements
 pub fn parse_expected_hash(hash_str: &str) -> Fp {
     Fp::from_str(hash_str).expect("Invalid expected hash format")
+}
+
+/// Decode a base58-encoded memo into a fixed-size byte array
+pub fn decode_memo_from_base58(memo_base58: &str) -> [u8; 34] {
+    let memo_bytes = bs58::decode(memo_base58)
+        .into_vec()
+        .expect("Valid base58 memo");
+
+    memo_bytes[1..memo_bytes.len() - 4]
+        .try_into()
+        .expect("Memo length matches expected size")
 }

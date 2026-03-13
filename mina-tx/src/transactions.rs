@@ -180,7 +180,7 @@ mod tests {
     use mina_signer::Keypair;
 
     use crate::{
-        errors::MinaTxError, transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors,
+        errors::MinaTxError, transactions::zkapp_tx::test_vectors::get_zkapp_test_vectors,
     };
 
     use super::*;

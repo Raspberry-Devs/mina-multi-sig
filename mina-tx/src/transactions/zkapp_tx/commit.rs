@@ -282,7 +282,7 @@ pub(crate) fn param_to_field(param: &str) -> Result<Fp, MinaTxError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::transactions::zkapp_tx::zkapp_test_vectors::{
+    use crate::transactions::zkapp_tx::test_vectors::{
         get_hash_with_prefix_test_vectors, get_zkapp_test_vectors, parse_expected_hash,
     };
 

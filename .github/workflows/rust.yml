@@ -30,6 +30,8 @@ jobs:
         run: cargo build --verbose ${{ matrix.features && format('--features {0}', matrix.features) }}
       - name: Run tests
         run: cargo test --verbose ${{ matrix.features && format('--features {0}', matrix.features) }}
+      - name: Test mina-tx with frost-bluepallas-compat
+        run: cargo test -p mina-tx --verbose --features frost-bluepallas-compat${{ matrix.features && format(',{0}', matrix.features) }}
   check-format-and-audit:
     runs-on: ubuntu-latest
     steps:

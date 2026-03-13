@@ -409,7 +409,7 @@ fn delegation_json_deser_with_mina_sign() {
 
 #[test]
 fn test_zkapp_tx_mina_signer_compatibility() {
-    use mina_tx::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors;
+    use mina_tx::zkapp_tx::test_vectors::get_zkapp_test_vectors;
 
     let mut rng = rand_core::OsRng;
     let test_vectors = get_zkapp_test_vectors();

@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 use mina_signer::PubKey;
 use mina_signer::Signature;
 use mina_signer::Signer;
-use mina_tx::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors;
+use mina_tx::zkapp_tx::test_vectors::get_zkapp_test_vectors;
 use mina_tx::{TransactionEnvelope, TransactionKind, TransactionSignature};
 use regex::Regex;
 use std::fs;

@@ -1,17 +1,13 @@
-//! Test vectors for ZkApp transaction commitment functions
-//!
-//! This module contains shared test data used across different commitment function tests.
-//! All test vectors use empty/default data structures - populate with actual test data as needed.
+//! Test vectors for ZkApp transaction commitment functions (pre-Mesa, 8 state fields)
 
 use alloc::{string::ToString, vec::Vec};
-use bs58;
 use core::str::FromStr;
 use mina_hasher::Fp;
 use mina_signer::{CompressedPubKey, NetworkId};
 
-use crate::transactions::TransactionEnvelope;
+use super::common::{decode_memo_from_base58, HashWithPrefixTestVector, ZkAppTestVector};
 
-use super::{
+use crate::transactions::zkapp_tx::{
     AccountPreconditions, AccountUpdate, AccountUpdateBody, ActionState, Actions, AuthRequired,
     Authorization, AuthorizationKind, BalanceChange, EpochData, EpochLedger, Events, FeePayer,
     FeePayerBody, Field, MayUseToken, NetworkPreconditions, Permissions, Preconditions, PublicKey,
@@ -19,45 +15,7 @@ use super::{
     Update, VerificationKeyData, ZKAppCommand, ZkappUri,
 };
 
-/// Comprehensive test vector containing all data needed for commitment function tests
-#[derive(Clone)]
-pub struct ZkAppTestVector {
-    /// Name/description of the test case
-    pub name: &'static str,
-    /// ZKAppCommand to test
-    pub zkapp_command: ZKAppCommand,
-    /// Network to use for the test
-    pub network: NetworkId,
-    /// Expected hash_with_prefix result for memo
-    pub expected_memo_hash: &'static str,
-    /// Expected fee_payer_hash result
-    pub expected_fee_payer_hash: &'static str,
-    /// Expected account updates commitment from zk_commit
-    pub expected_account_updates_commitment: &'static str,
-    /// Expected full commitment from zk_commit
-    pub expected_full_commitment: &'static str,
-}
-
-impl From<ZkAppTestVector> for TransactionEnvelope {
-    fn from(vector: ZkAppTestVector) -> TransactionEnvelope {
-        TransactionEnvelope::new_zkapp(vector.network, vector.zkapp_command)
-    }
-}
-
-/// Additional test vectors specifically for hash_with_prefix function
-#[derive(Clone)]
-pub struct HashWithPrefixTestVector {
-    /// Name/description of the test case
-    pub name: &'static str,
-    /// Prefix string to use
-    pub prefix: &'static str,
-    /// Input field elements
-    pub input_fields: Vec<Fp>,
-    /// Expected hash result (as string for parsing)
-    pub expected_hash: &'static str,
-}
-
-/// Returns the main test vectors for ZkApp commitment functions
+/// Returns the main test vectors for ZkApp commitment functions (pre-Mesa)
 pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
     vec![ZkAppTestVector {
             name: "empty_account_updates",
@@ -987,18 +945,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
 ]
 }
 
-fn decode_memo_from_base58(memo_base58: &str) -> [u8; 34] {
-    let memo_bytes = bs58::decode(memo_base58)
-        .into_vec()
-        .expect("Valid base58 memo");
-
-    memo_bytes[1..memo_bytes.len() - 4]
-        .try_into()
-        .expect("Memo length matches expected size")
-}
-
-/// Returns additional test vectors for hash_with_prefix function
-/// TODO: Populate with actual test data
+/// Returns additional test vectors for hash_with_prefix function (pre-Mesa)
 pub fn get_hash_with_prefix_test_vectors() -> Vec<HashWithPrefixTestVector> {
     vec![HashWithPrefixTestVector {
         name: "mina_acct_update_node",
@@ -1013,9 +960,4 @@ pub fn get_hash_with_prefix_test_vectors() -> Vec<HashWithPrefixTestVector> {
         expected_hash:
             "20456728518925904340727370305821489989002971473792411299271630913563245218671",
     }]
-}
-
-/// Helper function to parse expected hash strings into Fp elements
-pub fn parse_expected_hash(hash_str: &str) -> Fp {
-    Fp::from_str(hash_str).expect("Invalid expected hash format")
 }

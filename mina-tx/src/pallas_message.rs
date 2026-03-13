@@ -8,10 +8,10 @@ use ark_ff::PrimeField;
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::{Hashable, Hasher, ROInput};
 #[cfg(feature = "frost-bluepallas-compat")]
+use mina_signer::signature::Signature as MinaSig;
+#[cfg(feature = "frost-bluepallas-compat")]
 use mina_signer::Keypair;
-use mina_signer::{
-    pubkey::PubKey, signature::Signature as MinaSig, BaseField, NetworkId, ScalarField,
-};
+use mina_signer::{pubkey::PubKey, BaseField, NetworkId, ScalarField};
 
 const PALLAS_MESSAGE_VERSION: u8 = 1;
 

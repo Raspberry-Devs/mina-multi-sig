@@ -24,14 +24,9 @@ pub mod zkapp_display;
 pub mod zkapp_graphql;
 pub mod zkapp_serde;
 
-// Allow any test-only code to access this module + non mesa-hardfork
-#[cfg(all(any(test, feature = "test-utils"), not(feature = "mesa-hardfork")))]
-pub mod zkapp_test_vectors;
-
-// Test vectors for mesa hardfork features
-#[cfg(all(any(test, feature = "test-utils"), feature = "mesa-hardfork"))]
-#[path = "zkapp_tx/zkapp_test_vectors_mesa.rs"]
-pub mod zkapp_test_vectors;
+// Test vectors module — feature-gated to swap pre-Mesa / Mesa data
+#[cfg(any(test, feature = "test-utils"))]
+pub mod test_vectors;
 
 // Re-export signature injection types for convenience
 pub use signature_injection::{SignatureInjectionResult, SignatureInjectionWarning};
