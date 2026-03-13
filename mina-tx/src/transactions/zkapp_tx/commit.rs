@@ -2,15 +2,7 @@
 //! This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
 use alloc::{boxed::Box, collections::VecDeque, string::ToString, vec::Vec};
 
-use ark_ff::Field;
-use mina_hasher::Fp;
-use mina_poseidon::{
-    constants::PlonkSpongeConstantsKimchi,
-    pasta::fp_kimchi,
-    poseidon::{ArithmeticSponge, Sponge},
-};
-use mina_signer::NetworkId;
-
+use crate::transactions::network_id::NetworkId;
 use crate::{
     errors::{MinaTxError, MinaTxResult},
     transactions::zkapp_tx::{
@@ -18,6 +10,13 @@ use crate::{
         packing::{Packable, PackedInput},
         AccountUpdate, FeePayer, ZKAppCommand,
     },
+};
+use ark_ff::Field;
+use mina_hasher::Fp;
+use mina_poseidon::{
+    constants::PlonkSpongeConstantsKimchi,
+    pasta::fp_kimchi,
+    poseidon::{ArithmeticSponge, Sponge},
 };
 
 // -------------------------------------------------------------------------------------------------

@@ -5,8 +5,10 @@ use alloc::{
 };
 use ark_ff::Field as ArkField;
 use mina_hasher::{Hashable, ROInput};
-use mina_signer::{CompressedPubKey, NetworkId};
+use mina_signer::CompressedPubKey;
 use serde::{Deserialize, Serialize};
+
+use crate::transactions::network_id::NetworkId;
 
 use crate::transactions::{
     zkapp_tx::{

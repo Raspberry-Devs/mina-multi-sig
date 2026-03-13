@@ -10,7 +10,8 @@ use mina_tx::{
 };
 
 use mina_hasher::Hashable;
-use mina_signer::{CurvePoint, NetworkId, PubKey, Signer};
+use mina_signer::{CurvePoint, PubKey, Signer};
+use mina_tx::NetworkId;
 use rand_core::SeedableRng;
 
 use std::ops::{Add, Neg};
@@ -22,7 +23,7 @@ type Suite = BluePallas<PallasMessage>;
 fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
     // Esnure that the FROST implementation can sign a message and Mina can verify it
 
-    let network_id = NetworkId::TESTNET;
+    let network_id = NetworkId::Testnet;
 
     let rng = rand_chacha::ChaChaRng::seed_from_u64(100);
     let tx = TransactionEnvelope::new_legacy(
@@ -86,7 +87,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         "Message Hashes from FROST and Mina do not match"
     );
 
-    let mut ctx = mina_signer::create_legacy::<PallasMessage>(NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy::<PallasMessage>(NetworkId::Testnet);
     println!(
         "Mina verification result: {:?}",
         ctx.verify(&mina_sig, &mina_pk, &mina_msg)
@@ -150,7 +151,7 @@ fn roi_mina_tx() {
     .set_memo_str("Hello Mina!")
     .unwrap();
 
-    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx.clone());
 
     let msg = tx_env.to_pallas_message();
     assert_eq!(
@@ -203,7 +204,7 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
     }"#;
     // We want to now deserialize into a transaction
     let tx: LegacyTransaction = serde_json::from_str(json).unwrap();
-    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx);
     let msg = tx_env.to_pallas_message().serialize();
 
     for _ in 0..64 {
@@ -227,7 +228,7 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
             "Signature commitment y-coordinate must be even"
         );
 
-        let mut ctx = mina_signer::create_legacy::<TransactionEnvelope>(NetworkId::TESTNET);
+        let mut ctx = mina_signer::create_legacy::<TransactionEnvelope>(NetworkId::Testnet);
         assert!(ctx.verify(&mina_sig, &mina_pk, &tx_env));
     }
 

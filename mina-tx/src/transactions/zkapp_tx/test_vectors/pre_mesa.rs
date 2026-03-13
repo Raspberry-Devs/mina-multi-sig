@@ -3,7 +3,9 @@
 use alloc::{string::ToString, vec::Vec};
 use core::str::FromStr;
 use mina_hasher::Fp;
-use mina_signer::{CompressedPubKey, NetworkId};
+use mina_signer::CompressedPubKey;
+
+use crate::transactions::network_id::NetworkId;
 
 use super::common::{decode_memo_from_base58, HashWithPrefixTestVector, ZkAppTestVector};
 
@@ -33,7 +35,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YTLoDojpEF9jChvyaDpteawAPPXgdZQukX6UGSKzVVgf17wzQiv"),
             },
-            network: NetworkId::TESTNET,
+            network: NetworkId::Testnet,
             expected_memo_hash: "11389652194005057975368457399421352653010041179485881427310531175333437124368",
             expected_fee_payer_hash: "7440442690224604593498294045035842737848284124224925036785514405229648680377",
             expected_account_updates_commitment: "0",
@@ -163,7 +165,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::MAINNET,
+            network: NetworkId::Mainnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "19706318721710889218414924651039754460938911066772149869668298883599530223675",
             expected_account_updates_commitment: "20885808005185651189421947183942528580939515770642397950928596427944626893435",
@@ -568,7 +570,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::MAINNET,
+            network: NetworkId::Mainnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "13599943768324718842045631264846766373395338777851778014399949785850374160876",
             expected_account_updates_commitment: "18157416997738750511548808808606476591395902704575661339284356171982987558452",
@@ -782,7 +784,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::MAINNET,
+            network: NetworkId::Mainnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "18557821528466210466362221959818444224122964900994620153505407721900866383710",
             expected_account_updates_commitment: "692918817100816493287714686901447970091023252434376857771101589716855696298",
@@ -915,7 +917,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::TESTNET,
+            network: NetworkId::Testnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "22591001022197211780755176808690376369488425396145396343616148937337644278803",
             expected_account_updates_commitment: "890036752761563610176645072391048796311042767532971976592942060327069338763",
@@ -936,7 +938,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 account_updates: vec![],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::TESTNET,
+            network: NetworkId::Testnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "16613044925297152030622651327100970331511857730632418522821277052425737998593",
             expected_account_updates_commitment: "0",

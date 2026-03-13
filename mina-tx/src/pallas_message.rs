@@ -11,7 +11,9 @@ use mina_hasher::{Hashable, Hasher, ROInput};
 use mina_signer::signature::Signature as MinaSig;
 #[cfg(feature = "frost-bluepallas-compat")]
 use mina_signer::Keypair;
-use mina_signer::{pubkey::PubKey, BaseField, NetworkId, ScalarField};
+use mina_signer::{pubkey::PubKey, BaseField, ScalarField};
+
+use crate::transactions::network_id::NetworkId;
 
 const PALLAS_MESSAGE_VERSION: u8 = 1;
 
@@ -43,8 +45,7 @@ impl PallasMessage {
     pub fn from_raw_bytes_default(input: &[u8]) -> Self {
         Self {
             input: ROInput::new().append_bytes(input),
-            // default to testnet so if we somehow end up here, we only sign a testnet transaction
-            network_id: NetworkId::TESTNET,
+            network_id: NetworkId::Testnet,
             is_legacy: true,
         }
     }
@@ -54,7 +55,11 @@ impl PallasMessage {
         let roi_bytes = self.input.serialize();
         let mut out = Vec::with_capacity(7 + roi_bytes.len());
         out.push(PALLAS_MESSAGE_VERSION);
-        out.push(self.network_id.clone() as u8);
+        out.push(match &self.network_id {
+            NetworkId::Testnet => 0u8,
+            NetworkId::Mainnet => 1u8,
+            NetworkId::Custom(_) => unimplemented!("PallasMessage::serialize for Custom network"),
+        });
         out.push(u8::from(self.is_legacy));
         out.extend_from_slice(&(roi_bytes.len() as u32).to_le_bytes());
         out.extend_from_slice(&roi_bytes);
@@ -76,8 +81,8 @@ impl PallasMessage {
         }
 
         let network_id = match input[1] {
-            0 => NetworkId::TESTNET,
-            1 => NetworkId::MAINNET,
+            0 => NetworkId::Testnet,
+            1 => NetworkId::Mainnet,
             _ => {
                 return Err(crate::errors::MinaTxError::DeSerializationError(
                     "Invalid network id in PallasMessage".into(),
@@ -250,14 +255,14 @@ mod tests {
     fn test_pallas_message_round_trip() {
         let message = PallasMessage::from_parts(
             ROInput::new().append_bytes(b"hello"),
-            NetworkId::MAINNET,
+            NetworkId::Mainnet,
             false,
         );
 
         let bytes = message.serialize();
         let decoded = PallasMessage::deserialize(&bytes).expect("deserialize should succeed");
 
-        assert_eq!(decoded.network_id(), NetworkId::MAINNET);
+        assert_eq!(decoded.network_id(), NetworkId::Mainnet);
         assert!(!decoded.is_legacy());
         assert_eq!(decoded.input, message.input);
     }

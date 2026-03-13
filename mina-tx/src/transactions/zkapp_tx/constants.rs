@@ -3,12 +3,12 @@
 use alloc::string::ToString;
 use core::str::FromStr;
 
+use crate::{
+    errors::MinaTxError, transactions::network_id::NetworkId, transactions::zkapp_tx::Field,
+};
 use ark_ff::{AdditiveGroup, BigInt, PrimeField};
 use lazy_static::lazy_static;
 use mina_hasher::Fp;
-use mina_signer::NetworkId;
-
-use crate::{errors::MinaTxError, transactions::zkapp_tx::Field};
 
 pub const TXN_VERSION_CURRENT: u32 = 3; // Used in Emptiable
 
@@ -61,8 +61,9 @@ pub enum ZkAppBodyPrefix {
 impl From<NetworkId> for ZkAppBodyPrefix {
     fn from(network: NetworkId) -> Self {
         match network {
-            NetworkId::MAINNET => ZkAppBodyPrefix::Mainnet,
-            NetworkId::TESTNET => ZkAppBodyPrefix::Testnet,
+            NetworkId::Mainnet => ZkAppBodyPrefix::Mainnet,
+            NetworkId::Testnet => ZkAppBodyPrefix::Testnet,
+            NetworkId::Custom(_) => unimplemented!("ZkAppBodyPrefix for Custom network"),
         }
     }
 }

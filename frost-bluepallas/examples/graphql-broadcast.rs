@@ -16,7 +16,8 @@ use std::{fs, path::PathBuf};
 
 use ark_ff::PrimeField;
 use frost_bluepallas::signing_utilities::generate_signature_from_sk;
-use mina_signer::{CompressedPubKey, Keypair, NetworkId, PubKey};
+use mina_signer::{CompressedPubKey, Keypair, PubKey};
+use mina_tx::NetworkId;
 use mina_tx::{
     legacy_tx::LegacyTransaction,
     pallas_message::{translate_minask, translate_sig, PallasMessage},
@@ -74,7 +75,7 @@ fn build_legacy_payment(from: &PubKey, to: &PubKey) -> TransactionEnvelope {
         .set_memo_str("FROST payment test")
         .expect("memo fits")
         .set_valid_until(4_294_967_295);
-    TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx)
+    TransactionEnvelope::new_legacy(NetworkId::Testnet, tx)
 }
 
 fn build_legacy_delegation(from: &PubKey, to: &PubKey) -> TransactionEnvelope {
@@ -82,7 +83,7 @@ fn build_legacy_delegation(from: &PubKey, to: &PubKey) -> TransactionEnvelope {
         .set_memo_str("FROST delegation test")
         .expect("memo fits")
         .set_valid_until(4_294_967_295);
-    TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx)
+    TransactionEnvelope::new_legacy(NetworkId::Testnet, tx)
 }
 
 fn build_zkapp_tx(from: &CompressedPubKey) -> TransactionEnvelope {
@@ -137,7 +138,7 @@ fn build_zkapp_tx(from: &CompressedPubKey) -> TransactionEnvelope {
         memo,
     };
 
-    TransactionEnvelope::new_zkapp(NetworkId::TESTNET, cmd)
+    TransactionEnvelope::new_zkapp(NetworkId::Testnet, cmd)
 }
 
 // ---------------------------------------------------------------------------

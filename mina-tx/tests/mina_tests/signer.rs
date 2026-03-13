@@ -3,16 +3,16 @@
 
 use frost_bluepallas::signing_utilities;
 use frost_core::Ciphersuite;
-use mina_signer::{Keypair, NetworkId, PubKey, Signer};
+use mina_signer::{Keypair, PubKey, Signer};
 use mina_tx::{
     legacy_tx::LegacyTransaction,
     pallas_message::{translate_minask, translate_pk, PallasMessage},
-    TransactionEnvelope,
+    NetworkId, TransactionEnvelope,
 };
 
 #[test]
 fn signer_test_raw() {
-    let network_id = NetworkId::TESTNET;
+    let network_id = NetworkId::Testnet;
 
     let kp = Keypair::from_hex("164244176fddb5d769b7de2027469d027ad428fadcc0c02396e6280142efb718")
         .expect("failed to create keypair");
@@ -39,7 +39,7 @@ fn signer_test_raw() {
     );
 
     // Generate FROST signature using the private key
-    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx);
     let msg = tx_env.to_pallas_message().serialize();
     let fr_sk =
         translate_minask(&kp).expect("failed to translate mina keypair to frost signing key");
@@ -107,7 +107,7 @@ fn sign_mina_tx() {
     .unwrap();
 
     // Generate FROST signature
-    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx);
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx);
     let msg = tx_env.to_pallas_message().serialize();
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
         &msg,
@@ -124,9 +124,9 @@ fn sign_mina_tx() {
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer
-    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx_env);
-    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx_env);
 
     assert!(is_valid, "Mina signature verification failed");
@@ -138,7 +138,7 @@ fn sign_mina_tx_mainnet() {
     let mut rng = rand_core::OsRng;
 
     // Set network id to Mainnet
-    let network_id = NetworkId::MAINNET;
+    let network_id = NetworkId::Mainnet;
 
     // Use trusted dealer to setup public and packages
     let max_signers = 3;
@@ -233,7 +233,7 @@ fn transaction_json_deser_with_mina_sign() {
         serde_json::from_str(&tx_json).expect("Failed to deserialize transaction from JSON");
 
     // Now sign the deserialized transaction
-    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, deserialized_tx.clone());
     let msg = tx_env.to_pallas_message().serialize();
 
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
@@ -251,17 +251,17 @@ fn transaction_json_deser_with_mina_sign() {
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with TESTNET
-    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid = ctx.verify(&mina_sig, &mina_vk, &tx_env);
 
-    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid2 = ctx2.verify(
         &mina_sig,
         &mina_vk,
         &PallasMessage::deserialize(&msg).expect("valid pallas message bytes"),
     );
 
-    let mut ctx3 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx3 = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid3 = ctx3.verify(&mina_sig, &mina_vk, &deserialized_tx);
 
     assert!(is_valid, "Mina signature verification failed on TESTNET");
@@ -299,7 +299,7 @@ fn sign_mina_delegation_tx() {
     .unwrap();
 
     // Generate FROST signature
-    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, tx.clone());
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx.clone());
     let msg = tx_env.to_pallas_message().serialize();
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
         &msg,
@@ -316,14 +316,14 @@ fn sign_mina_delegation_tx() {
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer
-    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid_msg = ctx.verify(
         &mina_sig,
         &mina_vk,
         &PallasMessage::deserialize(&msg).expect("valid pallas message bytes"),
     );
 
-    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid_tx = ctx2.verify(&mina_sig, &mina_vk, &tx);
 
     assert!(is_valid_msg, "Mina signature verification (message) failed");
@@ -370,7 +370,7 @@ fn delegation_json_deser_with_mina_sign() {
         serde_json::from_str(&tx_json).expect("Failed to deserialize delegation tx from JSON");
 
     // Now sign the deserialized transaction
-    let tx_env = TransactionEnvelope::new_legacy(NetworkId::TESTNET, deserialized_tx.clone());
+    let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, deserialized_tx.clone());
     let msg = tx_env.to_pallas_message().serialize();
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
         &msg,
@@ -387,10 +387,10 @@ fn delegation_json_deser_with_mina_sign() {
         .expect("Failed to translate FROST verifying key to Mina public key");
 
     // Verify the signature using Mina Signer with TESTNET
-    let mut ctx = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid_tx = ctx.verify(&mina_sig, &mina_vk, &deserialized_tx);
 
-    let mut ctx2 = mina_signer::create_legacy(NetworkId::TESTNET);
+    let mut ctx2 = mina_signer::create_legacy(NetworkId::Testnet);
     let is_valid_msg = ctx2.verify(
         &mina_sig,
         &mina_vk,
