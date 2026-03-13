@@ -1,6 +1,6 @@
 //! Module containint various constants used by ZkApp transactions (both for packing and hashing)
 
-use alloc::string::ToString;
+use alloc::string::{String, ToString};
 use core::str::FromStr;
 
 use crate::{
@@ -56,6 +56,7 @@ pub(crate) const APP_STATE_LENGTH: usize = 32;
 pub enum ZkAppBodyPrefix {
     Mainnet,
     Testnet,
+    Custom(String),
 }
 
 impl From<NetworkId> for ZkAppBodyPrefix {
@@ -63,16 +64,17 @@ impl From<NetworkId> for ZkAppBodyPrefix {
         match network {
             NetworkId::Mainnet => ZkAppBodyPrefix::Mainnet,
             NetworkId::Testnet => ZkAppBodyPrefix::Testnet,
-            NetworkId::Custom(_) => unimplemented!("ZkAppBodyPrefix for Custom network"),
+            NetworkId::Custom(s) => ZkAppBodyPrefix::Custom(s),
         }
     }
 }
 
-impl From<ZkAppBodyPrefix> for &'static str {
+impl From<ZkAppBodyPrefix> for String {
     fn from(value: ZkAppBodyPrefix) -> Self {
         match value {
-            ZkAppBodyPrefix::Mainnet => ZK_APP_BODY_MAINNET,
-            ZkAppBodyPrefix::Testnet => ZK_APP_BODY_TESTNET,
+            ZkAppBodyPrefix::Mainnet => ZK_APP_BODY_MAINNET.to_string(),
+            ZkAppBodyPrefix::Testnet => ZK_APP_BODY_TESTNET.to_string(),
+            ZkAppBodyPrefix::Custom(s) => NetworkId::create_custom_prefix(&(s + "ZkappBody")),
         }
     }
 }

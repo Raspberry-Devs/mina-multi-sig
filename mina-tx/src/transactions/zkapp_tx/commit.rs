@@ -157,8 +157,8 @@ fn hash_account_update(account_update: &AccountUpdate, network: &NetworkId) -> M
     assert_account_update_authorization_kind(account_update)?;
 
     let inputs = account_update.pack().pack_to_fields();
-    let network_zk = ZkAppBodyPrefix::from(network.clone());
-    hash_with_prefix(network_zk.into(), &inputs.fields)
+    let network_zk: String = ZkAppBodyPrefix::from(network.clone()).into();
+    hash_with_prefix(&network_zk, &inputs.fields)
 }
 
 // -------------------------------------------------------------------------------------------------

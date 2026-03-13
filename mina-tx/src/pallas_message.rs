@@ -13,7 +13,7 @@ use mina_signer::signature::Signature as MinaSig;
 use mina_signer::Keypair;
 use mina_signer::{pubkey::PubKey, BaseField, ScalarField};
 
-use crate::transactions::network_id::NetworkId;
+use crate::transactions::network_id::{NetworkId, MAX_PREFIX_LENGTH};
 
 const PALLAS_MESSAGE_VERSION: u8 = 1;
 
@@ -55,11 +55,24 @@ impl PallasMessage {
         let roi_bytes = self.input.serialize();
         let mut out = Vec::with_capacity(7 + roi_bytes.len());
         out.push(PALLAS_MESSAGE_VERSION);
-        out.push(match &self.network_id {
-            NetworkId::Testnet => 0u8,
-            NetworkId::Mainnet => 1u8,
-            NetworkId::Custom(_) => unimplemented!("PallasMessage::serialize for Custom network"),
-        });
+        match &self.network_id {
+            NetworkId::Testnet => {
+                out.push(0u8);
+            }
+            NetworkId::Mainnet => {
+                out.push(1u8);
+            }
+            NetworkId::Custom(s) => {
+                assert!(
+                    s.len() <= MAX_PREFIX_LENGTH,
+                    "Custom network ID exceeds maximum length of {MAX_PREFIX_LENGTH}"
+                );
+                out.push(2u8);
+                let name_bytes = s.as_bytes();
+                out.push(name_bytes.len() as u8);
+                out.extend_from_slice(name_bytes);
+            }
+        };
         out.push(u8::from(self.is_legacy));
         out.extend_from_slice(&(roi_bytes.len() as u32).to_le_bytes());
         out.extend_from_slice(&roi_bytes);
@@ -68,7 +81,7 @@ impl PallasMessage {
 
     /// Deserialize a message from the bytes produced by [`Self::serialize`].
     pub fn deserialize(input: &[u8]) -> Result<Self, crate::errors::MinaTxError> {
-        if input.len() < 7 {
+        if input.len() < 3 {
             return Err(crate::errors::MinaTxError::DeSerializationError(
                 "PallasMessage bytes too short".into(),
             ));
@@ -80,9 +93,35 @@ impl PallasMessage {
             ));
         }
 
-        let network_id = match input[1] {
-            0 => NetworkId::Testnet,
-            1 => NetworkId::Mainnet,
+        let (network_id, offset) = match input[1] {
+            0 => (NetworkId::Testnet, 2),
+            1 => (NetworkId::Mainnet, 2),
+            2 => {
+                if input.len() < 3 {
+                    return Err(crate::errors::MinaTxError::DeSerializationError(
+                        "PallasMessage too short for custom network ID".into(),
+                    ));
+                }
+                let name_len = input[2] as usize;
+                if name_len > MAX_PREFIX_LENGTH {
+                    return Err(crate::errors::MinaTxError::DeSerializationError(
+                        "Custom network ID exceeds maximum length".into(),
+                    ));
+                }
+                if input.len() < 3 + name_len {
+                    return Err(crate::errors::MinaTxError::DeSerializationError(
+                        "PallasMessage too short for custom network ID name".into(),
+                    ));
+                }
+                let name = core::str::from_utf8(&input[3..3 + name_len])
+                    .map_err(|_| {
+                        crate::errors::MinaTxError::DeSerializationError(
+                            "Invalid UTF-8 in custom network ID".into(),
+                        )
+                    })?
+                    .into();
+                (NetworkId::Custom(name), 3 + name_len)
+            }
             _ => {
                 return Err(crate::errors::MinaTxError::DeSerializationError(
                     "Invalid network id in PallasMessage".into(),
@@ -90,7 +129,7 @@ impl PallasMessage {
             }
         };
 
-        let is_legacy = match input[2] {
+        let is_legacy = match input[offset] {
             0 => false,
             1 => true,
             _ => {
@@ -100,14 +139,27 @@ impl PallasMessage {
             }
         };
 
-        let roi_len = u32::from_le_bytes([input[3], input[4], input[5], input[6]]) as usize;
-        if input.len() != 7 + roi_len {
+        let header_len = offset + 1 + 4; // version + network + legacy + roi_len(u32)
+        if input.len() < header_len {
+            return Err(crate::errors::MinaTxError::DeSerializationError(
+                "PallasMessage bytes too short".into(),
+            ));
+        }
+        let roi_start = offset + 1;
+        let roi_len = u32::from_le_bytes([
+            input[roi_start],
+            input[roi_start + 1],
+            input[roi_start + 2],
+            input[roi_start + 3],
+        ]) as usize;
+        let data_start = roi_start + 4;
+        if input.len() != data_start + roi_len {
             return Err(crate::errors::MinaTxError::DeSerializationError(
                 "Malformed PallasMessage length".into(),
             ));
         }
 
-        let roi = ROInput::deserialize(&input[7..]).map_err(|_| {
+        let roi = ROInput::deserialize(&input[data_start..]).map_err(|_| {
             crate::errors::MinaTxError::DeSerializationError("Failed to deserialize ROInput".into())
         })?;
 

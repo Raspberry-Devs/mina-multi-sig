@@ -3,9 +3,16 @@
 //! This replaces direct use of `mina_signer::NetworkId` to allow custom network IDs
 //! (e.g., devnets) that the upstream crate does not support.
 
-use alloc::{string::String, vec, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
 use mina_hasher::DomainParameter;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+pub const MAX_PREFIX_LENGTH: usize = 20;
+const PADDING_CHAR: u8 = b'*';
 
 /// Network identifier for Mina transactions.
 ///
@@ -23,22 +30,53 @@ impl DomainParameter for NetworkId {
         match self {
             NetworkId::Testnet => vec![0x00],
             NetworkId::Mainnet => vec![0x01],
-            NetworkId::Custom(_) => {
-                unimplemented!("DomainParameter::into_bytes for Custom network")
-            }
+            NetworkId::Custom(s) => network_id_to_bytes(&s),
         }
     }
 }
 
+/// Encode a network ID string as bytes for domain hashing.
+///
+/// Each character's byte is converted to 8 bits, iterated in reverse character
+/// order, and concatenated into a bit string which is packed into bytes.
+fn network_id_to_bytes(s: &str) -> Vec<u8> {
+    let mut bits = Vec::with_capacity(s.len() * 8);
+    for ch in s.bytes().rev() {
+        for bit in (0..8).rev() {
+            bits.push((ch >> bit) & 1);
+        }
+    }
+    let mut bytes = Vec::with_capacity(bits.len().div_ceil(8));
+    for chunk in bits.chunks(8) {
+        let mut byte = 0u8;
+        for (i, &b) in chunk.iter().enumerate() {
+            byte |= b << (7 - i);
+        }
+        bytes.push(byte);
+    }
+    bytes
+}
+
 impl NetworkId {
+    /// Pad or truncate a prefix string to exactly `MAX_PREFIX_LENGTH` characters.
+    pub fn create_custom_prefix(prefix: &str) -> String {
+        if prefix.len() <= MAX_PREFIX_LENGTH {
+            let mut s = String::from(prefix);
+            for _ in 0..(MAX_PREFIX_LENGTH - prefix.len()) {
+                s.push(PADDING_CHAR as char);
+            }
+            s
+        } else {
+            prefix[..MAX_PREFIX_LENGTH].to_string()
+        }
+    }
+
     /// Returns the domain string used for hashing/signing.
     pub fn into_domain_string(self) -> String {
         match self {
             NetworkId::Mainnet => String::from("MinaSignatureMainnet"),
             NetworkId::Testnet => String::from("CodaSignature"),
-            NetworkId::Custom(_) => {
-                unimplemented!("into_domain_string for Custom network")
-            }
+            NetworkId::Custom(s) => Self::create_custom_prefix(&(s + "Signature")),
         }
     }
 }
@@ -48,18 +86,6 @@ impl From<mina_signer::NetworkId> for NetworkId {
         match id {
             mina_signer::NetworkId::TESTNET => NetworkId::Testnet,
             mina_signer::NetworkId::MAINNET => NetworkId::Mainnet,
-        }
-    }
-}
-
-impl From<NetworkId> for mina_signer::NetworkId {
-    fn from(id: NetworkId) -> Self {
-        match id {
-            NetworkId::Testnet => mina_signer::NetworkId::TESTNET,
-            NetworkId::Mainnet => mina_signer::NetworkId::MAINNET,
-            NetworkId::Custom(_) => {
-                unimplemented!("Cannot convert Custom NetworkId to mina_signer::NetworkId")
-            }
         }
     }
 }
@@ -210,13 +236,5 @@ mod tests {
         assert_eq!(testnet, NetworkId::Testnet);
         let mainnet: NetworkId = mina_signer::NetworkId::MAINNET.into();
         assert_eq!(mainnet, NetworkId::Mainnet);
-    }
-
-    #[test]
-    fn test_to_mina_signer() {
-        let testnet: mina_signer::NetworkId = NetworkId::Testnet.into();
-        assert_eq!(testnet, mina_signer::NetworkId::TESTNET);
-        let mainnet: mina_signer::NetworkId = NetworkId::Mainnet.into();
-        assert_eq!(mainnet, mina_signer::NetworkId::MAINNET);
     }
 }
