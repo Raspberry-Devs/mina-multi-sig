@@ -23,6 +23,7 @@ lazy_static.workspace = true
 num-bigint = "0.4.6"
 
 [dev-dependencies]
+mina-tx = { path = ".", features = ["test-utils"] }
 rand_chacha = "0.3"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 hex.workspace = true

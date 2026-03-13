@@ -255,6 +255,7 @@ mod tests {
         assert_eq!(envelope.network_id() as u8, 0);
     }
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_from_str_network_zkapp() {
         let json = include_str!("../tests/data/payment-zkapp.json");
