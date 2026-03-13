@@ -32,3 +32,4 @@ reqwest = { workspace = true, features = ["blocking"] }
 default = []
 frost-bluepallas-compat = ["dep:frost-bluepallas", "dep:frost-core", "dep:ark-ec"]
 test-utils = []
+mesa-hardfork = []

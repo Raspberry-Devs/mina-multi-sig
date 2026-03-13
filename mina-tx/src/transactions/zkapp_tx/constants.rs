@@ -46,7 +46,11 @@ pub const ZK_ACTION_STATE_EMPTY: &str = "MinaZkappActionStateEmptyElt";
 
 pub const MINA_ZKAPP_URI: &str = "MinaZkappUri";
 
+#[cfg(not(feature = "mesa-hardfork"))]
 pub(crate) const APP_STATE_LENGTH: usize = 8;
+
+#[cfg(feature = "mesa-hardfork")]
+pub(crate) const APP_STATE_LENGTH: usize = 32;
 
 // Enum to represent the prefix used for hashing zkapp body based on network
 pub enum ZkAppBodyPrefix {
