@@ -43,6 +43,7 @@ impl PallasMessage {
     pub fn from_raw_bytes_default(input: &[u8]) -> Self {
         Self {
             input: ROInput::new().append_bytes(input),
+            // default to testnet so if we somehow end up here, we only sign a testnet transaction
             network_id: NetworkId::TESTNET,
             is_legacy: true,
         }
@@ -230,6 +231,7 @@ impl frost_bluepallas::ChallengeMessage for PallasMessage {
             translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let rx = r.into_affine().x;
 
+        // This fall-through into from_raw_bytes_default allows us to pass FROST tests which use arbitrary byte messages
         let msg =
             Self::deserialize(message).unwrap_or_else(|_| Self::from_raw_bytes_default(message));
         let network_id = msg.network_id();
