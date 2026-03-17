@@ -110,7 +110,7 @@ pub struct PallasGroup {}
 impl Group for PallasGroup {
     type Element = ProjectivePallas;
     type Field = PallasScalarField;
-    type Serialization = [u8; GROUP_SIZE]; // Projective Pallas is a struct with 3 of PallasBaseField
+    type Serialization = [u8; GROUP_SIZE]; // Compressed byte representation of a Pallas group element
 
     fn cofactor() -> <Self::Field as Field>::Scalar {
         Self::Field::one()

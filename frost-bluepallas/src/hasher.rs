@@ -33,7 +33,7 @@ impl Hashable for PallasHashElement<'_> {
         roi
     }
 
-    // As of right now, assume domain string is included in the input
+    // Use a fixed domain string for PallasHashElement hashing
     fn domain_string(_domain_param: Self::D) -> Option<String> {
         HASH_ELEMENT_STRING.to_string().into()
     }
@@ -43,8 +43,8 @@ type Fq = <PallasScalarField as Field>::Scalar;
 
 // Maps poseidon hash of input to a scalar field element
 pub fn hash_to_scalar(input: &[&[u8]]) -> Fq {
-    // Calculate total number of bytes and prepend to prevent padding attacks
-
+    // Hash via PallasHashElement, which length-prefixes the segment count and each segment
+    // to prevent padding and segmentation-based collision attacks.
     let wrap = PallasHashElement { value: input };
     let mut hasher = create_legacy::<PallasHashElement>(());
 

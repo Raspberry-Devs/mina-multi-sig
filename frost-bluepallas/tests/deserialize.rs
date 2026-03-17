@@ -40,7 +40,7 @@ fn scalar_endianness_is_little_endian() {
     let one = PallasScalarField::deserialize(&ONE_LE).expect("1 should deserialize");
     let big_endian_one = {
         let mut bytes = [0u8; FIELD_SIZE];
-        bytes[31] = 1;
+        bytes[FIELD_SIZE - 1] = 1;
         bytes
     };
     let be_one =
@@ -101,7 +101,8 @@ fn serialize_group_element_roundtrip() {
     assert_eq!(
         serialized.len(),
         GROUP_SIZE,
-        "serialized group length should be 96"
+        "serialized group length should be {}",
+        GROUP_SIZE
     );
 
     let deserialized =
