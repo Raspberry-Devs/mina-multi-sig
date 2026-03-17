@@ -57,6 +57,9 @@ pub trait ChallengeMessage:
     ) -> Result<frost_core::Challenge<BluePallas<Self>>, frost_core::Error<BluePallas<Self>>>;
 }
 
+pub const GROUP_SIZE: usize = 33; // Size of group elements in bytes (compressed)
+pub const FIELD_SIZE: usize = 32; // Size of field elements in bytes (compressed)
+
 /// PallasScalarField implements the FROST field interface for the Pallas scalar field
 #[derive(Clone, Copy)]
 pub struct PallasScalarField;
@@ -64,7 +67,7 @@ pub struct PallasScalarField;
 impl Field for PallasScalarField {
     // Equivalent to Fq in mina::curves::pasta i.e. the scalar field of the Pallas curve
     type Scalar = <PallasParameters as CurveConfig>::ScalarField;
-    type Serialization = [u8; 32];
+    type Serialization = [u8; FIELD_SIZE];
     fn zero() -> Self::Scalar {
         Self::Scalar::zero()
     }
@@ -80,7 +83,7 @@ impl Field for PallasScalarField {
 
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
         // Serialize the scalar in compressed form
-        let mut buf = [0u8; 32];
+        let mut buf = [0u8; FIELD_SIZE];
         scalar
             .serialize_compressed(&mut buf[..])
             .expect("Serialization should not fail for valid scalars");
@@ -107,7 +110,7 @@ pub struct PallasGroup {}
 impl Group for PallasGroup {
     type Element = ProjectivePallas;
     type Field = PallasScalarField;
-    type Serialization = [u8; 32 * 3]; // Projective Pallas is a struct with 3 of PallasBaseField
+    type Serialization = [u8; GROUP_SIZE]; // Projective Pallas is a struct with 3 of PallasBaseField
 
     fn cofactor() -> <Self::Field as Field>::Scalar {
         Self::Field::one()
@@ -125,9 +128,7 @@ impl Group for PallasGroup {
             return Err(GroupError::InvalidIdentityElement);
         }
 
-        let mut buf: Self::Serialization = [0u8; 96];
-        // Does the size reduce below 96 bytes for compressed serialize, though that's probably
-        // fine? Could try switching to compressed (de)serialize
+        let mut buf: Self::Serialization = [0u8; GROUP_SIZE];
         element
             .serialize_compressed(&mut buf[..])
             .map_err(|_| GroupError::MalformedElement)?;
