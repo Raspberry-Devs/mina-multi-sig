@@ -269,6 +269,7 @@ fn check_identifier_generation() -> Result<(), Error<PallasMessage>> {
     Ok(())
 }
 
+#[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_sign_with_dealer_and_identifiers() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
