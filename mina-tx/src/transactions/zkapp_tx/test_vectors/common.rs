@@ -46,6 +46,23 @@ pub struct HashWithPrefixTestVector {
     pub expected_hash: &'static str,
 }
 
+/// Shared test vectors for hash_with_prefix function (identical pre-Mesa and Mesa)
+pub fn get_hash_with_prefix_test_vectors() -> Vec<HashWithPrefixTestVector> {
+    vec![HashWithPrefixTestVector {
+        name: "mina_acct_update_node",
+        prefix: "MinaAcctUpdateNode",
+        input_fields: vec![
+            Fp::from_str(
+                "23487734643675003113914430489774334948844391842009122040704261138931555665056",
+            )
+            .unwrap(),
+            Fp::from_str("0").unwrap(),
+        ],
+        expected_hash:
+            "20456728518925904340727370305821489989002971473792411299271630913563245218671",
+    }]
+}
+
 /// Helper function to parse expected hash strings into Fp elements
 pub fn parse_expected_hash(hash_str: &str) -> Fp {
     Fp::from_str(hash_str).expect("Invalid expected hash format")

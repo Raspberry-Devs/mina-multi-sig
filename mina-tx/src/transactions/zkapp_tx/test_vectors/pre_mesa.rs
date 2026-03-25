@@ -7,7 +7,7 @@ use mina_signer::CompressedPubKey;
 
 use crate::transactions::network_id::NetworkId;
 
-use super::common::{decode_memo_from_base58, HashWithPrefixTestVector, ZkAppTestVector};
+use super::common::{decode_memo_from_base58, ZkAppTestVector};
 
 use crate::transactions::zkapp_tx::{
     AccountPreconditions, AccountUpdate, AccountUpdateBody, ActionState, Actions, AuthRequired,
@@ -944,22 +944,29 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
             expected_account_updates_commitment: "0",
             expected_full_commitment: "11846000834259235905958753603813777773459101710265500737400417221141603138177",
         },
+        ZkAppTestVector {
+            name: "custom_network_pre_mesa",
+            zkapp_command: ZKAppCommand {
+                fee_payer: FeePayer {
+                    body: FeePayerBody {
+                        public_key: PublicKey(CompressedPubKey::from_address(
+                            "B62qkqMwft1eLFboTUW7cmfPNrfyZWiVg48USd2A8Desfuqxc86zHuB",
+                        )
+                        .unwrap()),
+                        fee: 1679200499796871645,
+                        valid_until: None,
+                        nonce: 15,
+                    },
+                    authorization: "7mWxjLYgbJUkZNcGouvhVj5tJ8yu9hoexb9ntvPK8t5LHqzmrL6QJjjKtf5SgmxB4QWkDw7qoMMbbNGtHVpsbJHPyTy2EzRQ".to_string(),
+                },
+                account_updates: vec![],
+                memo: decode_memo_from_base58("E4YznxwbLj515YZkJnQEP98QpZxitCs5VUhmrWNMudU11kY9zsX7P"),
+            },
+            network: NetworkId::Custom("custom-id".to_string()),
+            expected_memo_hash: "14174694814443877827982196340033492868057033762737343905965741568956710104329",
+            expected_fee_payer_hash: "16508792017190938232744995850232271122680735280341401954706208133833287151842",
+            expected_account_updates_commitment: "0",
+            expected_full_commitment: "22021571605304717044738174035307683343526155467678925454104471257968480085847",
+        }
 ]
-}
-
-/// Returns additional test vectors for hash_with_prefix function (pre-Mesa)
-pub fn get_hash_with_prefix_test_vectors() -> Vec<HashWithPrefixTestVector> {
-    vec![HashWithPrefixTestVector {
-        name: "mina_acct_update_node",
-        prefix: "MinaAcctUpdateNode",
-        input_fields: vec![
-            Fp::from_str(
-                "23487734643675003113914430489774334948844391842009122040704261138931555665056",
-            )
-            .unwrap(),
-            Fp::from_str("0").unwrap(),
-        ],
-        expected_hash:
-            "20456728518925904340727370305821489989002971473792411299271630913563245218671",
-    }]
 }

@@ -7,11 +7,12 @@ mod pre_mesa;
 mod mesa;
 
 pub use common::{
-    decode_memo_from_base58, parse_expected_hash, HashWithPrefixTestVector, ZkAppTestVector,
+    decode_memo_from_base58, get_hash_with_prefix_test_vectors, parse_expected_hash,
+    HashWithPrefixTestVector, ZkAppTestVector,
 };
 
 #[cfg(not(feature = "mesa-hardfork"))]
-pub use pre_mesa::{get_hash_with_prefix_test_vectors, get_zkapp_test_vectors};
+pub use pre_mesa::get_zkapp_test_vectors;
 
 #[cfg(feature = "mesa-hardfork")]
-pub use mesa::{get_hash_with_prefix_test_vectors, get_zkapp_test_vectors};
+pub use mesa::get_zkapp_test_vectors;
