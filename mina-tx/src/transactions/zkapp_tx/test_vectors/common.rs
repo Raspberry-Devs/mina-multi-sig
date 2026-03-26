@@ -1,9 +1,9 @@
 //! Shared types and helpers for ZkApp test vectors (both pre-Mesa and Mesa)
 
+use crate::transactions::network_id::NetworkId;
 use alloc::vec::Vec;
 use core::str::FromStr;
 use mina_hasher::Fp;
-use crate::transactions::network_id::NetworkId;
 
 use crate::transactions::zkapp_tx::ZKAppCommand;
 use crate::transactions::TransactionEnvelope;
