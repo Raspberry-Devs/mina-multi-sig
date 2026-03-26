@@ -5,29 +5,25 @@
 //! server. through the mina-frost-client. Finally we read the generated signature and verify that it
 //! agrees with the group public key according to the `mina-signer` crate
 
+mod helpers;
+
+use helpers::{
+    binary_name, build_client_binary, form_group_with_dkg, greet_participants,
+    group_keys_from_config, introduce_participant, network_to_cli_arg, parse_and_verify_signature,
+    sign_with_binary, start_frostd, write_json_str_pretty, CliParticipant, SigningParticipant,
+};
 use lazy_static::lazy_static;
-use mina_signer::PubKey;
-use mina_signer::Signature;
-use mina_signer::Signer;
 use mina_tx::zkapp_tx::test_vectors::get_zkapp_test_vectors;
-use mina_tx::{TransactionEnvelope, TransactionKind, TransactionSignature};
-use regex::Regex;
+use mina_tx::{TransactionEnvelope, TransactionKind};
 use std::fs;
 use std::io::Result;
-use std::path::PathBuf;
-use std::process;
-use std::process::Command;
-use std::process::Stdio;
+use std::path::{Path, PathBuf};
 
 lazy_static! {
     static ref binary_path: PathBuf = PathBuf::from(format!(
         "{}/../target/release/{}",
         env!("CARGO_MANIFEST_DIR"),
-        if cfg!(windows) {
-            "mina-frost-client.exe"
-        } else {
-            "mina-frost-client"
-        }
+        binary_name()
     ));
     static ref working_dir: PathBuf =
         PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/assets"));
@@ -40,299 +36,59 @@ lazy_static! {
 const SIG_FILE: &str = "signature.json";
 const NETWORK_ID: &str = "testnet";
 
-#[derive(Debug)]
-struct Pid {
-    toml: String,
-    contact: String,
-    pk: String,
-}
-
-macro_rules! run_cli {
-    ( $args:expr ) => {{
-        let status = Command::new(binary_path.clone())
-            .args($args)
-            .stderr(Stdio::null()) // control verbosity by commenting line
-            .current_dir(working_dir.clone())
-            .status()
-            .expect("subprocess failed");
-
-        assert!(status.success(), "CLI command failed: {:?}", $args);
-    }};
-}
-
-macro_rules! run_cli_wait {
-    ( $args:expr ) => {{
-        Command::new(binary_path.clone())
-            .args($args)
-            .stderr(Stdio::null()) // control verbosity by commenting line
-            .current_dir(working_dir.clone())
-            .spawn()?
-    }};
-}
-
-macro_rules! run_cli_extract {
-    ($( $arg:expr ),* $(,)?) => {{
-        let output = Command::new(binary_path.clone())
-            .args([ $( $arg ),* ])
-            .current_dir(working_dir.clone())
-            .output()
-            .expect("subprocess failed");
-
-        assert!(
-            output.status.success(),
-            "CLI command failed: {:?}",
-            [ $( $arg ),* ]
-        );
-
-        String::from_utf8_lossy(&output.stderr).to_string()
-    }};
-}
-
-macro_rules! regex_match {
-    ($str:expr, $( $regex:expr ),* $(,)?) => {{
-        (
-            $({
-                let re = Regex::new($regex).unwrap();
-                let caps = re.captures($str).unwrap();
-                // if the regex has a capture group, return group 1; otherwise full match
-                if caps.len() > 1 {
-                    caps[1].to_string()
-                } else {
-                    caps[0].to_string()
-                }
-            }),*
-        )
-    }};
-}
-
 /// Dump ZKApp transaction test vectors to files, return pathnames
-fn write_zkapp_tx_files() -> Result<Vec<String>> {
+fn write_zkapp_tx_files() -> Result<Vec<(String, String)>> {
     let test_vectors = get_zkapp_test_vectors();
 
-    let mut paths: Vec<String> = Vec::with_capacity(test_vectors.len());
+    let mut paths: Vec<(String, String)> = Vec::with_capacity(test_vectors.len());
     for (index, tv) in test_vectors.into_iter().enumerate() {
         let path = working_dir.join(format!("zkapp_tx_{}.json", index));
-        paths.push(path.to_str().unwrap().to_string());
-
         let tx_env: TransactionEnvelope = tv.into();
+        let network_id = network_to_cli_arg(&tx_env.network_id());
+        paths.push((path.to_str().unwrap().to_string(), network_id));
 
         let inner = match tx_env.inner() {
             TransactionKind::ZkApp(inner) => inner,
             _ => panic!("Expected ZKApp transaction"),
         };
 
-        let json = serde_json::to_string_pretty(&inner).unwrap();
-        fs::write(path, json)?;
+        let json = serde_json::to_string(&inner)
+            .map_err(|e| std::io::Error::other(format!("failed serializing zkapp tx: {e}")))?;
+        write_json_str_pretty(&path, &json)?;
     }
     Ok(paths)
 }
 
-/// Create a participant by making them a .toml file
-fn introduce(name: &str) -> Result<Pid> {
-    let toml = format!("{}.toml", name);
-    run_cli!(["init", "-c", &toml]);
-
-    let export_str = run_cli_extract!("export", "--name", name, "-c", &toml);
-    let (contact, pk) = regex_match!(
-        &export_str,
-        r"(?m)^minafrost[^\r\n]*$",
-        r"(?mi)^Public Key: ([0-9a-f]+)$"
-    );
-
-    Ok(Pid { toml, contact, pk })
-}
-
-// All participants exchange contact info
-fn greet(pids: &[Pid]) -> Result<()> {
-    for Pid { toml, .. } in pids {
-        for Pid {
-            contact,
-            toml: b_toml,
-            ..
-        } in pids
-        {
-            if toml != b_toml {
-                run_cli!(["import", "-c", toml, contact]);
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Errors if pids is empty
-/// The first participant acts as coordinator and the rest join the session
-/// t is the threshold
-fn form_group(pids: &[Pid], threshold: usize) -> Result<()> {
-    let len = threshold.to_string();
-    let pks: Vec<&str> = pids.iter().map(|Pid { pk, .. }| pk.as_str()).collect();
-
-    let mut children = Vec::new();
-
-    for (i, Pid { toml, .. }) in pids.iter().enumerate() {
-        let mut args = vec![
-            "dkg",
-            "-d",
-            "Raspberry Devs",
-            "-s",
-            "localhost:2744",
-            "-t",
-            &len,
-            "-c",
-            toml,
-        ];
-        if i == 0 {
-            // first participant plays coordinator, and also needs to know all public keys
-            for pk in &pks {
-                args.push("-S");
-                args.push(pk);
-            }
-        }
-        children.push(run_cli_wait!(args));
-
-        // Have to make sure that the coordinator properly starts before the participant
-        // Otherwise the test will fail. So we hope 1 second is more than enough...
-        if i == 0 {
-            std::thread::sleep(std::time::Duration::from_secs(1));
-        }
-    }
-    for child in &mut children {
-        assert!(child
-            .wait()
-            .expect("participant subprocess didn't stop during group formation")
-            .success());
-    }
-    Ok(())
-}
-
 /// Sign and obtain the signature
 /// We sign the `TransactionEnvelope` as given by `sign_message_path`
-fn sign(pids: &[Pid], group_pk: &str, threshold: usize, sign_message_path: &str) -> Result<()> {
-    let mut children = Vec::new();
-
-    // constructing the coordinator command
-    let mut args = vec![
-        "coordinator",
-        "-c",
-        &pids[0].toml,
-        "-s",
-        "localhost:2744",
-        "--group",
-        group_pk,
-        "-m",
-        sign_message_path,
-        "-o",
-        SIG_FILE,
-        "-n",
-        NETWORK_ID,
-    ];
-    let pks: Vec<&str> = pids
+fn sign(
+    participants: &[CliParticipant],
+    group_pk: &str,
+    threshold: usize,
+    sign_message_path: &str,
+    network_id: &str,
+) -> Result<()> {
+    let signing_participants = participants
         .iter()
-        .map(|Pid { pk, .. }| pk.as_str())
-        .take(threshold)
-        .collect();
-    for pk in &pks {
-        args.push("-S");
-        args.push(pk);
-    }
+        .map(|p| SigningParticipant {
+            config_path: p.toml.clone(),
+            pubkey_hex: p.pubkey_hex.clone(),
+        })
+        .collect::<Vec<_>>();
 
-    // Running the coordinator
-    children.push(run_cli_wait!(args));
-    // sleep to make sure coordinator starts up before the participants
-    std::thread::sleep(std::time::Duration::from_secs(1));
+    sign_with_binary(
+        &binary_path,
+        &working_dir,
+        group_pk,
+        Path::new(sign_message_path),
+        SIG_FILE,
+        network_id,
+        "localhost:2744",
+        threshold,
+        &signing_participants,
+    );
 
-    // Spawn the participants
-    for Pid { toml, .. } in &pids[..threshold] {
-        children.push(run_cli_wait!([
-            "participant",
-            "-c",
-            toml,
-            "-s",
-            "localhost:2744",
-            "--group",
-            group_pk,
-            "-y",
-        ]));
-    }
-    for child in &mut children {
-        assert!(child
-            .wait()
-            .expect("subprocess didn't stop during signing")
-            .success());
-    }
     Ok(())
-}
-
-/// We're done using the cli. This is the cross-package part of the test
-/// now verify the signature generated by mina-frost-client using the `mina-signer` crate
-fn parse_and_verify(pk_str: &str, verify_message_path: &str, is_legacy: bool) {
-    let msg_json = fs::read_to_string(verify_message_path).unwrap();
-
-    let msg = TransactionEnvelope::from_str_network(
-        msg_json.trim(),
-        NETWORK_ID.to_string().try_into().unwrap(),
-    )
-    .unwrap();
-
-    let pk = PubKey::from_address(pk_str).unwrap();
-
-    let sig_json = fs::read_to_string(working_dir.join(SIG_FILE).clone()).unwrap();
-
-    // Deserialize the full TransactionSignature output
-    let tx_sig: TransactionSignature = serde_json::from_str(&sig_json).unwrap();
-
-    let field = tx_sig.signature.field;
-    let scalar = tx_sig.signature.scalar;
-    println!("field: {}", field);
-    println!("scalar: {}", scalar);
-
-    let mina_sig: Signature = Signature {
-        s: scalar.into(),
-        rx: field.into(),
-    };
-
-    if !is_legacy {
-        // For ZkApp transactions, verify the signature was injected into the transaction
-        let zkapp = match tx_sig.payload.inner() {
-            TransactionKind::ZkApp(inner) => inner,
-            _ => panic!("Expected ZkApp transaction in payload"),
-        };
-
-        // Verify fee payer authorization was injected (non-empty)
-        assert!(
-            !zkapp.fee_payer.authorization.is_empty(),
-            "Fee payer authorization should be non-empty after signature injection"
-        );
-
-        // Verify account updates that should have been signed have signatures
-        for (i, update) in zkapp.account_updates.iter().enumerate() {
-            let is_signed = update.body.authorization_kind.is_signed;
-            let pk_matches = update.body.public_key.0 == pk.into_compressed();
-            let full_commitment = update.body.use_full_commitment;
-
-            if is_signed && pk_matches && full_commitment {
-                let sig = update.authorization.signature.as_ref().unwrap_or_else(|| {
-                    panic!(
-                        "Account update at index {} should have a signature after injection",
-                        i
-                    )
-                });
-                assert!(
-                    !sig.is_empty(),
-                    "Account update at index {} has an empty signature",
-                    i
-                );
-            }
-        }
-    }
-
-    // Verify the signature using mina-signer, depending on whether it's legacy or zkapp
-    if is_legacy {
-        let mut ctx = mina_signer::create_legacy::<TransactionEnvelope>(msg.network_id());
-        assert!(ctx.verify(&mina_sig, &pk, &msg));
-        return;
-    }
-    let mut ctx = mina_signer::create_kimchi::<TransactionEnvelope>(msg.network_id());
-    assert!(ctx.verify(&mina_sig, &pk, &msg));
 }
 
 /// This test will iterate through all zkapp_test_vectors and verify that
@@ -341,31 +97,47 @@ fn cross_package_test(threshold: usize, max_signers: usize) -> Result<()> {
     let mut server_process = setup()?;
     let zkapp_message_paths = write_zkapp_tx_files()?;
 
-    let pids = (0..max_signers)
-        .map(|x| x.to_string())
-        .map(|x| introduce(&x))
-        .collect::<Result<Vec<Pid>>>()?;
+    let participants = (0..max_signers)
+        .map(|x| introduce_participant(&binary_path, &working_dir, &x.to_string()))
+        .collect::<Vec<CliParticipant>>();
 
-    greet(&pids)?;
+    greet_participants(&binary_path, &working_dir, &participants);
 
-    form_group(&pids, threshold)?;
+    form_group_with_dkg(
+        &binary_path,
+        &working_dir,
+        &participants,
+        threshold,
+        "localhost:2744",
+        "Raspberry Devs",
+    )?;
 
-    let pk_str = run_cli_extract!("groups", "-c", &pids[0].toml);
-    let (group_pk_hex, group_pk_mina) = regex_match!(
-        &pk_str,
-        r"(?mi)^Public key \(hex format\): ([0-9a-f]+)$",
-        r"(?mi)^Public key \(mina format\): (\S+)$",
-    );
+    let (group_pk_hex, group_pk_mina) =
+        group_keys_from_config(&binary_path, &working_dir, &participants[0].toml);
     println!("group public key: {}", group_pk_mina);
 
-    // Message paths for signing and is_legacy flag as tuples
-    let mut message_paths = vec![(message_path.to_str().unwrap().to_string(), true)];
-    message_paths.extend(zkapp_message_paths.into_iter().map(|p| (p, false)));
+    // Message paths for signing as (path, is_legacy, network_id)
+    let mut message_paths = vec![(
+        message_path.to_str().unwrap().to_string(),
+        true,
+        NETWORK_ID.to_string(),
+    )];
+    message_paths.extend(
+        zkapp_message_paths
+            .into_iter()
+            .map(|(p, network_id)| (p, false, network_id)),
+    );
 
     // Iterate through each transaction message path, sign+verify
-    for (msg, flag) in message_paths.iter() {
-        sign(&pids, &group_pk_hex, threshold, msg)?;
-        parse_and_verify(&group_pk_mina, msg, *flag);
+    for (msg, flag, network_id) in message_paths.iter() {
+        sign(&participants, &group_pk_hex, threshold, msg, network_id)?;
+        parse_and_verify_signature(
+            &group_pk_mina,
+            Path::new(msg),
+            &working_dir.join(SIG_FILE),
+            network_id,
+            *flag,
+        );
     }
 
     server_process.kill()?;
@@ -378,7 +150,7 @@ fn permute_cross_package_test() -> Result<()> {
     cross_package_test(5, 10)
 }
 
-fn setup() -> Result<process::Child> {
+fn setup() -> Result<std::process::Child> {
     // Clean up generated directory if it exists
     if working_dir.exists() {
         println!("Cleaning up existing generated directory...");
@@ -387,36 +159,14 @@ fn setup() -> Result<process::Child> {
     // Create directory for generated files
     fs::create_dir_all(working_dir.clone())?;
 
-    // compile release binaries
-    let repo_root_path: PathBuf = PathBuf::from(format!("{}/..", env!("CARGO_MANIFEST_DIR")));
-    let status = Command::new("cargo")
-        .args(["build", "--release"])
-        .current_dir(repo_root_path)
-        .status()
-        .expect("Failed to build release binary");
-    assert!(status.success(), "Release build failed");
-
-    // ensure mkcert certificates are installed everytime (required for docker)
-    Command::new("mkcert")
-        .arg("-install")
-        .output()
-        .expect("failed to run mkcert -install");
-
-    Command::new("mkcert")
-        .args(["localhost", "127.0.0.1", "::1"])
-        .stderr(Stdio::null()) // discard stderr
-        .current_dir(working_dir.clone())
-        .status()?;
-
-    let tls_cert_path = working_dir.join("localhost+2.pem");
-    let tls_key_path = working_dir.join("localhost+2-key.pem");
+    // compile release binary
+    let built_binary = build_client_binary(env!("CARGO_MANIFEST_DIR"), None, false);
+    assert!(
+        built_binary.exists(),
+        "release client binary does not exist at {}",
+        built_binary.display()
+    );
 
     // Start frostd server in the background
-    Command::new("frostd")
-        .arg("--tls-cert")
-        .arg(&tls_cert_path)
-        .arg("--tls-key")
-        .arg(&tls_key_path)
-        .stderr(Stdio::null()) // discard stderr
-        .spawn()
+    start_frostd(&working_dir)
 }

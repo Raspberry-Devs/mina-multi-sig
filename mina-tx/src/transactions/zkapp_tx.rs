@@ -30,6 +30,9 @@ pub mod zkapp_serde;
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_vectors;
 
+/// Compile-time flag indicating whether this build uses Mesa hardfork transaction semantics.
+pub const IS_MESA_HARDFORK: bool = cfg!(feature = "mesa-hardfork");
+
 // Re-export signature injection types for convenience
 pub use signature_injection::{SignatureInjectionResult, SignatureInjectionWarning};
 
