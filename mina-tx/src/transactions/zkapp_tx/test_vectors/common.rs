@@ -3,7 +3,7 @@
 use alloc::vec::Vec;
 use core::str::FromStr;
 use mina_hasher::Fp;
-use mina_signer::NetworkId;
+use crate::transactions::network_id::NetworkId;
 
 use crate::transactions::zkapp_tx::ZKAppCommand;
 use crate::transactions::TransactionEnvelope;

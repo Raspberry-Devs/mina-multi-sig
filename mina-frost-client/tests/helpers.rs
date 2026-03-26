@@ -377,6 +377,9 @@ pub fn start_frostd(cwd: &Path) -> io::Result<Child> {
         .status()?;
     status_success_or_err(cert_status, "mkcert localhost certificate generation")?;
 
+    // Avoid flaky "certificate not valid yet" races on fast CI runners.
+    thread::sleep(Duration::from_secs(2));
+
     let tls_cert_path = cwd.join("localhost+2.pem");
     let tls_key_path = cwd.join("localhost+2-key.pem");
 
