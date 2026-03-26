@@ -160,7 +160,11 @@ fn setup() -> Result<std::process::Child> {
     fs::create_dir_all(working_dir.clone())?;
 
     // compile release binary
-    let built_binary = build_client_binary(env!("CARGO_MANIFEST_DIR"), None, false);
+    let built_binary = build_client_binary(
+        env!("CARGO_MANIFEST_DIR"),
+        None,
+        mina_tx::zkapp_tx::IS_MESA_HARDFORK,
+    );
     assert!(
         built_binary.exists(),
         "release client binary does not exist at {}",
