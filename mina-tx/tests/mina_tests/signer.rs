@@ -40,7 +40,7 @@ fn signer_test_raw() {
 
     // Generate FROST signature using the private key
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx);
-    let msg = tx_env.to_pallas_message().serialize();
+    let msg = tx_env.to_pallas_message().serialize().unwrap();
     let fr_sk =
         translate_minask(&kp).expect("failed to translate mina keypair to frost signing key");
 
@@ -108,7 +108,7 @@ fn sign_mina_tx() {
 
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx);
-    let msg = tx_env.to_pallas_message().serialize();
+    let msg = tx_env.to_pallas_message().serialize().unwrap();
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
         &msg,
         shares,
@@ -168,7 +168,7 @@ fn sign_mina_tx_mainnet() {
 
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(network_id.clone(), tx);
-    let msg = tx_env.to_pallas_message().serialize();
+    let msg = tx_env.to_pallas_message().serialize().unwrap();
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
         &msg,
         shares,
@@ -234,7 +234,7 @@ fn transaction_json_deser_with_mina_sign() {
 
     // Now sign the deserialized transaction
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, deserialized_tx.clone());
-    let msg = tx_env.to_pallas_message().serialize();
+    let msg = tx_env.to_pallas_message().serialize().unwrap();
 
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
         &msg,
@@ -300,7 +300,7 @@ fn sign_mina_delegation_tx() {
 
     // Generate FROST signature
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx.clone());
-    let msg = tx_env.to_pallas_message().serialize();
+    let msg = tx_env.to_pallas_message().serialize().unwrap();
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
         &msg,
         shares,
@@ -371,7 +371,7 @@ fn delegation_json_deser_with_mina_sign() {
 
     // Now sign the deserialized transaction
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, deserialized_tx.clone());
-    let msg = tx_env.to_pallas_message().serialize();
+    let msg = tx_env.to_pallas_message().serialize().unwrap();
     let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(
         &msg,
         shares,
@@ -445,7 +445,7 @@ fn test_zkapp_tx_mina_signer_compatibility() {
             test_vector.network.clone(),
             test_vector.zkapp_command.clone(),
         );
-        let msg = tx_env.to_pallas_message().serialize();
+        let msg = tx_env.to_pallas_message().serialize().unwrap();
 
         // Generate FROST signature
         let (sig, vk) = signing_utilities::sign_from_packages::<PallasMessage, _>(

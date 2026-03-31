@@ -59,7 +59,9 @@ pub fn round_2(
         NetworkId::Testnet,
         true,
     );
-    let serialized_message = pallas_message.serialize();
+    let serialized_message = pallas_message
+        .serialize()
+        .expect("PallasMessage serialization should succeed");
     let signing_package = frost::SigningPackage::new(commitments_map, &serialized_message);
     let mut signature_shares = BTreeMap::new();
     for participant_identifier in nonces_map.keys() {

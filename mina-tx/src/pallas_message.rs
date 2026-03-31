@@ -13,7 +13,10 @@ use mina_signer::signature::Signature as MinaSig;
 use mina_signer::Keypair;
 use mina_signer::{pubkey::PubKey, BaseField, ScalarField};
 
-use crate::transactions::network_id::{NetworkId, MAX_PREFIX_LENGTH};
+use crate::{
+    errors::MinaTxError,
+    transactions::network_id::{NetworkId, MAX_PREFIX_LENGTH},
+};
 
 const PALLAS_MESSAGE_VERSION: u8 = 1;
 
@@ -51,7 +54,7 @@ impl PallasMessage {
     }
 
     /// Serialize this message to bytes for transport/signing.
-    pub fn serialize(&self) -> Vec<u8> {
+    pub fn serialize(&self) -> Result<Vec<u8>, MinaTxError> {
         let roi_bytes = self.input.serialize();
         let mut out = Vec::with_capacity(7 + roi_bytes.len());
         out.push(PALLAS_MESSAGE_VERSION);
@@ -63,10 +66,11 @@ impl PallasMessage {
                 out.push(1u8);
             }
             NetworkId::Custom(s) => {
-                assert!(
-                    s.len() <= MAX_PREFIX_LENGTH,
-                    "Custom network ID exceeds maximum length of {MAX_PREFIX_LENGTH}"
-                );
+                if s.len() > MAX_PREFIX_LENGTH {
+                    return Err(crate::errors::MinaTxError::SerializationError(format!(
+                        "Custom network ID exceeds maximum length of {MAX_PREFIX_LENGTH}"
+                    )));
+                }
                 out.push(2u8);
                 let name_bytes = s.as_bytes();
                 out.push(name_bytes.len() as u8);
@@ -76,7 +80,7 @@ impl PallasMessage {
         out.push(u8::from(self.is_legacy));
         out.extend_from_slice(&(roi_bytes.len() as u32).to_le_bytes());
         out.extend_from_slice(&roi_bytes);
-        out
+        Ok(out)
     }
 
     /// Deserialize a message from the bytes produced by [`Self::serialize`].
@@ -97,11 +101,6 @@ impl PallasMessage {
             0 => (NetworkId::Testnet, 2),
             1 => (NetworkId::Mainnet, 2),
             2 => {
-                if input.len() < 3 {
-                    return Err(crate::errors::MinaTxError::DeSerializationError(
-                        "PallasMessage too short for custom network ID".into(),
-                    ));
-                }
                 let name_len = input[2] as usize;
                 if name_len > MAX_PREFIX_LENGTH {
                     return Err(crate::errors::MinaTxError::DeSerializationError(
@@ -187,7 +186,7 @@ impl Hashable for PallasMessage {
     }
 
     fn domain_string(network_id: NetworkId) -> Option<String> {
-        network_id.into_domain_string().into()
+        Some(network_id.into_domain_string())
     }
 }
 
@@ -303,19 +302,198 @@ impl frost_bluepallas::ChallengeMessage for PallasMessage {
 mod tests {
     use super::*;
 
+    fn round_trip(message: &PallasMessage) -> PallasMessage {
+        let bytes = message.serialize().expect("serialize should succeed");
+        PallasMessage::deserialize(&bytes).expect("deserialize should succeed")
+    }
+
+    // --- Round-trip tests for all NetworkId variants ---
+
     #[test]
-    fn test_pallas_message_round_trip() {
+    fn test_round_trip_mainnet() {
         let message = PallasMessage::from_parts(
             ROInput::new().append_bytes(b"hello"),
             NetworkId::Mainnet,
             false,
         );
-
-        let bytes = message.serialize();
-        let decoded = PallasMessage::deserialize(&bytes).expect("deserialize should succeed");
-
+        let decoded = round_trip(&message);
         assert_eq!(decoded.network_id(), NetworkId::Mainnet);
         assert!(!decoded.is_legacy());
         assert_eq!(decoded.input, message.input);
+    }
+
+    #[test]
+    fn test_round_trip_testnet() {
+        let message = PallasMessage::from_parts(
+            ROInput::new().append_bytes(b"testnet payload"),
+            NetworkId::Testnet,
+            true,
+        );
+        let decoded = round_trip(&message);
+        assert_eq!(decoded.network_id(), NetworkId::Testnet);
+        assert!(decoded.is_legacy());
+        assert_eq!(decoded.input, message.input);
+    }
+
+    #[test]
+    fn test_round_trip_custom_network_id() {
+        let message = PallasMessage::from_parts(
+            ROInput::new().append_bytes(b"devnet payload"),
+            NetworkId::Custom("devnet".into()),
+            false,
+        );
+        let decoded = round_trip(&message);
+        assert_eq!(decoded.network_id(), NetworkId::Custom("devnet".into()));
+        assert!(!decoded.is_legacy());
+        assert_eq!(decoded.input, message.input);
+    }
+
+    // --- Round-trip with empty ROInput ---
+
+    #[test]
+    fn test_round_trip_empty_roi_input() {
+        // Empty ROInput exercises the roi_len = 0 path in serialize/deserialize.
+        let message = PallasMessage::from_parts(ROInput::new(), NetworkId::Testnet, true);
+        let decoded = round_trip(&message);
+        assert_eq!(decoded.network_id(), NetworkId::Testnet);
+        assert!(decoded.is_legacy());
+        assert_eq!(decoded.input, message.input);
+    }
+
+    // --- serialize rejects oversized custom network IDs ---
+
+    #[test]
+    fn test_serialize_rejects_custom_network_id_exceeding_max_length() {
+        let too_long = "x".repeat(MAX_PREFIX_LENGTH + 1);
+        let message = PallasMessage::from_parts(ROInput::new(), NetworkId::Custom(too_long), false);
+        assert!(matches!(
+            message.serialize(),
+            Err(crate::errors::MinaTxError::SerializationError(_))
+        ));
+    }
+
+    // --- Deserialization error cases ---
+
+    #[test]
+    fn test_deserialize_rejects_unknown_version() {
+        let mut bytes = PallasMessage::from_parts(
+            ROInput::new().append_bytes(b"data"),
+            NetworkId::Testnet,
+            true,
+        )
+        .serialize()
+        .unwrap();
+        bytes[0] = 0xFF; // corrupt the version byte
+
+        assert!(matches!(
+            PallasMessage::deserialize(&bytes),
+            Err(crate::errors::MinaTxError::DeSerializationError(_))
+        ));
+    }
+
+    #[test]
+    fn test_deserialize_rejects_unknown_network_id_discriminant() {
+        let mut bytes = PallasMessage::from_parts(
+            ROInput::new().append_bytes(b"data"),
+            NetworkId::Testnet,
+            true,
+        )
+        .serialize()
+        .unwrap();
+        bytes[1] = 0x05; // not a valid network discriminant
+
+        assert!(matches!(
+            PallasMessage::deserialize(&bytes),
+            Err(crate::errors::MinaTxError::DeSerializationError(_))
+        ));
+    }
+
+    #[test]
+    fn test_deserialize_rejects_invalid_legacy_flag() {
+        let mut bytes = PallasMessage::from_parts(
+            ROInput::new().append_bytes(b"data"),
+            NetworkId::Testnet,
+            true,
+        )
+        .serialize()
+        .unwrap();
+        // For Testnet layout: [version(0), network_tag(1), legacy_flag(2), ...]
+        bytes[2] = 0x02; // 0x02 is not a valid bool byte
+
+        assert!(matches!(
+            PallasMessage::deserialize(&bytes),
+            Err(crate::errors::MinaTxError::DeSerializationError(_))
+        ));
+    }
+
+    #[test]
+    fn test_deserialize_rejects_input_shorter_than_minimum_header() {
+        // Fewer than 3 bytes — cannot read version + network tag + anything further.
+        assert!(matches!(
+            PallasMessage::deserialize(&[PALLAS_MESSAGE_VERSION, 0x00]),
+            Err(crate::errors::MinaTxError::DeSerializationError(_))
+        ));
+    }
+
+    #[test]
+    fn test_deserialize_rejects_truncated_custom_network_name() {
+        // Claim name_len=10 but supply only 4 bytes of name body.
+        let bytes = [
+            PALLAS_MESSAGE_VERSION,
+            0x02, // Custom
+            10,   // name_len = 10
+            b'a',
+            b'b',
+            b'c',
+            b'd', // only 4 of the 10 promised bytes
+        ];
+        assert!(matches!(
+            PallasMessage::deserialize(&bytes),
+            Err(crate::errors::MinaTxError::DeSerializationError(_))
+        ));
+    }
+
+    #[test]
+    fn test_deserialize_rejects_custom_network_id_exceeding_max_length() {
+        // Encode a name_len > MAX_PREFIX_LENGTH directly in the byte stream.
+        let too_long = MAX_PREFIX_LENGTH + 1;
+        let mut bytes = vec![PALLAS_MESSAGE_VERSION, 0x02, too_long as u8];
+        bytes.extend(vec![b'x'; too_long]);
+
+        assert!(matches!(
+            PallasMessage::deserialize(&bytes),
+            Err(crate::errors::MinaTxError::DeSerializationError(_))
+        ));
+    }
+
+    #[test]
+    fn test_deserialize_rejects_mismatched_roi_length() {
+        // Build a valid message then corrupt the declared roi_len to mismatch actual body size.
+        let mut bytes = PallasMessage::from_parts(
+            ROInput::new().append_bytes(b"payload"),
+            NetworkId::Mainnet,
+            false,
+        )
+        .serialize()
+        .unwrap();
+
+        // Mainnet layout: version(0) | network_tag(1) | legacy(2) | roi_len_u32_le(3..7) | body
+        // Increment the first byte of the little-endian roi_len to inflate the declared length.
+        bytes[3] = bytes[3].wrapping_add(1);
+
+        assert!(matches!(
+            PallasMessage::deserialize(&bytes),
+            Err(crate::errors::MinaTxError::DeSerializationError(_))
+        ));
+    }
+
+    // --- from_raw_bytes_default contract ---
+
+    #[test]
+    fn test_from_raw_bytes_default_uses_testnet_and_legacy() {
+        // These defaults are relied upon by the challenge() fallback path; they must not change silently.
+        let msg = PallasMessage::from_raw_bytes_default(b"arbitrary");
+        assert_eq!(msg.network_id(), NetworkId::Testnet);
+        assert!(msg.is_legacy());
     }
 }

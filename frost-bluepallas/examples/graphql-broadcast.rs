@@ -148,7 +148,7 @@ fn build_zkapp_tx(from: &CompressedPubKey) -> TransactionEnvelope {
 fn sign_envelope(envelope: TransactionEnvelope, keypair: &Keypair) -> TransactionSignature {
     let signing_key = translate_minask(keypair).expect("valid keypair");
 
-    let msg = envelope.to_pallas_message().serialize();
+    let msg = envelope.to_pallas_message().serialize().unwrap();
 
     let (frost_sig, _vk) = generate_signature_from_sk::<PallasMessage, _>(
         &msg,

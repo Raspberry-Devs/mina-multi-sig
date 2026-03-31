@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //let tx = tx.set_memo_str("Hello World!");
     let signing_key = translate_minask(&mina_keypair)?;
 
-    let msg = tx.to_pallas_message().serialize();
+    let msg = tx.to_pallas_message().serialize().unwrap();
 
     // Sign the transaction with FROST
     let (sig, vk) = frost_bluepallas::signing_utilities::generate_signature_from_sk::<

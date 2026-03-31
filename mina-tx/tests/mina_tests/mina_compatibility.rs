@@ -38,7 +38,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
             16,
         ),
     );
-    let fr_msg = tx.to_pallas_message().serialize();
+    let fr_msg = tx.to_pallas_message().serialize().unwrap();
 
     let (fr_sig, fr_pk) = generate_signature_random::<PallasMessage, _>(&fr_msg, rng)?;
 
@@ -205,7 +205,7 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
     // We want to now deserialize into a transaction
     let tx: LegacyTransaction = serde_json::from_str(json).unwrap();
     let tx_env = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx);
-    let msg = tx_env.to_pallas_message().serialize();
+    let msg = tx_env.to_pallas_message().serialize().unwrap();
 
     for _ in 0..64 {
         let rng = rand_core::OsRng;

@@ -11,6 +11,7 @@ use alloc::{
 use mina_hasher::DomainParameter;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+// This should not grow past 255, otherwise we would break compile-time guarantees
 pub const MAX_PREFIX_LENGTH: usize = 20;
 const PADDING_CHAR: u8 = b'*';
 

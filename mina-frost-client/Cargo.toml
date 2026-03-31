@@ -50,3 +50,6 @@ mina-hasher.workspace = true
 ark-ff.workspace = true
 frost-bluepallas = { path = "../frost-bluepallas", features = ["test-utils"] }
 mina-tx = { path = "../mina-tx", features = ["test-utils"] }
+
+[features]
+mesa-hardfork = ["mina-tx/mesa-hardfork"]
