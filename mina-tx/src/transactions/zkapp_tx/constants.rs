@@ -1,6 +1,9 @@
-//! Module containint various constants used by ZkApp transactions (both for packing and hashing)
+//! Module containing various constants used by ZkApp transactions (both for packing and hashing)
 
-use alloc::string::{String, ToString};
+use alloc::{
+    borrow::Cow,
+    string::{String, ToString},
+};
 use core::str::FromStr;
 
 use crate::{
@@ -73,12 +76,14 @@ impl From<NetworkId> for ZkAppBodyPrefix {
     }
 }
 
-impl From<ZkAppBodyPrefix> for String {
+impl From<ZkAppBodyPrefix> for Cow<'static, str> {
     fn from(value: ZkAppBodyPrefix) -> Self {
         match value {
-            ZkAppBodyPrefix::Mainnet => ZK_APP_BODY_MAINNET.to_string(),
-            ZkAppBodyPrefix::Testnet => ZK_APP_BODY_TESTNET.to_string(),
-            ZkAppBodyPrefix::Custom(s) => NetworkId::create_custom_prefix(&(s + "ZkappBody")),
+            ZkAppBodyPrefix::Mainnet => Cow::Borrowed(ZK_APP_BODY_MAINNET),
+            ZkAppBodyPrefix::Testnet => Cow::Borrowed(ZK_APP_BODY_TESTNET),
+            ZkAppBodyPrefix::Custom(s) => {
+                Cow::Owned(NetworkId::create_custom_prefix(&(s + "ZkappBody")))
+            }
         }
     }
 }

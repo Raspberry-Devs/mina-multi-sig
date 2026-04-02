@@ -3,11 +3,7 @@
 //! This replaces direct use of `mina_signer::NetworkId` to allow custom network IDs
 //! (e.g., devnets) that the upstream crate does not support.
 
-use alloc::{
-    string::{String, ToString},
-    vec,
-    vec::Vec,
-};
+use alloc::{string::String, vec, vec::Vec};
 use mina_hasher::DomainParameter;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -68,7 +64,7 @@ impl NetworkId {
             }
             s
         } else {
-            prefix[..MAX_PREFIX_LENGTH].to_string()
+            prefix.chars().take(MAX_PREFIX_LENGTH).collect()
         }
     }
 
@@ -151,9 +147,20 @@ impl core::convert::TryFrom<String> for NetworkIdEnvelope {
     type Error = String;
     fn try_from(s: String) -> Result<Self, Self::Error> {
         match s.as_str() {
+            // Map devnet to testnet for compatibility with o1js
+            "devnet" => Ok(NetworkIdEnvelope(NetworkId::Testnet)),
             "testnet" => Ok(NetworkIdEnvelope(NetworkId::Testnet)),
             "mainnet" => Ok(NetworkIdEnvelope(NetworkId::Mainnet)),
-            _ => Ok(NetworkIdEnvelope(NetworkId::Custom(s))),
+            _ => {
+                if s.len() > MAX_PREFIX_LENGTH {
+                    Err(format!(
+                        "Custom network ID '{}' is too long (max {} characters)",
+                        s, MAX_PREFIX_LENGTH
+                    ))
+                } else {
+                    Ok(NetworkIdEnvelope(NetworkId::Custom(s)))
+                }
+            }
         }
     }
 }
@@ -237,5 +244,23 @@ mod tests {
         assert_eq!(testnet, NetworkId::Testnet);
         let mainnet: NetworkId = mina_signer::NetworkId::MAINNET.into();
         assert_eq!(mainnet, NetworkId::Mainnet);
+    }
+
+    #[test]
+    fn test_network_id_to_bytes() {
+        let bytes = network_id_to_bytes("abc");
+        assert_eq!(bytes, vec![0b01100011, 0b01100010, 0b01100001]);
+
+        let bytes2 = network_id_to_bytes("devnet");
+        assert_eq!(
+            bytes2,
+            vec![0b01110100, 0b01100101, 0b01101110, 0b01110110, 0b01100101, 0b01100100]
+        );
+
+        let bytes3 = network_id_to_bytes("mainnet");
+        assert_eq!(
+            bytes3,
+            vec![0b01110100, 0b01100101, 0b01101110, 0b1101110, 0b1101001, 0b1100001, 0b1101101]
+        );
     }
 }
