@@ -1,5 +1,8 @@
 # Mina Multi-Sig
 
+[![Rust](https://github.com/raspberry-devs/mina-multi-sig/actions/workflows/rust.yml/badge.svg)](https://github.com/raspberry-devs/mina-multi-sig/actions/workflows/rust.yml)
+[![Documentation](https://github.com/raspberry-devs/mina-multi-sig/actions/workflows/docs.yml/badge.svg)](https://github.com/raspberry-devs/mina-multi-sig/actions/workflows/docs.yml)
+
 This repository provides an experimental implementation of multi-signature tooling for the [Mina Protocol](https://minaprotocol.com/). The project is built around [FROST](https://github.com/cfrg/draft-irtf-cfrg-frost) (Flexible Round-Optimized Schnorr Threshold signatures) and contains both a reusable library and a command line client.
 
 ## ⚠️ Security Warning

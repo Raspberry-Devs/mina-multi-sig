@@ -13,6 +13,3 @@ mina-frost-client/tests/assets/
 
 # GraphQL schemas
 *.graphql
-
-# AI generated files
-CLAUDE.md
