@@ -48,19 +48,47 @@ pub struct HashWithPrefixTestVector {
 
 /// Shared test vectors for hash_with_prefix function (identical pre-Mesa and Mesa)
 pub fn get_hash_with_prefix_test_vectors() -> Vec<HashWithPrefixTestVector> {
-    vec![HashWithPrefixTestVector {
-        name: "mina_acct_update_node",
-        prefix: "MinaAcctUpdateNode",
-        input_fields: vec![
-            Fp::from_str(
-                "23487734643675003113914430489774334948844391842009122040704261138931555665056",
-            )
-            .unwrap(),
-            Fp::from_str("0").unwrap(),
-        ],
-        expected_hash:
-            "20456728518925904340727370305821489989002971473792411299271630913563245218671",
-    }]
+    vec![
+        HashWithPrefixTestVector {
+            name: "mina_acct_update_node",
+            prefix: "MinaAcctUpdateNode",
+            input_fields: vec![
+                Fp::from_str(
+                    "23487734643675003113914430489774334948844391842009122040704261138931555665056",
+                )
+                .unwrap(),
+                Fp::from_str("0").unwrap(),
+            ],
+            expected_hash:
+                "20456728518925904340727370305821489989002971473792411299271630913563245218671",
+        },
+        HashWithPrefixTestVector {
+            name: "mina_acct_update_node_padding",
+            prefix: "MinaAcctUpdateNode**",
+            input_fields: vec![
+                Fp::from_str(
+                    "23487734643675003113914430489774334948844391842009122040704261138931555665056",
+                )
+                .unwrap(),
+                Fp::from_str("0").unwrap(),
+            ],
+            expected_hash:
+                "20456728518925904340727370305821489989002971473792411299271630913563245218671",
+        },
+        HashWithPrefixTestVector {
+            name: "mina_mesa_acct_update_node",
+            prefix: "MinaAcctUpdateNode**",
+            input_fields: vec![
+                Fp::from_str(
+                    "10465935274604359671980142030658189993496602034687736843743530928948423289651",
+                )
+                .unwrap(),
+                Fp::from_str("0").unwrap(),
+            ],
+            expected_hash:
+                "8248281392496553843148113550038120804829999815033040074701912548560253992646",
+        },
+    ]
 }
 
 /// Helper function to parse expected hash strings into Fp elements

@@ -10,7 +10,11 @@ use ark_ff::{AdditiveGroup, BigInt, PrimeField};
 use lazy_static::lazy_static;
 use mina_hasher::Fp;
 
+#[cfg(not(feature = "mesa-hardfork"))]
 pub const TXN_VERSION_CURRENT: u32 = 3; // Used in Emptiable
+
+#[cfg(feature = "mesa-hardfork")]
+pub const TXN_VERSION_CURRENT: u32 = 4; // Used in Emptiable
 
 // Constant value for a dummy verification key, if an account update is not proved and instead signed
 // then we use this constant hash value to indicate that no verification key is associated with the account update.
