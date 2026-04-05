@@ -455,6 +455,7 @@ mod tests {
         assert_eq!(deser.0, token_id.0);
     }
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_deserialize_real_zkapp_transaction() {
         // Read the JSON file from test fixtures
@@ -623,6 +624,7 @@ mod tests {
         assert_round_trip(&zkapp_command);
     }
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_deserialize_payment_zkapp_transaction() {
         // Read the JSON file from test fixtures
@@ -786,6 +788,7 @@ mod tests {
         assert_round_trip(&zkapp_command);
     }
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_serde_update_state() {
         let input_str = include_str!("../../../tests/data/update-state.json");
@@ -800,6 +803,7 @@ mod tests {
         assert_round_trip(&zkapp_command);
     }
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_serde_deploy_contract() {
         let input_str = include_str!("../../../tests/data/deploy-contract.json");

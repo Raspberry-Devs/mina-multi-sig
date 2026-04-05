@@ -1871,6 +1871,7 @@ dependencies = [
  "mina-hasher",
  "mina-poseidon",
  "mina-signer",
+ "mina-tx",
  "num-bigint",
  "num-traits",
  "rand_chacha 0.3.1",

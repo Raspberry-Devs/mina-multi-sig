@@ -1,16 +1,8 @@
 //! ZkApp transaction commitment computation and hashing utilities
 //! This module provides functionality to compute commitments for ZkApp transactions which can be later signed over
-use alloc::{boxed::Box, collections::VecDeque, string::ToString, vec::Vec};
+use alloc::{borrow::Cow, boxed::Box, collections::VecDeque, string::ToString, vec::Vec};
 
-use ark_ff::Field;
-use mina_hasher::Fp;
-use mina_poseidon::{
-    constants::PlonkSpongeConstantsKimchi,
-    pasta::fp_kimchi,
-    poseidon::{ArithmeticSponge, Sponge},
-};
-use mina_signer::NetworkId;
-
+use crate::transactions::network_id::NetworkId;
 use crate::{
     errors::{MinaTxError, MinaTxResult},
     transactions::zkapp_tx::{
@@ -18,6 +10,13 @@ use crate::{
         packing::{Packable, PackedInput},
         AccountUpdate, FeePayer, ZKAppCommand,
     },
+};
+use ark_ff::Field;
+use mina_hasher::Fp;
+use mina_poseidon::{
+    constants::PlonkSpongeConstantsKimchi,
+    pasta::fp_kimchi,
+    poseidon::{ArithmeticSponge, Sponge},
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -158,8 +157,8 @@ fn hash_account_update(account_update: &AccountUpdate, network: &NetworkId) -> M
     assert_account_update_authorization_kind(account_update)?;
 
     let inputs = account_update.pack().pack_to_fields();
-    let network_zk = ZkAppBodyPrefix::from(network.clone());
-    hash_with_prefix(network_zk.into(), &inputs.fields)
+    let network_zk = Cow::<str>::from(ZkAppBodyPrefix::from(network.clone()));
+    hash_with_prefix(&network_zk, &inputs.fields)
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -243,13 +242,13 @@ pub fn is_call_depth_valid(zkapp_command: &ZKAppCommand) -> bool {
     }
 
     for call_depth in call_depths {
-        if call_depth < current {
+        // If we reset call depth back to < current we approve
+        // Or if we increase call depth by 1 we approve
+        if call_depth <= current + 1 {
+            current = call_depth;
+        } else {
             return false;
         }
-        if call_depth - current > 1 {
-            return false;
-        }
-        current = call_depth;
     }
 
     true
@@ -282,7 +281,7 @@ pub(crate) fn param_to_field(param: &str) -> Result<Fp, MinaTxError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::transactions::zkapp_tx::zkapp_test_vectors::{
+    use crate::transactions::zkapp_tx::test_vectors::{
         get_hash_with_prefix_test_vectors, get_zkapp_test_vectors, parse_expected_hash,
     };
 
