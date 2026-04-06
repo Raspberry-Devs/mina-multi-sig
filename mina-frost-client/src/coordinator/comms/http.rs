@@ -334,4 +334,63 @@ mod tests {
             "Encrypting the deploy-v0.0.4 signing package should fail because it exceeds the Noise frame limit"
         );
     }
+
+    /// Chunking the serialized payload, encrypting each chunk separately, and
+    /// reassembling after decryption should produce the original payload.
+    /// Each encrypted chunk must fit within frostd's MAX_MSG_SIZE.
+    #[test]
+    fn test_chunked_encrypt_decrypt_roundtrip() {
+        let serialized = serialize_signing_package_for_tx(include_str!(
+            "../../../../mina-tx/tests/data/deploy-v0.0.4-unsigned.json"
+        ));
+
+        // Noise_K handshake overhead: 48 bytes (32 ephemeral + 16 AEAD tag)
+        let max_chunk_plaintext = api::MAX_MSG_SIZE - 48;
+        let chunks: Vec<&[u8]> = serialized.chunks(max_chunk_plaintext).collect();
+        eprintln!(
+            "Deploy tx: {} bytes, {} chunks (max {} bytes each)",
+            serialized.len(),
+            chunks.len(),
+            max_chunk_plaintext
+        );
+
+        let (privkey_a, pubkey_a) = Cipher::generate_keypair().unwrap();
+        let (privkey_b, pubkey_b) = Cipher::generate_keypair().unwrap();
+        let mut cipher_a = Cipher::new(privkey_a, vec![pubkey_b.clone()]).unwrap();
+        let mut cipher_b = Cipher::new(privkey_b, vec![pubkey_a.clone()]).unwrap();
+
+        // Coordinator side: encrypt each chunk, verify each fits in frostd limit
+        let mut encrypted_chunks = Vec::new();
+        for chunk in &chunks {
+            let encrypted = cipher_a
+                .encrypt(Some(&pubkey_b), chunk.to_vec())
+                .expect("each chunk should encrypt");
+            assert!(
+                encrypted.len() <= api::MAX_MSG_SIZE,
+                "encrypted chunk ({} bytes) exceeds frostd limit ({})",
+                encrypted.len(),
+                api::MAX_MSG_SIZE
+            );
+            encrypted_chunks.push(encrypted);
+        }
+
+        // Participant side: decrypt each chunk, reassemble
+        let mut reassembled = Vec::new();
+        for encrypted in encrypted_chunks {
+            let decrypted = cipher_b
+                .decrypt(api::Msg {
+                    sender: pubkey_a.clone(),
+                    msg: encrypted,
+                })
+                .expect("each chunk should decrypt");
+            reassembled.extend_from_slice(&decrypted.msg);
+        }
+
+        assert_eq!(reassembled, serialized);
+
+        // Verify the reassembled bytes deserialize back correctly
+        let deserialized: SendSigningPackageArgs<crate::BluePallasSuite> =
+            serde_json::from_slice(&reassembled).unwrap();
+        assert_eq!(deserialized.signing_package.len(), 1);
+    }
 }
