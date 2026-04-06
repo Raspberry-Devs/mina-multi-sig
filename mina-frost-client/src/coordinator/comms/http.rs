@@ -167,20 +167,48 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         // We need to send a message separately for each recipient even if the
         // message is the same, because they are (possibly) encrypted
         // individually for each recipient.
+        //
+        // Large payloads (e.g. deploy transactions with verification keys) may
+        // exceed frostd's MAX_MSG_SIZE (65535 bytes) after JSON serialization and
+        // encryption. We chunk the serialized payload so each encrypted chunk fits
+        // in a single frostd message. The first message sent to each recipient is
+        // a 4-byte big-endian chunk count header, followed by the encrypted chunks.
+        let serialized = serde_json::to_vec(&send_signing_package_config)?;
+        let max_chunk_plaintext = api::MAX_MSG_SIZE - 48; // Noise_K overhead
+        let plaintext_chunks: Vec<&[u8]> = serialized.chunks(max_chunk_plaintext).collect();
+        let num_chunks = plaintext_chunks.len() as u32;
+
         let pubkeys: Vec<_> = self.pubkeys.keys().cloned().collect();
         for recipient in pubkeys {
-            let msg = cipher.encrypt(
+            // Send chunk count header (encrypted)
+            let header = cipher.encrypt(
                 Some(&recipient),
-                serde_json::to_vec(&send_signing_package_config)?,
+                num_chunks.to_be_bytes().to_vec(),
             )?;
             let _r = self
                 .client
                 .send(&api::SendArgs {
                     session_id: self.session_id.unwrap(),
                     recipients: vec![recipient.clone()],
-                    msg,
+                    msg: header,
                 })
                 .await?;
+
+            // Send each chunk (encrypted)
+            for chunk in &plaintext_chunks {
+                let encrypted = cipher.encrypt(
+                    Some(&recipient),
+                    chunk.to_vec(),
+                )?;
+                let _r = self
+                    .client
+                    .send(&api::SendArgs {
+                        session_id: self.session_id.unwrap(),
+                        recipients: vec![recipient.clone()],
+                        msg: encrypted,
+                    })
+                    .await?;
+            }
         }
 
         eprintln!("Waiting for participants to send their SignatureShares...");
