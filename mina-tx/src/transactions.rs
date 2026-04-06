@@ -88,19 +88,26 @@ impl TransactionEnvelope {
     pub fn from_str_network(s: &str, network_id: NetworkIdEnvelope) -> Result<Self, MinaTxError> {
         let s = s.trim();
 
-        // Try parsing as ZkApp transaction first
-        if let Ok(zkapp) = serde_json::from_str::<ZKAppCommand>(s) {
-            return Ok(Self::new_zkapp(network_id.0, zkapp));
-        }
+        // Try parsing as ZkApp transaction first, then Legacy.
+        // IMPORTANT: Do NOT silently swallow parse errors here. If both fail, the caller
+        // needs to see the actual serde errors to diagnose the problem — not a generic
+        // "unknown transaction type" message that tells them nothing.
+        let zkapp_err = match serde_json::from_str::<ZKAppCommand>(s) {
+            Ok(zkapp) => return Ok(Self::new_zkapp(network_id.0, zkapp)),
+            Err(e) => e,
+        };
 
-        // Try parsing as Legacy transaction
-        if let Ok(legacy) = serde_json::from_str::<LegacyTransaction>(s) {
-            return Ok(Self::new_legacy(network_id.0, legacy));
-        }
+        let legacy_err = match serde_json::from_str::<LegacyTransaction>(s) {
+            Ok(legacy) => return Ok(Self::new_legacy(network_id.0, legacy)),
+            Err(e) => e,
+        };
 
-        // Neither worked, return an error
         Err(MinaTxError::UnknownTransactionType(
-            "Unable to parse transaction. Expected a valid legacy transaction or ZkApp transaction JSON.".to_string()
+            alloc::format!(
+                "Unable to parse transaction as ZkApp or Legacy.\n  ZkApp parse error: {}\n  Legacy parse error: {}",
+                zkapp_err,
+                legacy_err
+            )
         ))
     }
 
