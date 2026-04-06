@@ -10,6 +10,7 @@ pub mod signatures;
 pub mod transactions;
 
 pub use signatures::{PubKeySer, Sig, TransactionSignature};
+pub use transactions::network_id::NetworkId;
 pub use transactions::{
     legacy_tx, network_id, zkapp_tx, TransactionEnvelope, TransactionKind, MEMO_BYTES,
 };

@@ -1,18 +1,6 @@
-//! Information sharing:
-//! <https://github.com/o1-labs/proof-systems> defines tools for interfacing with the mina blockchain
-//! (pretty sure that) the actual internals of the mina blockchain such as signature verification for
-//! contracts with the `signature` permission happens through the OCaml implementation.
-//!
-//! There are 3 relevant crates in the proof-systems, `signer` which uses `hasher` and `curves`
-//! Do not use the `pasta-curves` from crates.io. That's different implementation of pasta by the
-//! ZCash Foundation (the won't match up nicely). The above 3 crates are not on crates.io and are
-//! used directly from github.
-//!
-//! The goal is to replace the functionality of `signer` with the implementation of `frost-core`
-//! found in this file! So the tests will generate a signature with our implementation and try to
-//! verify it with the `signer`'s verify method. We do not use `signer` at all in our
-//! implementation. We do use `hasher` which provides the hash functions used by `signer` and our
-//! implementation of `frost-core`.
+//! FROST BluePallas ciphersuite implementation for the Mina protocol.
+//! This library uses the mina_hasher crate for the Poseidon hash function and mina_curves for the Pallas curve implementation,
+//! and implements the FROST signature scheme as specified in the FROST paper and the Mina protocol specifications.
 #![warn(rustdoc::broken_intra_doc_links)]
 #![warn(rustdoc::bare_urls)]
 #![no_std]
@@ -57,6 +45,9 @@ pub trait ChallengeMessage:
     ) -> Result<frost_core::Challenge<BluePallas<Self>>, frost_core::Error<BluePallas<Self>>>;
 }
 
+pub const GROUP_SIZE: usize = 33; // Size of group elements in bytes (compressed)
+pub const FIELD_SIZE: usize = 32; // Size of field elements in bytes (compressed)
+
 /// PallasScalarField implements the FROST field interface for the Pallas scalar field
 #[derive(Clone, Copy)]
 pub struct PallasScalarField;
@@ -64,7 +55,7 @@ pub struct PallasScalarField;
 impl Field for PallasScalarField {
     // Equivalent to Fq in mina::curves::pasta i.e. the scalar field of the Pallas curve
     type Scalar = <PallasParameters as CurveConfig>::ScalarField;
-    type Serialization = [u8; 32];
+    type Serialization = [u8; FIELD_SIZE];
     fn zero() -> Self::Scalar {
         Self::Scalar::zero()
     }
@@ -80,7 +71,7 @@ impl Field for PallasScalarField {
 
     fn serialize(scalar: &Self::Scalar) -> Self::Serialization {
         // Serialize the scalar in compressed form
-        let mut buf = [0u8; 32];
+        let mut buf = [0u8; FIELD_SIZE];
         scalar
             .serialize_compressed(&mut buf[..])
             .expect("Serialization should not fail for valid scalars");
@@ -92,7 +83,7 @@ impl Field for PallasScalarField {
         Self::serialize(scalar)
     }
 
-    // Parse the canonical 32-byte big-endian form back into a field element,
+    // Parse the scalar from compressed form
     fn deserialize(buf: &Self::Serialization) -> Result<Self::Scalar, FieldError> {
         let scalar = <Self::Scalar as CanonicalDeserialize>::deserialize_compressed(&buf[..])
             .map_err(|_| FieldError::MalformedScalar)?;
@@ -107,7 +98,7 @@ pub struct PallasGroup {}
 impl Group for PallasGroup {
     type Element = ProjectivePallas;
     type Field = PallasScalarField;
-    type Serialization = [u8; 32 * 3]; // Projective Pallas is a struct with 3 of PallasBaseField
+    type Serialization = [u8; GROUP_SIZE]; // Compressed byte representation of a Pallas group element
 
     fn cofactor() -> <Self::Field as Field>::Scalar {
         Self::Field::one()
@@ -125,9 +116,7 @@ impl Group for PallasGroup {
             return Err(GroupError::InvalidIdentityElement);
         }
 
-        let mut buf: Self::Serialization = [0u8; 96];
-        // Does the size reduce below 96 bytes for compressed serialize, though that's probably
-        // fine? Could try switching to compressed (de)serialize
+        let mut buf: Self::Serialization = [0u8; GROUP_SIZE];
         element
             .serialize_compressed(&mut buf[..])
             .map_err(|_| GroupError::MalformedElement)?;

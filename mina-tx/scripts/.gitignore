@@ -1,2 +1,4 @@
 zkapp.json
 zkapp.rs
+__pycache__
+/generated/

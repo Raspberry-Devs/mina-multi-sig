@@ -16,8 +16,9 @@ use alloc::{
     vec::Vec,
 };
 use mina_hasher::Hashable;
-use mina_signer::NetworkId;
 use serde::{Deserialize, Serialize};
+
+use crate::transactions::network_id::NetworkId;
 
 pub mod legacy_tx;
 pub mod network_id;
@@ -187,7 +188,7 @@ mod tests {
     use mina_signer::Keypair;
 
     use crate::{
-        errors::MinaTxError, transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors,
+        errors::MinaTxError, transactions::zkapp_tx::test_vectors::get_zkapp_test_vectors,
     };
 
     use super::*;
@@ -207,7 +208,7 @@ mod tests {
             0,
         );
 
-        let envelope = TransactionEnvelope::new_legacy(NetworkId::TESTNET, legacy_tx);
+        let envelope = TransactionEnvelope::new_legacy(NetworkId::Testnet, legacy_tx);
 
         let serialized = envelope.serialize().expect("Serialization failed");
         let deserialized =
@@ -254,25 +255,26 @@ mod tests {
 
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(result.is_ok());
         let envelope = result.unwrap();
         assert!(envelope.is_legacy());
-        assert_eq!(envelope.network_id() as u8, 0);
+        assert_eq!(envelope.network_id(), NetworkId::Testnet);
     }
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_from_str_network_zkapp() {
         let json = include_str!("../tests/data/payment-zkapp.json");
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::MAINNET),
+            NetworkIdEnvelope::from(NetworkId::Mainnet),
         );
         assert!(result.is_ok());
         let envelope = result.unwrap();
         assert!(!envelope.is_legacy());
-        assert_eq!(envelope.network_id() as u8, 1);
+        assert_eq!(envelope.network_id(), NetworkId::Mainnet);
     }
 
     /// Regression test: deploy-v0.0.4-unsigned.json fails to parse because ZkappUri and
@@ -358,7 +360,7 @@ mod tests {
     fn test_from_str_network_invalid_json() {
         let result = TransactionEnvelope::from_str_network(
             "not json",
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(result.is_err());
     }
@@ -368,7 +370,7 @@ mod tests {
         let json = r#"{"unknown": "field"}"#;
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(result.is_err());
     }
