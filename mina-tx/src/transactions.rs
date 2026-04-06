@@ -281,6 +281,7 @@ mod tests {
     /// TokenSymbol use derive(Serialize, Deserialize) on Vec<u8>, which expects a JSON
     /// array of integers. But o1js serializes these as plain strings.
     /// e.g. "zkappUri": "https://..." and "tokenSymbol": "MOCKnE"
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_parse_deploy_v004_zkapp_uri_as_string() {
         let json = include_str!("../tests/data/deploy-v0.0.4-unsigned.json");
@@ -298,6 +299,7 @@ mod tests {
     }
 
     /// Minimal reproduction: zkappUri as a string should parse, not require a byte array
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_zkapp_uri_string_field() {
         let json = include_str!("../tests/data/deploy-contract.json");
@@ -323,6 +325,7 @@ mod tests {
 
     /// ZkappUri with more than 32 characters should parse — the 32-char limit is wrong,
     /// o1js and the Mina protocol don't enforce it.
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_zkapp_uri_longer_than_32_chars() {
         let json = include_str!("../tests/data/deploy-contract.json");
@@ -342,6 +345,7 @@ mod tests {
     }
 
     /// Minimal reproduction: tokenSymbol as a string should parse, not require a byte array
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_token_symbol_string_field() {
         let json = include_str!("../tests/data/deploy-contract.json");
