@@ -286,7 +286,7 @@ mod tests {
         let json = include_str!("../tests/data/deploy-v0.0.4-unsigned.json");
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(
             result.is_ok(),
@@ -303,7 +303,10 @@ mod tests {
         let json = include_str!("../tests/data/deploy-contract.json");
         // First ensure the base parses fine (zkappUri: null)
         let base_result = serde_json::from_str::<ZKAppCommand>(json);
-        assert!(base_result.is_ok(), "Base deploy-contract.json should parse");
+        assert!(
+            base_result.is_ok(),
+            "Base deploy-contract.json should parse"
+        );
 
         // Now inject a string zkappUri value like o1js produces
         let modified = json.replace(
@@ -344,10 +347,7 @@ mod tests {
         let json = include_str!("../tests/data/deploy-contract.json");
 
         // Inject a string tokenSymbol value like o1js produces
-        let modified = json.replace(
-            "\"tokenSymbol\": null",
-            "\"tokenSymbol\": \"MOCK\"",
-        );
+        let modified = json.replace("\"tokenSymbol\": null", "\"tokenSymbol\": \"MOCK\"");
         let result = serde_json::from_str::<ZKAppCommand>(&modified);
         assert!(
             result.is_ok(),
