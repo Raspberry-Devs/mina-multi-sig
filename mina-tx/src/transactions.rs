@@ -268,6 +268,85 @@ mod tests {
         assert_eq!(envelope.network_id() as u8, 1);
     }
 
+    /// Regression test: deploy-v0.0.4-unsigned.json fails to parse because ZkappUri and
+    /// TokenSymbol use derive(Serialize, Deserialize) on Vec<u8>, which expects a JSON
+    /// array of integers. But o1js serializes these as plain strings.
+    /// e.g. "zkappUri": "https://..." and "tokenSymbol": "MOCKnE"
+    #[test]
+    fn test_parse_deploy_v004_zkapp_uri_as_string() {
+        let json = include_str!("../tests/data/deploy-v0.0.4-unsigned.json");
+        let result = TransactionEnvelope::from_str_network(
+            json,
+            NetworkIdEnvelope::from(NetworkId::TESTNET),
+        );
+        assert!(
+            result.is_ok(),
+            "Failed to parse deploy-v0.0.4-unsigned.json: {:?}",
+            result.unwrap_err()
+        );
+        let envelope = result.unwrap();
+        assert!(!envelope.is_legacy());
+    }
+
+    /// Minimal reproduction: zkappUri as a string should parse, not require a byte array
+    #[test]
+    fn test_zkapp_uri_string_field() {
+        let json = include_str!("../tests/data/deploy-contract.json");
+        // First ensure the base parses fine (zkappUri: null)
+        let base_result = serde_json::from_str::<ZKAppCommand>(json);
+        assert!(base_result.is_ok(), "Base deploy-contract.json should parse");
+
+        // Now inject a string zkappUri value like o1js produces
+        let modified = json.replace(
+            "\"zkappUri\": null",
+            "\"zkappUri\": \"https://example.com\"",
+        );
+        let result = serde_json::from_str::<ZKAppCommand>(&modified);
+        assert!(
+            result.is_ok(),
+            "ZkApp with string zkappUri should parse but got: {}",
+            result.unwrap_err()
+        );
+    }
+
+    /// ZkappUri with more than 32 characters should parse — the 32-char limit is wrong,
+    /// o1js and the Mina protocol don't enforce it.
+    #[test]
+    fn test_zkapp_uri_longer_than_32_chars() {
+        let json = include_str!("../tests/data/deploy-contract.json");
+        let long_uri = "https://github.com/nori-zk/mock-nori-bridge"; // 45 chars
+        assert!(long_uri.len() > 32);
+
+        let modified = json.replace(
+            "\"zkappUri\": null",
+            &alloc::format!("\"zkappUri\": \"{}\"", long_uri),
+        );
+        let result = serde_json::from_str::<ZKAppCommand>(&modified);
+        assert!(
+            result.is_ok(),
+            "ZkApp with >32 char zkappUri should parse but got: {}",
+            result.unwrap_err()
+        );
+    }
+
+    /// Minimal reproduction: tokenSymbol as a string should parse, not require a byte array
+    #[test]
+    fn test_token_symbol_string_field() {
+        let json = include_str!("../tests/data/deploy-contract.json");
+
+        // Inject a string tokenSymbol value like o1js produces
+        let modified = json.replace(
+            "\"tokenSymbol\": null",
+            "\"tokenSymbol\": \"MOCK\"",
+        );
+        let result = serde_json::from_str::<ZKAppCommand>(&modified);
+        assert!(
+            result.is_ok(),
+            "ZkApp with string tokenSymbol should parse but got: {}",
+            result.unwrap_err()
+        );
+    }
+
     #[test]
     fn test_from_str_network_invalid_json() {
         let result = TransactionEnvelope::from_str_network(
