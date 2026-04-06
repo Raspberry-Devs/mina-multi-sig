@@ -2,7 +2,7 @@
 
 use crate::{
     errors::MinaTxError,
-    signatures::Sig,
+    signatures::{Sig, TransactionSignature},
     transactions::{
         legacy_tx::LegacyTransaction,
         network_id::NetworkIdEnvelope,
@@ -87,6 +87,13 @@ impl TransactionEnvelope {
     /// Returns an error if parsing fails for both types.
     pub fn from_str_network(s: &str, network_id: NetworkIdEnvelope) -> Result<Self, MinaTxError> {
         let s = s.trim();
+
+        // Try parsing as a TransactionSignature first (output from a previous signing session).
+        // This enables chained multi-group signing where the output of one session is fed as
+        // input to the next. The inner payload already has the previous signature injected.
+        if let Ok(signed) = serde_json::from_str::<TransactionSignature>(s) {
+            return Ok(signed.payload);
+        }
 
         // Try parsing as ZkApp transaction first, then Legacy.
         // IMPORTANT: Do NOT silently swallow parse errors here. If both fail, the caller
