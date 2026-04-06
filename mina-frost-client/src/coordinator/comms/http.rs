@@ -230,3 +230,108 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use crate::api::{self, SendSigningPackageArgs};
+    use crate::cipher::Cipher;
+    use frost_bluepallas::keys::generate_with_dealer;
+    use frost_core::keys::{IdentifierList, KeyPackage};
+    use mina_tx::{
+        network_id::NetworkIdEnvelope, pallas_message::PallasMessage, TransactionEnvelope,
+    };
+    use mina_signer::NetworkId;
+    use rand::thread_rng;
+
+    /// Helper: build serialized SendSigningPackageArgs from a transaction fixture
+    fn serialize_signing_package_for_tx(tx_json: &str) -> Vec<u8> {
+        let envelope = TransactionEnvelope::from_str_network(
+            tx_json,
+            NetworkIdEnvelope::from(NetworkId::TESTNET),
+        )
+        .unwrap();
+        let message_bytes = envelope.serialize().unwrap();
+
+        let mut rng = thread_rng();
+        let (shares, _) = generate_with_dealer::<PallasMessage, _>(
+            2,
+            2,
+            IdentifierList::Default,
+            &mut rng,
+        )
+        .unwrap();
+        let (id, share) = shares.iter().next().unwrap();
+        let key_package = KeyPackage::try_from(share.clone()).unwrap();
+        let (_nonces, commitments) =
+            frost_bluepallas::round1::commit(key_package.signing_share(), &mut rng);
+        let mut commitments_map = BTreeMap::new();
+        commitments_map.insert(*id, commitments);
+
+        let signing_package =
+            frost_bluepallas::SigningPackage::new(commitments_map, &message_bytes);
+        let send_args = SendSigningPackageArgs {
+            signing_package: vec![signing_package],
+            aux_msg: Default::default(),
+        };
+        serde_json::to_vec(&send_args).unwrap()
+    }
+
+    /// Small transaction: serialized signing package fits in a single frostd message
+    #[test]
+    fn test_small_signing_package_fits_frostd_limit() {
+        let serialized = serialize_signing_package_for_tx(include_str!(
+            "../../../../mina-tx/tests/data/payment-zkapp.json"
+        ));
+        eprintln!("Small tx SendSigningPackageArgs: {} bytes", serialized.len());
+        assert!(
+            serialized.len() <= api::MAX_MSG_SIZE,
+            "Small tx serialized ({} bytes) should fit in frostd limit ({})",
+            serialized.len(),
+            api::MAX_MSG_SIZE
+        );
+
+        // Encryption should also succeed
+        let (privkey, _) = Cipher::generate_keypair().unwrap();
+        let (_, pubkey) = Cipher::generate_keypair().unwrap();
+        let mut cipher = Cipher::new(privkey, vec![pubkey.clone()]).unwrap();
+        let encrypted = cipher.encrypt(Some(&pubkey), serialized).unwrap();
+        assert!(
+            encrypted.len() <= api::MAX_MSG_SIZE,
+            "Small tx encrypted ({} bytes) should fit in frostd limit ({})",
+            encrypted.len(),
+            api::MAX_MSG_SIZE
+        );
+    }
+
+    /// Large transaction with verification keys: the serialized signing package exceeds
+    /// frostd's MAX_MSG_SIZE because frost-core hex-encodes the message bytes inside
+    /// SigningPackage, roughly doubling the 46KB deploy-v0.0.4 transaction to 92KB.
+    #[test]
+    fn test_large_signing_package_exceeds_frostd_limit() {
+        let serialized = serialize_signing_package_for_tx(include_str!(
+            "../../../../mina-tx/tests/data/deploy-v0.0.4-unsigned.json"
+        ));
+        eprintln!(
+            "Deploy tx SendSigningPackageArgs: {} bytes (frostd limit: {})",
+            serialized.len(),
+            api::MAX_MSG_SIZE
+        );
+        assert!(
+            serialized.len() > api::MAX_MSG_SIZE,
+            "The deploy-v0.0.4 serialized signing package ({} bytes) should exceed the frostd limit ({})",
+            serialized.len(),
+            api::MAX_MSG_SIZE
+        );
+
+        // Encryption also fails because the plaintext exceeds the Noise single-frame limit
+        let (privkey, _) = Cipher::generate_keypair().unwrap();
+        let (_, pubkey) = Cipher::generate_keypair().unwrap();
+        let mut cipher = Cipher::new(privkey, vec![pubkey.clone()]).unwrap();
+        assert!(
+            cipher.encrypt(Some(&pubkey), serialized).is_err(),
+            "Encrypting the deploy-v0.0.4 signing package should fail because it exceeds the Noise frame limit"
+        );
+    }
+}
