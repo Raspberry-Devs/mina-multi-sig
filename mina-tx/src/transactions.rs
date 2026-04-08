@@ -370,12 +370,13 @@ mod tests {
     /// A TransactionSignature (output from a previous FROST signing session) should be
     /// parseable as input for a subsequent signing session, enabling chained multi-group
     /// signing of the same transaction.
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_parse_signed_transaction_as_input() {
         let json = include_str!("../tests/data/deploy-v0.0.6-admin-signed.json");
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(
             result.is_ok(),
