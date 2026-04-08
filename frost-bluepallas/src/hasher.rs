@@ -1,6 +1,6 @@
 //! Mina-compatible hashing utilities for FROST using the Pallas curve.
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use ark_ff::PrimeField;
 use frost_core::Field;
 use mina_hasher::{create_legacy, Hashable, Hasher, ROInput};
@@ -14,23 +14,28 @@ pub(crate) struct PallasHashElement<'a> {
     value: &'a [&'a [u8]],
 }
 
+const HASH_ELEMENT_STRING: &str = "PallasHashElement";
+
 // Implement a hashable trait for a u8 slice
 impl Hashable for PallasHashElement<'_> {
     type D = ();
 
     fn to_roinput(&self) -> ROInput {
         let mut roi = ROInput::new();
-
-        for val in self.value {
-            roi = roi.append_bytes(val);
+        let count_bytes = (self.value.len() as u64).to_le_bytes();
+        roi = roi.append_bytes(&count_bytes);
+        for segment in self.value {
+            let len_bytes = (segment.len() as u64).to_le_bytes();
+            roi = roi.append_bytes(&len_bytes);
+            roi = roi.append_bytes(segment);
         }
 
         roi
     }
 
-    // As of right now, assume domain string is included in the input
+    // Use a fixed domain string for PallasHashElement hashing
     fn domain_string(_domain_param: Self::D) -> Option<String> {
-        None
+        HASH_ELEMENT_STRING.to_string().into()
     }
 }
 
@@ -38,6 +43,8 @@ type Fq = <PallasScalarField as Field>::Scalar;
 
 // Maps poseidon hash of input to a scalar field element
 pub fn hash_to_scalar(input: &[&[u8]]) -> Fq {
+    // Hash via PallasHashElement, which length-prefixes the segment count and each segment
+    // to prevent padding and segmentation-based collision attacks.
     let wrap = PallasHashElement { value: input };
     let mut hasher = create_legacy::<PallasHashElement>(());
 
@@ -75,5 +82,24 @@ mod tests {
         let arr = hash_to_array(&[&b"hello"[..]]);
         // Serialization for PallasScalarField is 32 bytes
         assert_eq!(arr.len(), 32);
+    }
+
+    #[test]
+    fn test_padding_attack_resistance() {
+        let base = &[&b"1"[..]];
+        let padded = &[&b"1"[..], &[0u8][..]];
+        let h_base = hash_to_scalar(base);
+        let h_padded = hash_to_scalar(padded);
+        assert_ne!(
+            h_base, h_padded,
+            "trailing zero-byte padding collides for this variable-length encoding",
+        );
+    }
+
+    #[test]
+    fn test_segment_boundary_collision() {
+        let a = hash_to_scalar(&[b"ab", b"c"]);
+        let b = hash_to_scalar(&[b"a", b"bc"]);
+        assert_ne!(a, b, "different segmentation can yield the same hash");
     }
 }

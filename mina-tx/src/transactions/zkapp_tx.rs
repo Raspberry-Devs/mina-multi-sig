@@ -5,8 +5,10 @@ use alloc::{
 };
 use ark_ff::Field as ArkField;
 use mina_hasher::{Hashable, ROInput};
-use mina_signer::{CompressedPubKey, NetworkId};
+use mina_signer::CompressedPubKey;
 use serde::{Deserialize, Serialize};
+
+use crate::transactions::network_id::NetworkId;
 
 use crate::transactions::{
     zkapp_tx::{
@@ -24,9 +26,12 @@ pub mod zkapp_display;
 pub mod zkapp_graphql;
 pub mod zkapp_serde;
 
-// Allow any test-only code to access this module
+// Test vectors module — feature-gated to swap pre-Mesa / Mesa data
 #[cfg(any(test, feature = "test-utils"))]
-pub mod zkapp_test_vectors;
+pub mod test_vectors;
+
+/// Compile-time flag indicating whether this build uses Mesa hardfork transaction semantics.
+pub const IS_MESA_HARDFORK: bool = cfg!(feature = "mesa-hardfork");
 
 // Re-export signature injection types for convenience
 pub use signature_injection::{SignatureInjectionResult, SignatureInjectionWarning};

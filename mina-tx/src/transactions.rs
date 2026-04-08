@@ -16,8 +16,9 @@ use alloc::{
     vec::Vec,
 };
 use mina_hasher::Hashable;
-use mina_signer::NetworkId;
 use serde::{Deserialize, Serialize};
+
+use crate::transactions::network_id::NetworkId;
 
 pub mod legacy_tx;
 pub mod network_id;
@@ -194,7 +195,7 @@ mod tests {
     use mina_signer::Keypair;
 
     use crate::{
-        errors::MinaTxError, transactions::zkapp_tx::zkapp_test_vectors::get_zkapp_test_vectors,
+        errors::MinaTxError, transactions::zkapp_tx::test_vectors::get_zkapp_test_vectors,
     };
 
     use super::*;
@@ -214,7 +215,7 @@ mod tests {
             0,
         );
 
-        let envelope = TransactionEnvelope::new_legacy(NetworkId::TESTNET, legacy_tx);
+        let envelope = TransactionEnvelope::new_legacy(NetworkId::Testnet, legacy_tx);
 
         let serialized = envelope.serialize().expect("Serialization failed");
         let deserialized =
@@ -261,37 +262,39 @@ mod tests {
 
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(result.is_ok());
         let envelope = result.unwrap();
         assert!(envelope.is_legacy());
-        assert_eq!(envelope.network_id() as u8, 0);
+        assert_eq!(envelope.network_id(), NetworkId::Testnet);
     }
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_from_str_network_zkapp() {
         let json = include_str!("../tests/data/payment-zkapp.json");
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::MAINNET),
+            NetworkIdEnvelope::from(NetworkId::Mainnet),
         );
         assert!(result.is_ok());
         let envelope = result.unwrap();
         assert!(!envelope.is_legacy());
-        assert_eq!(envelope.network_id() as u8, 1);
+        assert_eq!(envelope.network_id(), NetworkId::Mainnet);
     }
 
     /// Regression test: deploy-v0.0.4-unsigned.json fails to parse because ZkappUri and
     /// TokenSymbol use derive(Serialize, Deserialize) on Vec<u8>, which expects a JSON
     /// array of integers. But o1js serializes these as plain strings.
     /// e.g. "zkappUri": "https://..." and "tokenSymbol": "MOCKnE"
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_parse_deploy_v004_zkapp_uri_as_string() {
         let json = include_str!("../tests/data/deploy-v0.0.4-unsigned.json");
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(
             result.is_ok(),
@@ -303,12 +306,16 @@ mod tests {
     }
 
     /// Minimal reproduction: zkappUri as a string should parse, not require a byte array
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_zkapp_uri_string_field() {
         let json = include_str!("../tests/data/deploy-contract.json");
         // First ensure the base parses fine (zkappUri: null)
         let base_result = serde_json::from_str::<ZKAppCommand>(json);
-        assert!(base_result.is_ok(), "Base deploy-contract.json should parse");
+        assert!(
+            base_result.is_ok(),
+            "Base deploy-contract.json should parse"
+        );
 
         // Now inject a string zkappUri value like o1js produces
         let modified = json.replace(
@@ -325,6 +332,7 @@ mod tests {
 
     /// ZkappUri with more than 32 characters should parse — the 32-char limit is wrong,
     /// o1js and the Mina protocol don't enforce it.
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_zkapp_uri_longer_than_32_chars() {
         let json = include_str!("../tests/data/deploy-contract.json");
@@ -344,15 +352,13 @@ mod tests {
     }
 
     /// Minimal reproduction: tokenSymbol as a string should parse, not require a byte array
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_token_symbol_string_field() {
         let json = include_str!("../tests/data/deploy-contract.json");
 
         // Inject a string tokenSymbol value like o1js produces
-        let modified = json.replace(
-            "\"tokenSymbol\": null",
-            "\"tokenSymbol\": \"MOCK\"",
-        );
+        let modified = json.replace("\"tokenSymbol\": null", "\"tokenSymbol\": \"MOCK\"");
         let result = serde_json::from_str::<ZKAppCommand>(&modified);
         assert!(
             result.is_ok(),
@@ -384,7 +390,7 @@ mod tests {
     fn test_from_str_network_invalid_json() {
         let result = TransactionEnvelope::from_str_network(
             "not json",
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(result.is_err());
     }
@@ -394,7 +400,7 @@ mod tests {
         let json = r#"{"unknown": "field"}"#;
         let result = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         );
         assert!(result.is_err());
     }

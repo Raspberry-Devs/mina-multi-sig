@@ -42,7 +42,7 @@ pub async fn sign(
 
     let signing_package = round_2_config.signing_package.first().unwrap();
     let transaction = TransactionEnvelope::deserialize(signing_package.message())?;
-    let pallas_message_bytes = transaction.to_pallas_message().serialize();
+    let pallas_message_bytes = transaction.to_pallas_message().serialize()?;
     let signing_package_for_crypto = frost_core::SigningPackage::new(
         signing_package.signing_commitments().clone(),
         &pallas_message_bytes,

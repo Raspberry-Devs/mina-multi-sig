@@ -331,7 +331,6 @@ impl Packable for AccountUpdateBody {
 impl Packable for Update {
     fn pack(&self) -> PackedInput {
         let mut roi = PackedInput::new();
-
         roi = roi.append_packedinput(self.app_state.pack());
         roi = roi.append_packedinput(self.delegate.pack());
         roi = roi.append_packedinput(self.verification_key.pack());

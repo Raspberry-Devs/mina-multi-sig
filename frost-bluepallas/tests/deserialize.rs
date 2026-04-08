@@ -1,22 +1,21 @@
 use ark_ff::{BigInteger, PrimeField};
 use ark_serialize::CanonicalSerialize;
-use frost_bluepallas::{PallasGroup, PallasScalarField};
+use frost_bluepallas::{PallasGroup, PallasScalarField, FIELD_SIZE, GROUP_SIZE};
 use frost_core::{Field, Group};
 
-const ONE_LE: [u8; 32] = [
+const ONE_LE: [u8; FIELD_SIZE] = [
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
-const TWO_FIFTY_SIX_LE: [u8; 32] = [
+const TWO_FIFTY_SIX_LE: [u8; FIELD_SIZE] = [
     0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ];
 
-const GENERATOR_HEX: &str =
-    "010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const GENERATOR_HEX: &str = "010000000000000000000000000000000000000000000000000000000000000000";
 const DOUBLE_GENERATOR_HEX: &str =
-    "ffffff1f943ebc3fb11bd0859d1f6c150000000000000000000000000000002800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+    "ffffff1f943ebc3fb11bd0859d1f6c150000000000000000000000000000002800";
 
 #[test]
 fn scalar_regression_vectors_are_stable() {
@@ -40,8 +39,8 @@ fn scalar_regression_vectors_are_stable() {
 fn scalar_endianness_is_little_endian() {
     let one = PallasScalarField::deserialize(&ONE_LE).expect("1 should deserialize");
     let big_endian_one = {
-        let mut bytes = [0u8; 32];
-        bytes[31] = 1;
+        let mut bytes = [0u8; FIELD_SIZE];
+        bytes[FIELD_SIZE - 1] = 1;
         bytes
     };
     let be_one =
@@ -73,7 +72,7 @@ fn scalar_roundtrip_preserves_value() {
 
 #[test]
 fn deserialize_group_element_invalid() {
-    let mut buf = [0u8; 96];
+    let mut buf = [0u8; GROUP_SIZE];
     let _encoded_identity = PallasGroup::identity().serialize_compressed(&mut buf[..]);
     let result = PallasGroup::deserialize(&buf);
     assert!(
@@ -99,7 +98,12 @@ fn serialize_group_element_roundtrip() {
     let element = PallasGroup::generator();
     let serialized = PallasGroup::serialize(&element).expect("failed to serialize group element");
 
-    assert_eq!(serialized.len(), 96, "serialized group length should be 96");
+    assert_eq!(
+        serialized.len(),
+        GROUP_SIZE,
+        "serialized group length should be {}",
+        GROUP_SIZE
+    );
 
     let deserialized =
         PallasGroup::deserialize(&serialized).expect("failed to deserialize group element");

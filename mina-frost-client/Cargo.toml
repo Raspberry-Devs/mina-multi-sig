@@ -1,6 +1,6 @@
 [package]
 name = "mina-frost-client"
-version = "0.2.0"
+version = "1.0.0-alpha.0"
 edition = "2021"
 rust-version = "1.92"
 default-run = "mina-frost-client"
@@ -50,3 +50,6 @@ mina-hasher.workspace = true
 ark-ff.workspace = true
 frost-bluepallas = { path = "../frost-bluepallas", features = ["test-utils"] }
 mina-tx = { path = "../mina-tx", features = ["test-utils"] }
+
+[features]
+mesa-hardfork = ["mina-tx/mesa-hardfork"]
