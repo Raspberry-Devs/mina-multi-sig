@@ -35,12 +35,6 @@ pub struct HTTPComms<C: Ciphersuite> {
     state: CoordinatorSessionState<C>,
     pubkeys: HashMap<PublicKey, Identifier<C>>,
     cipher: Option<Cipher>,
-    /// Pubkeys that have already submitted a commitment in round 1. Used in
-    /// round 2 to detect and skip duplicate Noise handshakes from participants
-    /// that re-joined the session (e.g. from a second process), which would
-    /// otherwise cause SnowError(Decrypt) because the transport-mode Noise
-    /// state cannot process a new handshake message.
-    commitment_senders: HashSet<PublicKey>,
     _phantom: PhantomData<C>,
 }
 
@@ -57,7 +51,6 @@ impl<C: Ciphersuite> HTTPComms<C> {
             ),
             pubkeys: Default::default(),
             cipher: None,
-            commitment_senders: Default::default(),
             _phantom: Default::default(),
         })
     }
@@ -124,6 +117,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
 
         eprint!("Waiting for participants to send their commitments...");
 
+        let mut commitment_senders: HashSet<PublicKey> = HashSet::new();
         loop {
             let r = self
                 .client
@@ -133,13 +127,17 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                 })
                 .await?;
             for msg in r.msgs {
-                if self.commitment_senders.contains(&msg.sender) {
+                if commitment_senders.contains(&msg.sender) {
+                    eprintln!(
+                        "Warning: participant {:?} attempted to rejoin the session; ignoring",
+                        msg.sender
+                    );
                     continue;
                 }
                 let sender = msg.sender.clone();
                 let msg = cipher.decrypt(msg)?;
                 self.state.recv(msg)?;
-                self.commitment_senders.insert(sender);
+                commitment_senders.insert(sender);
             }
             tokio::time::sleep(Duration::from_secs(2)).await;
             eprint!(".");
@@ -209,20 +207,18 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                     continue;
                 }
                 let sender = msg.sender.clone();
-                match cipher.decrypt(msg) {
-                    Ok(msg) => {
-                        self.state.recv(msg)?;
-                        seen_share_senders.insert(sender);
+                let msg = match cipher.decrypt(msg) {
+                    Ok(msg) => msg,
+                    Err(_) => {
+                        eprintln!(
+                            "Warning: failed to decrypt message from {:?}; ignoring",
+                            sender
+                        );
+                        continue;
                     }
-                    Err(_) if self.commitment_senders.contains(&sender) => {
-                        // A duplicate participant process re-joined this session
-                        // and sent a fresh Noise handshake. The Noise state for
-                        // this sender is already in transport mode so decryption
-                        // fails. Ignore — the real signature share will arrive
-                        // from the original process.
-                    }
-                    Err(e) => return Err(e.into()),
-                }
+                };
+                self.state.recv(msg)?;
+                seen_share_senders.insert(sender);
             }
             tokio::time::sleep(Duration::from_secs(2)).await;
             eprint!(".");
