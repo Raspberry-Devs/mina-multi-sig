@@ -105,12 +105,10 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             })
             .await?;
 
-        if self.config.signers.is_empty() {
-            eprintln!(
-                "Send the following session ID to participants: {}",
-                r.session_id
-            );
-        }
+        eprintln!(
+            "Send the following session ID to participants: {}",
+            r.session_id
+        );
         self.session_id = Some(r.session_id);
 
         let Some(comm_privkey) = &self.config.comm_privkey else {

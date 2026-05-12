@@ -204,10 +204,9 @@ pub enum Command {
         /// to list)
         #[arg(short, long)]
         group: String,
-        /// The session ID to use (use `sessions` to list). Can be omitted in
-        /// case there is a single active session.
+        /// The session ID to use (use `sessions` to list).
         #[arg(short = 'S', long)]
-        session: Option<String>,
+        session: String,
         /// Automatically answer yes to signing any package.
         #[arg(short = 'y', long, default_value_t = false)]
         yes: bool,
