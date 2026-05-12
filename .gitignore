@@ -14,5 +14,9 @@ mina-frost-client/tests/assets/
 # GraphQL schemas
 *.graphql
 
-# AI generated folders
+# AI generated folders and files
 .claude/
+.codex
+
+# Playground
+playground/
