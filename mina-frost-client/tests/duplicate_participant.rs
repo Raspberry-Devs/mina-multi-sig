@@ -2,7 +2,7 @@ mod helpers;
 
 use helpers::{
     binary_name, build_client_binary, form_group_with_dkg, get_session_id, greet_participants,
-    group_keys_from_config, introduce_participant, run_cli_spawn_piped, start_frostd,
+    group_keys_from_config, introduce_participant, run_cli_spawn_piped, start_frostd, ChildGuard,
     CliParticipant, SigningParticipant,
 };
 use lazy_static::lazy_static;
@@ -32,7 +32,7 @@ lazy_static! {
 const SIG_FILE: &str = "signature.json";
 const NETWORK_ID: &str = "testnet";
 
-fn setup() -> Result<std::process::Child> {
+fn setup() -> Result<ChildGuard> {
     if working_dir.exists() {
         fs::remove_dir_all(working_dir.clone())?;
     }
@@ -49,7 +49,7 @@ fn setup() -> Result<std::process::Child> {
         built_binary.display()
     );
 
-    start_frostd(&working_dir)
+    start_frostd(&working_dir).map(ChildGuard)
 }
 
 fn participant_args(
@@ -149,7 +149,7 @@ fn sign_with_duplicate_participant(
 /// the signing session completes successfully.
 #[test]
 fn duplicate_participant_handled_gracefully() -> Result<()> {
-    let mut server_process = setup()?;
+    let server_process = setup()?;
 
     let participants = (0..3)
         .map(|x| introduce_participant(&binary_path, &working_dir, &x.to_string()))
@@ -211,6 +211,6 @@ fn duplicate_participant_handled_gracefully() -> Result<()> {
         "coordinator crashed with SnowError (regression)\nstderr={stderr}"
     );
 
-    server_process.kill()?;
+    drop(server_process);
     Ok(())
 }
