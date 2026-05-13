@@ -107,8 +107,14 @@ fn sign_with_duplicate_participant(
 
     let coordinator = run_cli_spawn_piped(binary, cwd, &coord_args);
 
-    let session_id = get_session_id(binary, cwd, &participants[0].config_path, server_url, group_pk_hex)
-        .expect("no signing session appeared after coordinator started");
+    let session_id = get_session_id(
+        binary,
+        cwd,
+        &participants[0].config_path,
+        server_url,
+        group_pk_hex,
+    )
+    .expect("no signing session appeared after coordinator started");
 
     let participant_children: Vec<Child> = participants
         .iter()

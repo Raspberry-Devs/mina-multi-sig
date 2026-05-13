@@ -366,7 +366,10 @@ pub fn sign_with_binary(
     }
 
     let mut children: Vec<(Vec<String>, Child)> = Vec::new();
-    children.push((coord_args.clone(), run_cli_spawn_piped(binary, cwd, &coord_args)));
+    children.push((
+        coord_args.clone(),
+        run_cli_spawn_piped(binary, cwd, &coord_args),
+    ));
 
     let session_id = get_session_id(
         binary,
@@ -395,7 +398,6 @@ pub fn sign_with_binary(
         );
     }
 }
-
 
 pub fn run_cli_spawn_quiet(binary: &Path, cwd: &Path, args: &[String]) -> io::Result<Child> {
     Command::new(binary)
