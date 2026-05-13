@@ -269,6 +269,59 @@ pub fn run_cli_spawn_piped(binary: &Path, cwd: &Path, args: &[String]) -> Child 
         .expect("failed to spawn CLI command")
 }
 
+/// Poll the server until a signing session appears, then return its ID.
+pub fn get_session_id(
+    binary: &Path,
+    cwd: &Path,
+    config: &str,
+    server_url: &str,
+    group_pk_hex: &str,
+) -> Option<String> {
+    let re = Regex::new(r"Session with ID ([0-9a-f-]{36})").unwrap();
+    for _ in 0..20 {
+        if let Ok(output) = Command::new(binary)
+            .args([
+                "sessions",
+                "-c",
+                config,
+                "-s",
+                server_url,
+                "--group",
+                group_pk_hex,
+            ])
+            .current_dir(cwd)
+            .output()
+        {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if let Some(caps) = re.captures(&stderr) {
+                return Some(caps[1].to_string());
+            }
+        }
+        thread::sleep(Duration::from_millis(500));
+    }
+    None
+}
+
+fn participant_args(
+    participant: &SigningParticipant,
+    server_url: &str,
+    group_pk_hex: &str,
+    session_id: &str,
+) -> Vec<String> {
+    vec![
+        "participant".to_string(),
+        "-c".to_string(),
+        participant.config_path.clone(),
+        "-s".to_string(),
+        server_url.to_string(),
+        "--group".to_string(),
+        group_pk_hex.to_string(),
+        "-S".to_string(),
+        session_id.to_string(),
+        "-y".to_string(),
+    ]
+}
+
 pub fn sign_with_binary(
     binary: &Path,
     cwd: &Path,
@@ -292,7 +345,7 @@ pub fn sign_with_binary(
     );
     assert!(threshold > 0, "threshold must be > 0");
 
-    let mut args = vec![
+    let mut coord_args = vec![
         "coordinator".to_string(),
         "-c".to_string(),
         participants[0].config_path.clone(),
@@ -307,33 +360,26 @@ pub fn sign_with_binary(
         "-n".to_string(),
         network_id.to_string(),
     ];
-
     for participant in participants.iter().take(threshold) {
-        args.push("-S".to_string());
-        args.push(participant.pubkey_hex.clone());
+        coord_args.push("-S".to_string());
+        coord_args.push(participant.pubkey_hex.clone());
     }
 
     let mut children: Vec<(Vec<String>, Child)> = Vec::new();
-    children.push((args.clone(), run_cli_spawn_piped(binary, cwd, &args)));
+    children.push((coord_args.clone(), run_cli_spawn_piped(binary, cwd, &coord_args)));
 
-    thread::sleep(Duration::from_secs(1));
+    let session_id = get_session_id(
+        binary,
+        cwd,
+        &participants[0].config_path,
+        server_url,
+        group_pk_hex,
+    )
+    .expect("no signing session appeared after coordinator started");
 
     for participant in participants.iter().take(threshold) {
-        let participant_args = vec![
-            "participant".to_string(),
-            "-c".to_string(),
-            participant.config_path.clone(),
-            "-s".to_string(),
-            server_url.to_string(),
-            "--group".to_string(),
-            group_pk_hex.to_string(),
-            "-y".to_string(),
-        ];
-
-        children.push((
-            participant_args.clone(),
-            run_cli_spawn_piped(binary, cwd, &participant_args),
-        ));
+        let args = participant_args(participant, server_url, group_pk_hex, &session_id);
+        children.push((args.clone(), run_cli_spawn_piped(binary, cwd, &args)));
     }
 
     for (child_args, child) in children {
@@ -349,6 +395,7 @@ pub fn sign_with_binary(
         );
     }
 }
+
 
 pub fn run_cli_spawn_quiet(binary: &Path, cwd: &Path, args: &[String]) -> io::Result<Child> {
     Command::new(binary)
