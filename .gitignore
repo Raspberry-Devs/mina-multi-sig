@@ -10,6 +10,7 @@ target/
 .vscode/
 
 mina-frost-client/tests/assets/
+mina-frost-client/tests/assets-duplicate/
 
 # GraphQL schemas
 *.graphql
