@@ -2,8 +2,8 @@ mod helpers;
 
 use helpers::{
     binary_name, build_client_binary, form_group_with_dkg, get_session_id, greet_participants,
-    group_keys_from_config, introduce_participant, run_cli_spawn_piped, start_frostd, ChildGuard,
-    CliParticipant, SigningParticipant,
+    group_keys_from_config, introduce_participant, participant_args, run_cli_spawn_piped,
+    start_frostd, ChildGuard, CliParticipant, SigningParticipant,
 };
 use lazy_static::lazy_static;
 use std::fs;
@@ -50,26 +50,6 @@ fn setup() -> Result<ChildGuard> {
     );
 
     start_frostd(&working_dir).map(ChildGuard)
-}
-
-fn participant_args(
-    participant: &SigningParticipant,
-    server_url: &str,
-    group_pk_hex: &str,
-    session_id: &str,
-) -> Vec<String> {
-    vec![
-        "participant".to_string(),
-        "-c".to_string(),
-        participant.config_path.clone(),
-        "-s".to_string(),
-        server_url.to_string(),
-        "--group".to_string(),
-        group_pk_hex.to_string(),
-        "-S".to_string(),
-        session_id.to_string(),
-        "-y".to_string(),
-    ]
 }
 
 fn sign_with_duplicate_participant(

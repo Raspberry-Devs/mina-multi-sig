@@ -129,7 +129,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             for msg in r.msgs {
                 if commitment_senders.contains(&msg.sender) {
                     eprintln!(
-                        "Warning: participant {:?} attempted to rejoin the session; ignoring",
+                        "Warning: participant {} attempted to rejoin the session; ignoring",
                         msg.sender
                     );
                     continue;
@@ -193,7 +193,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
 
         eprintln!("Waiting for participants to send their SignatureShares...");
 
-        let mut seen_share_senders: HashSet<api::PublicKey> = HashSet::new();
+        let mut seen_share_senders: HashSet<PublicKey> = HashSet::new();
         loop {
             let r = self
                 .client
@@ -211,7 +211,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                     Ok(msg) => msg,
                     Err(_) => {
                         eprintln!(
-                            "Warning: failed to decrypt message from {:?}; ignoring",
+                            "Warning: failed to decrypt message from {}; ignoring",
                             sender
                         );
                         continue;

@@ -302,7 +302,7 @@ pub fn get_session_id(
     None
 }
 
-fn participant_args(
+pub fn participant_args(
     participant: &SigningParticipant,
     server_url: &str,
     group_pk_hex: &str,
