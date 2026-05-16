@@ -127,6 +127,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                 })
                 .await?;
             for msg in r.msgs {
+                // A participant may rejoin with a fresh Noise context; warn and skip to avoid DoS.
                 if commitment_senders.contains(&msg.sender) {
                     eprintln!(
                         "Warning: participant {} attempted to rejoin the session; ignoring",
@@ -135,7 +136,17 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                     continue;
                 }
                 let sender = msg.sender.clone();
-                let msg = cipher.decrypt(msg)?;
+                // A malicious or broken participant must not be able to kill the coordinator.
+                let msg = match cipher.decrypt(msg) {
+                    Ok(msg) => msg,
+                    Err(_) => {
+                        eprintln!(
+                            "Warning: failed to decrypt message from {}; ignoring",
+                            sender
+                        );
+                        continue;
+                    }
+                };
                 self.state.recv(msg)?;
                 commitment_senders.insert(sender);
             }
@@ -203,10 +214,16 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                 })
                 .await?;
             for msg in r.msgs {
+                // A participant may rejoin with a fresh Noise context; warn and skip to avoid DoS.
                 if seen_share_senders.contains(&msg.sender) {
+                    eprintln!(
+                        "Warning: participant {} attempted to rejoin the session; ignoring",
+                        msg.sender
+                    );
                     continue;
                 }
                 let sender = msg.sender.clone();
+                // A malicious or broken participant must not be able to kill the coordinator.
                 let msg = match cipher.decrypt(msg) {
                     Ok(msg) => msg,
                     Err(_) => {
