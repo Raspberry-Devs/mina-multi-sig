@@ -147,8 +147,17 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                         continue;
                     }
                 };
-                self.state.recv(msg)?;
-                commitment_senders.insert(sender);
+                match self.state.recv(msg) {
+                    Ok(()) => {
+                        commitment_senders.insert(sender);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Warning: ignoring invalid commitment from {}: {}",
+                            sender, e
+                        );
+                    }
+                }
             }
             tokio::time::sleep(Duration::from_secs(2)).await;
             eprint!(".");
@@ -234,8 +243,17 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                         continue;
                     }
                 };
-                self.state.recv(msg)?;
-                seen_share_senders.insert(sender);
+                match self.state.recv(msg) {
+                    Ok(()) => {
+                        seen_share_senders.insert(sender);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Warning: ignoring invalid signature share from {}: {}",
+                            sender, e
+                        );
+                    }
+                }
             }
             tokio::time::sleep(Duration::from_secs(2)).await;
             eprint!(".");
