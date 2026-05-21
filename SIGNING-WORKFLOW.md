@@ -19,7 +19,7 @@ This guide walks you through signing Mina transactions using FROST threshold sig
 | Join DKG (participant) | `mina-frost-client dkg -d <DESC> -s <SERVER_URL> -t <THRESHOLD> -c <CONFIG_PATH>` |
 | List groups | `mina-frost-client groups -c <CONFIG_PATH>` |
 | Coordinate signing | `mina-frost-client coordinator -g <GROUP_PUBKEY> -S <SIGNER_PUBKEYS> -m <TX_FILE> -o <SIG_OUT> -n <NETWORK> -c <CONFIG_PATH>` |
-| Join signing | `mina-frost-client participant -g <GROUP_PUBKEY> -c <CONFIG_PATH>` |
+| Join signing | `mina-frost-client participant -g <GROUP_PUBKEY> -S <SESSION_ID> -c <CONFIG_PATH>` |
 | Build GraphQL | `mina-frost-client graphql-build -i <INPUT_JSON> -o <OUTPUT_FILE>` |
 | Broadcast | `mina-frost-client graphql-broadcast -g <GRAPHQL_FILE> -e <ENDPOINT_URL>` |
 
@@ -601,7 +601,7 @@ mina-frost-client participant \
 | `-c` | Path to participant's config file |
 | `-s` | Server URL (optional if stored in group config) |
 | `-g` | Group public key |
-| `-S` | Session ID (optional if only one active session) |
+| `-S` | Session ID (use `sessions` command to list if coordinator output was lost) |
 | `-y` | Auto-approve signing (skip confirmation prompt) |
 
 **Example:**
@@ -611,6 +611,7 @@ mina-frost-client participant \
   -c ~/.frost/bob.toml \
   -s localhost:2744 \
   -g <GROUP_PUBLIC_KEY> \
+  -S <SESSION_ID> \
   -y
 
 # Eve joins
@@ -618,6 +619,7 @@ mina-frost-client participant \
   -c ~/.frost/eve.toml \
   -s localhost:2744 \
   -g <GROUP_PUBLIC_KEY> \
+  -S <SESSION_ID> \
   -y
 ```
 

@@ -1,7 +1,7 @@
 //! HTTP implementation of the Comms trait.
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     error::Error,
     io::{BufRead, Write},
     marker::PhantomData,
@@ -98,12 +98,10 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
             })
             .await?;
 
-        if self.config.signers.is_empty() {
-            eprintln!(
-                "Send the following session ID to participants: {}",
-                r.session_id
-            );
-        }
+        eprintln!(
+            "Send the following session ID to participants: {}",
+            r.session_id
+        );
         self.session_id = Some(r.session_id);
 
         let Some(comm_privkey) = &self.config.comm_privkey else {
@@ -119,6 +117,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
 
         eprint!("Waiting for participants to send their commitments...");
 
+        let mut commitment_senders: HashSet<PublicKey> = HashSet::new();
         loop {
             let r = self
                 .client
@@ -128,8 +127,37 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                 })
                 .await?;
             for msg in r.msgs {
-                let msg = cipher.decrypt(msg)?;
-                self.state.recv(msg)?;
+                // A participant may rejoin with a fresh Noise context; warn and skip to avoid DoS.
+                if commitment_senders.contains(&msg.sender) {
+                    eprintln!(
+                        "Warning: participant {} attempted to rejoin the session; ignoring",
+                        msg.sender
+                    );
+                    continue;
+                }
+                let sender = msg.sender.clone();
+                // A malicious or broken participant must not be able to kill the coordinator.
+                let msg = match cipher.decrypt(msg) {
+                    Ok(msg) => msg,
+                    Err(_) => {
+                        eprintln!(
+                            "Warning: failed to decrypt message from {}; ignoring",
+                            sender
+                        );
+                        continue;
+                    }
+                };
+                match self.state.recv(msg) {
+                    Ok(()) => {
+                        commitment_senders.insert(sender);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Warning: ignoring invalid commitment from {}: {}",
+                            sender, e
+                        );
+                    }
+                }
             }
             tokio::time::sleep(Duration::from_secs(2)).await;
             eprint!(".");
@@ -185,6 +213,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
 
         eprintln!("Waiting for participants to send their SignatureShares...");
 
+        let mut seen_share_senders: HashSet<PublicKey> = HashSet::new();
         loop {
             let r = self
                 .client
@@ -194,8 +223,37 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
                 })
                 .await?;
             for msg in r.msgs {
-                let msg = cipher.decrypt(msg)?;
-                self.state.recv(msg)?;
+                // A participant may rejoin with a fresh Noise context; warn and skip to avoid DoS.
+                if seen_share_senders.contains(&msg.sender) {
+                    eprintln!(
+                        "Warning: participant {} attempted to rejoin the session; ignoring",
+                        msg.sender
+                    );
+                    continue;
+                }
+                let sender = msg.sender.clone();
+                // A malicious or broken participant must not be able to kill the coordinator.
+                let msg = match cipher.decrypt(msg) {
+                    Ok(msg) => msg,
+                    Err(_) => {
+                        eprintln!(
+                            "Warning: failed to decrypt message from {}; ignoring",
+                            sender
+                        );
+                        continue;
+                    }
+                };
+                match self.state.recv(msg) {
+                    Ok(()) => {
+                        seen_share_senders.insert(sender);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "Warning: ignoring invalid signature share from {}: {}",
+                            sender, e
+                        );
+                    }
+                }
             }
             tokio::time::sleep(Duration::from_secs(2)).await;
             eprint!(".");

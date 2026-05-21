@@ -102,22 +102,41 @@ use_frost_client coordinator \
     -o "$GENERATED_DIR/signature.json" &
 COORDINATOR_PID=$!
 
-# Give coordinator time to create the signing session
+# Wait for the coordinator to create the signing session and get its ID
 echo "Waiting for coordinator to create signing session..."
-sleep 5
+SESSION_ID=""
+for _i in $(seq 1 20); do
+    SESSION_ID=$(use_frost_client sessions \
+        -c "$GENERATED_DIR/alice.toml" \
+        --server-url "$SERVER_URL" \
+        --group "$GROUP_PUBLIC_KEY" 2>&1 \
+        | sed -n 's/^Session with ID //p' | head -n1)
+    [ -n "$SESSION_ID" ] && break
+    sleep 0.5
+done
+
+if [ -z "$SESSION_ID" ]; then
+    echo "ERROR: Could not get session ID from coordinator"
+    exit 1
+fi
+echo "Session ID: $SESSION_ID"
 
 echo "Starting participant (Bob)..."
-echo "y" | use_frost_client participant \
+use_frost_client participant \
     -c "$GENERATED_DIR/bob.toml" \
     --server-url "$SERVER_URL" \
-    --group "$GROUP_PUBLIC_KEY" &
+    --group "$GROUP_PUBLIC_KEY" \
+    --session "$SESSION_ID" \
+    -y &
 BOB_PID=$!
 
 echo "Starting participant (Eve)..."
-echo "y" | use_frost_client participant \
+use_frost_client participant \
     -c "$GENERATED_DIR/eve.toml" \
     --server-url "$SERVER_URL" \
-    --group "$GROUP_PUBLIC_KEY" &
+    --group "$GROUP_PUBLIC_KEY" \
+    --session "$SESSION_ID" \
+    -y &
 EVE_PID=$!
 
 # Wait for completion
