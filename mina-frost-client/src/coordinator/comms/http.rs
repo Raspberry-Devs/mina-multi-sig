@@ -356,6 +356,7 @@ mod tests {
     }
 
     /// Small transaction: serialized signing package fits in a single frostd message
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_small_signing_package_fits_frostd_limit() {
         let serialized = serialize_signing_package_for_tx(include_str!(
@@ -388,6 +389,7 @@ mod tests {
     /// Large transaction with verification keys: the serialized signing package exceeds
     /// frostd's MAX_MSG_SIZE because frost-core hex-encodes the message bytes inside
     /// SigningPackage, roughly doubling the 46KB deploy-v0.0.4 transaction to 92KB.
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_large_signing_package_exceeds_frostd_limit() {
         let serialized = serialize_signing_package_for_tx(include_str!(
@@ -418,6 +420,7 @@ mod tests {
     /// Chunking the serialized payload, encrypting each chunk separately, and
     /// reassembling after decryption should produce the original payload.
     /// Each encrypted chunk must fit within frostd's MAX_MSG_SIZE.
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_chunked_encrypt_decrypt_roundtrip() {
         let serialized = serialize_signing_package_for_tx(include_str!(

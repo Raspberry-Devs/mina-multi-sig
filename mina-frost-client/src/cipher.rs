@@ -257,6 +257,7 @@ mod tests {
         TransactionEnvelope,
     };
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_encrypt_small_transaction() {
         // A small payment-style zkapp transaction — should fit within Noise limits
@@ -281,6 +282,7 @@ mod tests {
         assert!(encrypted.is_ok(), "small tx encryption should succeed");
     }
 
+    #[cfg(not(feature = "mesa-hardfork"))]
     #[test]
     fn test_encrypt_large_signing_package() {
         // The deploy-v0.0.4 transaction with verification keys is large.
