@@ -252,8 +252,10 @@ impl Cipher {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mina_tx::{network_id::NetworkIdEnvelope, TransactionEnvelope};
-    use mina_signer::NetworkId;
+    use mina_tx::{
+        network_id::{NetworkId, NetworkIdEnvelope},
+        TransactionEnvelope,
+    };
 
     #[test]
     fn test_encrypt_small_transaction() {
@@ -261,7 +263,7 @@ mod tests {
         let json = include_str!("../../mina-tx/tests/data/payment-zkapp.json");
         let envelope = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         )
         .unwrap();
         let message_bytes = envelope.serialize().unwrap();
@@ -271,8 +273,8 @@ mod tests {
         assert!(msg_size < 65535, "small tx should be under Noise limit");
 
         // Verify encryption works
-        let (privkey_a, pubkey_a) = Cipher::generate_keypair().unwrap();
-        let (privkey_b, pubkey_b) = Cipher::generate_keypair().unwrap();
+        let (privkey_a, _pubkey_a) = Cipher::generate_keypair().unwrap();
+        let (_privkey_b, pubkey_b) = Cipher::generate_keypair().unwrap();
 
         let mut cipher_a = Cipher::new(privkey_a, vec![pubkey_b.clone()]).unwrap();
         let encrypted = cipher_a.encrypt(Some(&pubkey_b), message_bytes.clone());
@@ -288,7 +290,7 @@ mod tests {
         let json = include_str!("../../mina-tx/tests/data/deploy-v0.0.4-unsigned.json");
         let envelope = TransactionEnvelope::from_str_network(
             json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         )
         .unwrap();
         let message_bytes = envelope.serialize().unwrap();
@@ -302,7 +304,10 @@ mod tests {
         // We can't easily construct a real SigningPackage here without commitments,
         // but we can check the raw envelope size and the hex-encoded size.
         let hex_encoded_size = msg_size * 2; // serdect hex encoding
-        eprintln!("Estimated hex-encoded message size: {} bytes", hex_encoded_size);
+        eprintln!(
+            "Estimated hex-encoded message size: {} bytes",
+            hex_encoded_size
+        );
         eprintln!("Noise limit: {} bytes", api::MAX_MSG_SIZE);
 
         // Directly test: can we encrypt a payload this size?

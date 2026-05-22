@@ -209,10 +209,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         let pubkeys: Vec<_> = self.pubkeys.keys().cloned().collect();
         for recipient in pubkeys {
             // Send chunk count header (encrypted)
-            let header = cipher.encrypt(
-                Some(&recipient),
-                num_chunks.to_be_bytes().to_vec(),
-            )?;
+            let header = cipher.encrypt(Some(&recipient), num_chunks.to_be_bytes().to_vec())?;
             let _r = self
                 .client
                 .send(&api::SendArgs {
@@ -224,10 +221,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
 
             // Send each chunk (encrypted)
             for chunk in &plaintext_chunks {
-                let encrypted = cipher.encrypt(
-                    Some(&recipient),
-                    chunk.to_vec(),
-                )?;
+                let encrypted = cipher.encrypt(Some(&recipient), chunk.to_vec())?;
                 let _r = self
                     .client
                     .send(&api::SendArgs {
@@ -326,28 +320,25 @@ mod tests {
     use frost_bluepallas::keys::generate_with_dealer;
     use frost_core::keys::{IdentifierList, KeyPackage};
     use mina_tx::{
-        network_id::NetworkIdEnvelope, pallas_message::PallasMessage, TransactionEnvelope,
+        network_id::{NetworkId, NetworkIdEnvelope},
+        pallas_message::PallasMessage,
+        TransactionEnvelope,
     };
-    use mina_signer::NetworkId;
     use rand::thread_rng;
 
     /// Helper: build serialized SendSigningPackageArgs from a transaction fixture
     fn serialize_signing_package_for_tx(tx_json: &str) -> Vec<u8> {
         let envelope = TransactionEnvelope::from_str_network(
             tx_json,
-            NetworkIdEnvelope::from(NetworkId::TESTNET),
+            NetworkIdEnvelope::from(NetworkId::Testnet),
         )
         .unwrap();
         let message_bytes = envelope.serialize().unwrap();
 
         let mut rng = thread_rng();
-        let (shares, _) = generate_with_dealer::<PallasMessage, _>(
-            2,
-            2,
-            IdentifierList::Default,
-            &mut rng,
-        )
-        .unwrap();
+        let (shares, _) =
+            generate_with_dealer::<PallasMessage, _>(2, 2, IdentifierList::Default, &mut rng)
+                .unwrap();
         let (id, share) = shares.iter().next().unwrap();
         let key_package = KeyPackage::try_from(share.clone()).unwrap();
         let (_nonces, commitments) =
@@ -370,7 +361,10 @@ mod tests {
         let serialized = serialize_signing_package_for_tx(include_str!(
             "../../../../mina-tx/tests/data/payment-zkapp.json"
         ));
-        eprintln!("Small tx SendSigningPackageArgs: {} bytes", serialized.len());
+        eprintln!(
+            "Small tx SendSigningPackageArgs: {} bytes",
+            serialized.len()
+        );
         assert!(
             serialized.len() <= api::MAX_MSG_SIZE,
             "Small tx serialized ({} bytes) should fit in frostd limit ({})",

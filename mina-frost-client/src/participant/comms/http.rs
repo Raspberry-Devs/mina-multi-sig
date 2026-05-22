@@ -228,9 +228,11 @@ where
                 eprint!(".");
             } else {
                 let msg = cipher.decrypt(r.msgs[0].clone())?;
-                let header: [u8; 4] = msg.msg.as_slice().try_into().map_err(|_| {
-                    eyre::eyre!("invalid chunk count header")
-                })?;
+                let header: [u8; 4] = msg
+                    .msg
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| eyre::eyre!("invalid chunk count header"))?;
                 // If there were additional messages in this batch, queue them
                 // for chunk collection below.
                 let remaining: Vec<_> = r.msgs[1..].to_vec();
