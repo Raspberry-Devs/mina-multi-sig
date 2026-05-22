@@ -11,6 +11,16 @@ use mina_tx::TransactionSignature;
 
 const TEST_DATA_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/graphql");
 
+#[cfg(feature = "mesa-hardfork")]
+const ZKAPP_SIGNED_FIXTURE: &str = "zkapp_signed_mesa.json";
+#[cfg(not(feature = "mesa-hardfork"))]
+const ZKAPP_SIGNED_FIXTURE: &str = "zkapp_signed.json";
+
+#[cfg(feature = "mesa-hardfork")]
+const ZKAPP_GRAPHQL_FIXTURE: &str = "zkapp_graphql_mesa.json";
+#[cfg(not(feature = "mesa-hardfork"))]
+const ZKAPP_GRAPHQL_FIXTURE: &str = "zkapp_graphql.json";
+
 /// Load a golden file pair and assert the GraphQL conversion matches.
 fn assert_graphql_golden(signed_path: &str, graphql_path: &str) {
     let signed_json = std::fs::read_to_string(signed_path)
@@ -58,7 +68,7 @@ fn graphql_golden_delegation() {
 #[test]
 fn graphql_golden_zkapp() {
     assert_graphql_golden(
-        &format!("{TEST_DATA_DIR}/zkapp_signed.json"),
-        &format!("{TEST_DATA_DIR}/zkapp_graphql.json"),
+        &format!("{TEST_DATA_DIR}/{ZKAPP_SIGNED_FIXTURE}"),
+        &format!("{TEST_DATA_DIR}/{ZKAPP_GRAPHQL_FIXTURE}"),
     );
 }

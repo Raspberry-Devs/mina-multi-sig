@@ -8,13 +8,14 @@ env:
   CARGO_TERM_COLOR: always
 jobs:
   build-and-test:
-    name: build-and-test (${{ matrix.os }}, ${{ matrix.rust_toolchain }})
+    name: build-and-test (${{ matrix.os }}, ${{ matrix.rust_toolchain }}, ${{ matrix.features || 'default' }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         rust_toolchain: [stable, beta]
         os: [ubuntu-latest, macos-latest]
+        features: ["", "mesa-hardfork"]
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@master
@@ -26,9 +27,11 @@ jobs:
       - name: Install test prerequisites
         uses: ./.github/actions/setup-frost-prereqs
       - name: Build
-        run: cargo build --verbose
+        run: cargo build --verbose ${{ matrix.features && format('--features {0}', matrix.features) }}
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose ${{ matrix.features && format('--features {0}', matrix.features) }}
+      - name: Test mina-tx with frost-bluepallas-compat
+        run: cargo test -p mina-tx --verbose --features frost-bluepallas-compat${{ matrix.features && format(',{0}', matrix.features) }}
   check-format-and-audit:
     runs-on: ubuntu-latest
     steps:

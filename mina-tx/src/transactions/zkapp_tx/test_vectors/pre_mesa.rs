@@ -1,17 +1,15 @@
-//! Test vectors for ZkApp transaction commitment functions
-//!
-//! This module contains shared test data used across different commitment function tests.
-//! All test vectors use empty/default data structures - populate with actual test data as needed.
+//! Test vectors for ZkApp transaction commitment functions (pre-Mesa, 8 state fields)
 
 use alloc::{string::ToString, vec::Vec};
-use bs58;
 use core::str::FromStr;
 use mina_hasher::Fp;
-use mina_signer::{CompressedPubKey, NetworkId};
+use mina_signer::CompressedPubKey;
 
-use crate::transactions::TransactionEnvelope;
+use crate::transactions::network_id::NetworkId;
 
-use super::{
+use super::common::{decode_memo_from_base58, ZkAppTestVector};
+
+use crate::transactions::zkapp_tx::{
     AccountPreconditions, AccountUpdate, AccountUpdateBody, ActionState, Actions, AuthRequired,
     Authorization, AuthorizationKind, BalanceChange, EpochData, EpochLedger, Events, FeePayer,
     FeePayerBody, Field, MayUseToken, NetworkPreconditions, Permissions, Preconditions, PublicKey,
@@ -19,45 +17,7 @@ use super::{
     Update, VerificationKeyData, ZKAppCommand, ZkappUri,
 };
 
-/// Comprehensive test vector containing all data needed for commitment function tests
-#[derive(Clone)]
-pub struct ZkAppTestVector {
-    /// Name/description of the test case
-    pub name: &'static str,
-    /// ZKAppCommand to test
-    pub zkapp_command: ZKAppCommand,
-    /// Network to use for the test
-    pub network: NetworkId,
-    /// Expected hash_with_prefix result for memo
-    pub expected_memo_hash: &'static str,
-    /// Expected fee_payer_hash result
-    pub expected_fee_payer_hash: &'static str,
-    /// Expected account updates commitment from zk_commit
-    pub expected_account_updates_commitment: &'static str,
-    /// Expected full commitment from zk_commit
-    pub expected_full_commitment: &'static str,
-}
-
-impl From<ZkAppTestVector> for TransactionEnvelope {
-    fn from(vector: ZkAppTestVector) -> TransactionEnvelope {
-        TransactionEnvelope::new_zkapp(vector.network, vector.zkapp_command)
-    }
-}
-
-/// Additional test vectors specifically for hash_with_prefix function
-#[derive(Clone)]
-pub struct HashWithPrefixTestVector {
-    /// Name/description of the test case
-    pub name: &'static str,
-    /// Prefix string to use
-    pub prefix: &'static str,
-    /// Input field elements
-    pub input_fields: Vec<Fp>,
-    /// Expected hash result (as string for parsing)
-    pub expected_hash: &'static str,
-}
-
-/// Returns the main test vectors for ZkApp commitment functions
+/// Returns the main test vectors for ZkApp commitment functions (pre-Mesa)
 pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
     vec![ZkAppTestVector {
             name: "empty_account_updates",
@@ -75,7 +35,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YTLoDojpEF9jChvyaDpteawAPPXgdZQukX6UGSKzVVgf17wzQiv"),
             },
-            network: NetworkId::TESTNET,
+            network: NetworkId::Testnet,
             expected_memo_hash: "11389652194005057975368457399421352653010041179485881427310531175333437124368",
             expected_fee_payer_hash: "7440442690224604593498294045035842737848284124224925036785514405229648680377",
             expected_account_updates_commitment: "0",
@@ -205,7 +165,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::MAINNET,
+            network: NetworkId::Mainnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "19706318721710889218414924651039754460938911066772149869668298883599530223675",
             expected_account_updates_commitment: "20885808005185651189421947183942528580939515770642397950928596427944626893435",
@@ -610,7 +570,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::MAINNET,
+            network: NetworkId::Mainnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "13599943768324718842045631264846766373395338777851778014399949785850374160876",
             expected_account_updates_commitment: "18157416997738750511548808808606476591395902704575661339284356171982987558452",
@@ -824,7 +784,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::MAINNET,
+            network: NetworkId::Mainnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "18557821528466210466362221959818444224122964900994620153505407721900866383710",
             expected_account_updates_commitment: "692918817100816493287714686901447970091023252434376857771101589716855696298",
@@ -957,7 +917,7 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 ],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::TESTNET,
+            network: NetworkId::Testnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "22591001022197211780755176808690376369488425396145396343616148937337644278803",
             expected_account_updates_commitment: "890036752761563610176645072391048796311042767532971976592942060327069338763",
@@ -978,44 +938,255 @@ pub fn get_zkapp_test_vectors() -> Vec<ZkAppTestVector> {
                 account_updates: vec![],
                 memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
             },
-            network: NetworkId::TESTNET,
+            network: NetworkId::Testnet,
             expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
             expected_fee_payer_hash: "16613044925297152030622651327100970331511857730632418522821277052425737998593",
             expected_account_updates_commitment: "0",
             expected_full_commitment: "11846000834259235905958753603813777773459101710265500737400417221141603138177",
         },
+        ZkAppTestVector {
+            name: "custom_network_pre_mesa",
+            zkapp_command: ZKAppCommand {
+                fee_payer: FeePayer {
+                    body: FeePayerBody {
+                        public_key: PublicKey(CompressedPubKey::from_address(
+                            "B62qkqMwft1eLFboTUW7cmfPNrfyZWiVg48USd2A8Desfuqxc86zHuB",
+                        )
+                        .unwrap()),
+                        fee: 1679200499796871645,
+                        valid_until: None,
+                        nonce: 15,
+                    },
+                    authorization: "7mWxjLYgbJUkZNcGouvhVj5tJ8yu9hoexb9ntvPK8t5LHqzmrL6QJjjKtf5SgmxB4QWkDw7qoMMbbNGtHVpsbJHPyTy2EzRQ".to_string(),
+                },
+                account_updates: vec![],
+                memo: decode_memo_from_base58("E4YznxwbLj515YZkJnQEP98QpZxitCs5VUhmrWNMudU11kY9zsX7P"),
+            },
+            network: NetworkId::Custom("custom-id".to_string()),
+            expected_memo_hash: "14174694814443877827982196340033492868057033762737343905965741568956710104329",
+            expected_fee_payer_hash: "16508792017190938232744995850232271122680735280341401954706208133833287151842",
+            expected_account_updates_commitment: "0",
+            expected_full_commitment: "22021571605304717044738174035307683343526155467678925454104471257968480085847",
+        },
+        ZkAppTestVector {
+            name: "zkapp_command_custom_network",
+            zkapp_command: ZKAppCommand {
+                fee_payer: FeePayer {
+                    body: FeePayerBody {
+                        public_key: PublicKey(CompressedPubKey::from_address("B62qiXySBhfg3VgdxmcsjnuHW6GgyDthDZE7FaocMWxypAwdi9mZmGk").unwrap()),
+                        fee: 843960,
+                        valid_until: None,
+                        nonce: 4294967295,
+                    },
+                    authorization: "7mWxjLYgbJUkZNcGouvhVj5tJ8yu9hoexb9ntvPK8t5LHqzmrL6QJjjKtf5SgmxB4QWkDw7qoMMbbNGtHVpsbJHPyTy2EzRQ".to_string(),
+                },
+                account_updates: vec![
+// Account update 1
+                    AccountUpdate {
+                        body: AccountUpdateBody {
+                            public_key: PublicKey(CompressedPubKey::from_address("B62qiXySBhfg3VgdxmcsjnuHW6GgyDthDZE7FaocMWxypAwdi9mZmGk").unwrap()),
+                            token_id: serde_json::from_str::<TokenId>(r#""wRqwVaApoAsjZEnsfWaYuQDYVHwThQVpeW5WbuKGAXsgfFsVyk""#).unwrap(),
+                            update: Update {
+                                app_state: [None, None, Some(Field(Fp::from_str("6872003501013838290631834008669627748000579069258317997180086538263056689766").unwrap())), None, None, Some(Field(Fp::from_str("0").unwrap())), Some(Field(Fp::from_str("254654086988266576").unwrap())), None],
+                                delegate: Some(PublicKey(CompressedPubKey::from_address("B62qkTj1CFzhMGs5uinuV4cLN2TAPFSMpX2wm1WSgFdcVnSYmggrLJg").unwrap())),
+                                verification_key: None,
+                                permissions: None,
+                                zkapp_uri: None,
+                                token_symbol: None,
+                                timing: None,
+                                voting_for: None,
+                            },
+                            balance_change: BalanceChange {
+                                magnitude: 268099,
+                                sgn: -1,
+                            },
+                            increment_nonce: true,
+                            events: Events {
+                                data: vec![
+                                    vec![Field(Fp::from_str("24903465887816841302892221467956723128076324789999564541201221382480180589154").unwrap())],
+                                ]
+                            },
+                            actions: Actions {
+                                data: vec![]
+                            },
+                            call_data: Field(Fp::from_str("19662976588058976237639492977266630107926728778270148750496729414754379568735").unwrap()),
+                            call_depth: 0,
+                            preconditions: Preconditions {
+                                network: NetworkPreconditions {
+                                    snarked_ledger_hash: Some(Field(Fp::from_str("0").unwrap())),
+                                    blockchain_length: Some(RangeCondition { lower: StringU32(86581051), upper: StringU32(6) }),
+                                    min_window_density: Some(RangeCondition { lower: StringU32(15267494), upper: StringU32(22) }),
+                                    total_currency: None,
+                                    global_slot_since_genesis: None,
+                                    staking_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: None,
+                                            total_currency: None,
+                                        },
+                                        seed: Some(Field(Fp::from_str("1").unwrap())),
+                                        start_checkpoint: Some(Field(Fp::from_str("2487329821207327115576530349603291442320959777672550069174902103324124902764").unwrap())),
+                                        lock_checkpoint: Some(Field(Fp::from_str("243983602039921283109926343302807").unwrap())),
+                                        epoch_length: None,
+                                    },
+                                    next_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: Some(Field(Fp::from_str("12939447522330353559523084764564365122603211942992698560154525755430512887112").unwrap())),
+                                            total_currency: Some(RangeCondition { lower: StringU64(8307001286051), upper: StringU64(18146828052556643200) }),
+                                        },
+                                        seed: None,
+                                        start_checkpoint: None,
+                                        lock_checkpoint: None,
+                                        epoch_length: None,
+                                    },
+                                },
+                                account: AccountPreconditions {
+                                    balance: Some(RangeCondition { lower: StringU64(23061352016723), upper: StringU64(314379) }),
+                                    nonce: None,
+                                    receipt_chain_hash: None,
+                                    delegate: None,
+                                    state: [None, Some(Field(Fp::from_str("0").unwrap())), None, Some(Field(Fp::from_str("12046137492745285174430718772702672702269981619757887807653886355280535524446").unwrap())), Some(Field(Fp::from_str("24672484015473935072883815964845637483213814163748809958004216352142162096537").unwrap())), Some(Field(Fp::from_str("14572203374704196552294168659396270169869768288110164298078131283179508832992").unwrap())), None, None],
+                                    action_state: None,
+                                    proved_state: Some(false),
+                                    is_new: None,
+                                },
+                                valid_while: None,
+                            },
+                            use_full_commitment: true,
+                            implicit_account_creation_fee: true,
+                            may_use_token: MayUseToken {
+                                parents_own_token: false,
+                                inherit_from_parent: true,
+                            },
+                            authorization_kind: AuthorizationKind {
+                                is_signed: true,
+                                is_proved: false,
+                                verification_key_hash: Field(Fp::from_str("3392518251768960475377392625298437850623664973002200885669375116181514017494").unwrap()),
+                            },
+                        },
+                        authorization: Authorization {
+                            proof: None,
+                            signature: None,
+                        },
+                    },// Account update 2
+                    AccountUpdate {
+                        body: AccountUpdateBody {
+                            public_key: PublicKey(CompressedPubKey::from_address("B62qpCgjP9GTQdC39eVwGjFPC69GABgKQcj1uAG2GNK5FTz5Any7Ncz").unwrap()),
+                            token_id: serde_json::from_str::<TokenId>(r#""wRqwVaApoAsjZEnsfWaYuQDYVHwThQVpeW5WbuKGAXsgfFsVyk""#).unwrap(),
+                            update: Update {
+                                app_state: [None, None, Some(Field(Fp::from_str("16118726366410957662447754727829988241624256748299639871403254498326981575612").unwrap())), None, None, Some(Field(Fp::from_str("23327351516897784917505653838157359691962257007712192260272740689099690844340").unwrap())), None, None],
+                                delegate: None,
+                                verification_key: None,
+                                permissions: Some(Permissions {
+                                        edit_state: AuthRequired::None,
+                                        access: AuthRequired::Signature,
+                                        send: AuthRequired::None,
+                                        receive: AuthRequired::Signature,
+                                        set_delegate: AuthRequired::Impossible,
+                                        set_permissions: AuthRequired::Either,
+                                        set_verification_key: SetVerificationKey {
+                                            auth: AuthRequired::Proof,
+                                            txn_version: 104,
+                                        },
+                                        set_zkapp_uri: AuthRequired::None,
+                                        edit_action_state: AuthRequired::Impossible,
+                                        set_token_symbol: AuthRequired::Impossible,
+                                        increment_nonce: AuthRequired::None,
+                                        set_voting_for: AuthRequired::Signature,
+                                        set_timing: AuthRequired::Impossible,
+                                    }),
+                                zkapp_uri: None,
+                                token_symbol: None,
+                                timing: Some(TimingData {
+                                        initial_minimum_balance: 5,
+                                        cliff_time: 3,
+                                        cliff_amount: 101230,
+                                        vesting_period: 186,
+                                        vesting_increment: 147035311792306621,
+                                    }),
+                                voting_for: None,
+                            },
+                            balance_change: BalanceChange {
+                                magnitude: 1,
+                                sgn: 1,
+                            },
+                            increment_nonce: false,
+                            events: Events {
+                                data: vec![
+                                    vec![Field(Fp::from_str("19295723998412547096605233281224749416681148440801975611573235055773442403498").unwrap()), Field(Fp::from_str("28948022309329048855892746252171976963363056481941560715954676764349967630336").unwrap())],
+                                ]
+                            },
+                            actions: Actions {
+                                data: vec![
+                                    vec![Field(Fp::from_str("1").unwrap()), Field(Fp::from_str("28467763081145703693456329686194805251491456164439231268815458113505198419272").unwrap()), Field(Fp::from_str("22757053757274088534844787713747939408689574678845259335945962229387930922334").unwrap()), Field(Fp::from_str("5128909092545373750328067495973316591770103549020559591122607401760925016510").unwrap()), Field(Fp::from_str("8174725275").unwrap())],
+                                ]
+                            },
+                            call_data: Field(Fp::from_str("14418029322194733533087404302480165922783261349013738385061227127050106298672").unwrap()),
+                            call_depth: 0,
+                            preconditions: Preconditions {
+                                network: NetworkPreconditions {
+                                    snarked_ledger_hash: None,
+                                    blockchain_length: Some(RangeCondition { lower: StringU32(0), upper: StringU32(2) }),
+                                    min_window_density: Some(RangeCondition { lower: StringU32(2), upper: StringU32(17) }),
+                                    total_currency: Some(RangeCondition { lower: StringU64(0), upper: StringU64(1) }),
+                                    global_slot_since_genesis: None,
+                                    staking_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: None,
+                                            total_currency: None,
+                                        },
+                                        seed: Some(Field(Fp::from_str("13316443470921900654741770741225995378759096732737944001933332057752748709970").unwrap())),
+                                        start_checkpoint: None,
+                                        lock_checkpoint: None,
+                                        epoch_length: None,
+                                    },
+                                    next_epoch_data: EpochData {
+                                        ledger: EpochLedger {
+                                            hash: Some(Field(Fp::from_str("171747").unwrap())),
+                                            total_currency: None,
+                                        },
+                                        seed: None,
+                                        start_checkpoint: Some(Field(Fp::from_str("2271354878039906025559834337018963").unwrap())),
+                                        lock_checkpoint: Some(Field(Fp::from_str("28948022309329048855892746252171976963363056481941560715954676764349967630336").unwrap())),
+                                        epoch_length: Some(RangeCondition { lower: StringU32(2729652), upper: StringU32(2036563) }),
+                                    },
+                                },
+                                account: AccountPreconditions {
+                                    balance: Some(RangeCondition { lower: StringU64(83245), upper: StringU64(115499177033) }),
+                                    nonce: None,
+                                    receipt_chain_hash: None,
+                                    delegate: None,
+                                    state: [Some(Field(Fp::from_str("27938459743986065033580996037861417987551857030260676266931365754471188287518").unwrap())), None, Some(Field(Fp::from_str("50741015167109442031906719657282536").unwrap())), Some(Field(Fp::from_str("25158933843647085561973155297630886355158113833152380010095196516064914436264").unwrap())), None, None, None, Some(Field(Fp::from_str("23910145932313247320274499581687253032691235196629410490981914631675235844082").unwrap()))],
+                                    action_state: None,
+                                    proved_state: None,
+                                    is_new: Some(false),
+                                },
+                                valid_while: Some(RangeCondition { lower: StringU32(1), upper: StringU32(7446) }),
+                            },
+                            use_full_commitment: true,
+                            implicit_account_creation_fee: false,
+                            may_use_token: MayUseToken {
+                                parents_own_token: false,
+                                inherit_from_parent: false,
+                            },
+                            authorization_kind: AuthorizationKind {
+                                is_signed: false,
+                                is_proved: false,
+                                verification_key_hash: Field(Fp::from_str("3392518251768960475377392625298437850623664973002200885669375116181514017494").unwrap()),
+                            },
+                        },
+                        authorization: Authorization {
+                            proof: None,
+                            signature: None,
+                        },
+                    },
+                ],
+                memo: decode_memo_from_base58("E4YM2vTHhWEg66xpj52JErHUBU4pZ1yageL4TVDDpTTSsv8mK6YaH"),
+            },
+            network: NetworkId::Custom("other".to_string()),
+            expected_memo_hash: "146624400929844538317466382872834899021794596262855408933526545768996436172",
+            expected_fee_payer_hash: "13255801125847636651458833895357235556290722438281253328464986761450028016176",
+            expected_account_updates_commitment: "14804908526798373711835828966406626026823529178417256729648268563588226695826",
+            expected_full_commitment: "1733959594565630791853340565413775706916923175761891416947211170025561620905",
+        }
 ]
-}
-
-fn decode_memo_from_base58(memo_base58: &str) -> [u8; 34] {
-    let memo_bytes = bs58::decode(memo_base58)
-        .into_vec()
-        .expect("Valid base58 memo");
-
-    memo_bytes[1..memo_bytes.len() - 4]
-        .try_into()
-        .expect("Memo length matches expected size")
-}
-
-/// Returns additional test vectors for hash_with_prefix function
-/// TODO: Populate with actual test data
-pub fn get_hash_with_prefix_test_vectors() -> Vec<HashWithPrefixTestVector> {
-    vec![HashWithPrefixTestVector {
-        name: "mina_acct_update_node",
-        prefix: "MinaAcctUpdateNode",
-        input_fields: vec![
-            Fp::from_str(
-                "23487734643675003113914430489774334948844391842009122040704261138931555665056",
-            )
-            .unwrap(),
-            Fp::from_str("0").unwrap(),
-        ],
-        expected_hash:
-            "20456728518925904340727370305821489989002971473792411299271630913563245218671",
-    }]
-}
-
-/// Helper function to parse expected hash strings into Fp elements
-pub fn parse_expected_hash(hash_str: &str) -> Fp {
-    Fp::from_str(hash_str).expect("Invalid expected hash format")
 }

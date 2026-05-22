@@ -168,19 +168,9 @@ where
         );
 
         eprintln!("Joining signing session...");
-        let session_id = match self.session_id {
-            Some(s) => s,
-            None => {
-                // Get session ID from server
-                let r = self.client.list_sessions().await?;
-                if r.session_ids.len() > 1 {
-                    return Err(eyre!("user has more than one FROST session active; use `mina-frost-client sessions` to list them and specify the session ID with `-S`").into());
-                } else if r.session_ids.is_empty() {
-                    return Err(eyre!("User has no current sessions active. The Coordinator should either specify your username, or manually share the session ID which you can specify with --session_id").into());
-                }
-                r.session_ids[0]
-            }
-        };
+        let session_id = self
+            .session_id
+            .ok_or_else(|| eyre!("session ID is required; use `-S` to specify it"))?;
         self.session_id = Some(session_id);
 
         let (Some(comm_privkey), Some(comm_coordinator_pubkey_getter)) = (

@@ -72,7 +72,12 @@ def format_field(value: Union[str, int, None]) -> str:
 
 def format_field_token(value: Union[str, int, None]) -> str:
     """Format a field used inside TokenId."""
-    # TokenId always wraps a Field, but the inner representation is the same.
+    # o1js JSON encodes TokenId as base58check string.
+    # In older/generated fixtures, token IDs might still be numeric strings.
+    if isinstance(value, str) and not value.isdigit():
+        escaped = escape_string(value)
+        return f'serde_json::from_str::<TokenId>(r#""{escaped}""#).unwrap()'
+    # TokenId always wraps a Field for numeric representation.
     inner = format_field(value)
     return f"TokenId({inner})"
 
@@ -116,7 +121,16 @@ def format_range_condition_opt(range_data: Optional[Dict[str, Any]], type_name: 
         return "None"
     lower = _int_token(range_data.get("lower", 0))
     upper = _int_token(range_data.get("upper", 0))
-    return f"Some(RangeCondition {{ lower: {lower}, upper: {upper} }})"
+    if type_name == "u32":
+        lower_expr = f"StringU32({lower})"
+        upper_expr = f"StringU32({upper})"
+    elif type_name == "u64":
+        lower_expr = f"StringU64({lower})"
+        upper_expr = f"StringU64({upper})"
+    else:
+        lower_expr = lower
+        upper_expr = upper
+    return f"Some(RangeCondition {{ lower: {lower_expr}, upper: {upper_expr} }})"
 
 
 def format_auth_required(auth_str: Optional[str]) -> str:
@@ -248,15 +262,17 @@ def format_timing(timing_data: Optional[Dict[str, Any]]) -> str:
 def format_option_token_symbol(value: Any) -> str:
     if value is None:
         return "None"
-    s = escape_string(value)
-    return f'Some(TokenSymbol("{s}".as_bytes().to_vec()))'
+    b = value.encode("utf-8")
+    bytes_inline = ", ".join(str(x) for x in b)
+    return f"Some(TokenSymbol(vec![{bytes_inline}]))"
 
 
 def format_option_zkapp_uri(value: Any) -> str:
     if value is None:
         return "None"
-    s = escape_string(value)
-    return f'Some(ZkappUri("{s}".as_bytes().to_vec()))'
+    b = value.encode("utf-8")
+    bytes_inline = ", ".join(str(x) for x in b)
+    return f"Some(ZkappUri(vec![{bytes_inline}]))"
 
 
 def format_epoch_data(epoch_data: Dict[str, Any]) -> str:
@@ -290,7 +306,7 @@ def format_action_state_opt(value: Any) -> str:
     return f"Some(ActionState({inner}))"
 
 
-def format_account_update(update: Dict[str, Any], index: int, proper: bool) -> str:
+def format_account_update(update: Dict[str, Any], index: int) -> str:
     """Format a single account update for Rust."""
     body = update["body"]
 
@@ -382,18 +398,41 @@ def format_account_update(update: Dict[str, Any], index: int, proper: bool) -> s
                     }}"""
 
 
+def format_network_id(network_raw: Any) -> str:
+    """Map o1js network identifier to Rust NetworkId enum."""
+    if isinstance(network_raw, dict):
+        network_raw = network_raw.get("custom")
+
+    network = str(network_raw or "mainnet").lower()
+    if network == "mainnet":
+        return "NetworkId::Mainnet"
+    if network in ("testnet", "devnet"):
+        # o1js treats devnet / testnet as testnet domain for zkapp prefixes.
+        return "NetworkId::Testnet"
+    return f'NetworkId::Custom("{escape_string(network)}".to_string())'
+
+
+def expected_hash(js_data: Dict[str, Any], camel_key: str, snake_key: str) -> str:
+    """Read expected hash fields from either camelCase or snake_case keys."""
+    value = js_data.get(camel_key, js_data.get(snake_key, "0"))
+    return str(value)
+
+
 def generate_zkapp_command(js_data: Dict[str, Any], test_name: str = "complex_zkapp_command") -> str:
     """Generate the complete ZKAppCommand Rust code from JavaScript object data."""
     fee_payer = js_data["feePayer"]
     account_updates = js_data["accountUpdates"]
     memo = js_data["memo"]
-
-    # Heuristic: still used for token_id / action_state / network & hashes.
-    proper = test_name == "multiple_account_updates"
+    vector_name = str(js_data.get("name", test_name))
 
     formatted_updates: List[str] = []
     for i, update in enumerate(account_updates):
-        formatted_updates.append(format_account_update(update, i, proper))
+        formatted_updates.append(format_account_update(update, i))
+
+    if formatted_updates:
+        updates_expr = "vec![\n" + ",".join(formatted_updates) + ",\n                ]"
+    else:
+        updates_expr = "vec![]"
 
     valid_until_val = fee_payer["body"].get("validUntil", None)
     valid_until = f"Some({_int_token(valid_until_val)})" if valid_until_val is not None else "None"
@@ -401,21 +440,16 @@ def generate_zkapp_command(js_data: Dict[str, Any], test_name: str = "complex_zk
     # Always use decode_memo_from_base58 for memo
     memo_expr = f'decode_memo_from_base58("{escape_string(memo)}")'
 
-    if proper:
-        network = "NetworkId::TESTNET"
-        expected_memo_hash = js_data.get("expectedMemoHash", "0")
-        expected_fee_payer_hash = js_data.get("expectedFeePayerHash", "0")
-        expected_account_updates_commitment = js_data.get("expectedAccountUpdatesCommitment", "0")
-        expected_full_commitment = js_data.get("expectedFullCommitment", "0")
-    else:
-        network = "NetworkId::MAINNET"
-        expected_memo_hash = "0"
-        expected_fee_payer_hash = "0"
-        expected_account_updates_commitment = "0"
-        expected_full_commitment = "0"
+    network = format_network_id(js_data.get("network"))
+    expected_memo_hash = expected_hash(js_data, "expectedMemoHash", "expected_memo_hash")
+    expected_fee_payer_hash = expected_hash(js_data, "expectedFeePayerHash", "expected_fee_payer_hash")
+    expected_account_updates_commitment = expected_hash(
+        js_data, "expectedAccountUpdatesCommitment", "expected_account_updates_commitment"
+    )
+    expected_full_commitment = expected_hash(js_data, "expectedFullCommitment", "expected_full_commitment")
 
     return f"""ZkAppTestVector {{
-            name: "{test_name}",
+            name: "{escape_string(vector_name)}",
             zkapp_command: ZKAppCommand {{
                 fee_payer: FeePayer {{
                     body: FeePayerBody {{
@@ -426,9 +460,7 @@ def generate_zkapp_command(js_data: Dict[str, Any], test_name: str = "complex_zk
                     }},
                     authorization: "{escape_string(fee_payer["authorization"])}".to_string(),
                 }},
-                account_updates: vec![
-{",".join(formatted_updates)},
-                ],
+                account_updates: {updates_expr},
                 memo: {memo_expr},
             }},
             network: {network},

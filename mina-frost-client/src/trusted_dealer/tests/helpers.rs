@@ -1,7 +1,7 @@
 use frost_bluepallas as frost;
 use mina_hasher::ROInput;
-use mina_signer::NetworkId;
 use mina_tx::pallas_message::PallasMessage;
+use mina_tx::NetworkId;
 use rand::rngs::ThreadRng;
 use std::collections::BTreeMap;
 
@@ -56,10 +56,12 @@ pub fn round_2(
     // Signing input must be an explicitly encoded PallasMessage.
     let pallas_message = PallasMessage::from_parts(
         ROInput::new().append_bytes(message),
-        NetworkId::TESTNET,
+        NetworkId::Testnet,
         true,
     );
-    let serialized_message = pallas_message.serialize();
+    let serialized_message = pallas_message
+        .serialize()
+        .expect("PallasMessage serialization should succeed");
     let signing_package = frost::SigningPackage::new(commitments_map, &serialized_message);
     let mut signature_shares = BTreeMap::new();
     for participant_identifier in nonces_map.keys() {

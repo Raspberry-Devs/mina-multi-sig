@@ -41,7 +41,7 @@ pub async fn run_bluepallas(args: &Command) -> Result<(), Box<dyn Error>> {
         &group_config,
         key_package,
         server_url,
-        session,
+        &session,
     )?;
 
     // Execute signing
@@ -84,7 +84,7 @@ fn setup_participant_config<C: Ciphersuite>(
     group_config: &Group<C>,
     key_package: KeyPackage<C>,
     server_url: Option<String>,
-    session: Option<String>,
+    session: &str,
 ) -> Result<ParticipantConfig<C>, Box<dyn Error>> {
     // Determine server URL
     let server_url = if let Some(server_url) = server_url {
@@ -113,7 +113,7 @@ fn setup_participant_config<C: Ciphersuite>(
         port: server_url_parsed
             .port_or_known_default()
             .expect("always works for https"),
-        session_id: session.unwrap_or_default(),
+        session_id: session.to_owned(),
         comm_privkey: Some(
             user_config
                 .communication_key

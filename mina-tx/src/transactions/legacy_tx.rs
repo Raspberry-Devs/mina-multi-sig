@@ -3,7 +3,9 @@
 use alloc::string::{String, ToString};
 use core::fmt;
 use mina_hasher::{Hashable, ROInput};
-use mina_signer::{CompressedPubKey, NetworkId, PubKey};
+use mina_signer::{CompressedPubKey, PubKey};
+
+use crate::transactions::network_id::NetworkId;
 
 use serde::{
     ser::{Serialize, SerializeStruct, Serializer},

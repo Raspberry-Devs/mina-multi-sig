@@ -6,8 +6,9 @@ pub mod samples;
 pub mod types;
 
 use frost_bluepallas::BluePallas;
-use mina_signer::{NetworkId, Signer};
+use mina_signer::Signer;
 use mina_tx::pallas_message::{translate_pk, translate_sig, PallasMessage};
+use mina_tx::NetworkId;
 
 type Suite = BluePallas<PallasMessage>;
 
@@ -23,7 +24,7 @@ pub fn verify_signature(
     let pub_key = translate_pk(&group_pubkey).unwrap();
     // Check that signature validation has the expected result.
 
-    let mut ctx = mina_signer::create_legacy::<PallasMessage>(NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy::<PallasMessage>(NetworkId::Testnet);
     let pallas_message = PallasMessage::deserialize(msg)
         .unwrap_or_else(|_| PallasMessage::from_raw_bytes_default(msg));
     assert!(ctx.verify(&sig, &pub_key, &pallas_message));

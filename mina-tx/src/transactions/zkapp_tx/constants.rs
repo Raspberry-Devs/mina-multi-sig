@@ -1,16 +1,23 @@
-//! Module containint various constants used by ZkApp transactions (both for packing and hashing)
+//! Module containing various constants used by ZkApp transactions (both for packing and hashing)
 
-use alloc::string::ToString;
+use alloc::{
+    borrow::Cow,
+    string::{String, ToString},
+};
 use core::str::FromStr;
 
+use crate::{
+    errors::MinaTxError, transactions::network_id::NetworkId, transactions::zkapp_tx::Field,
+};
 use ark_ff::{AdditiveGroup, BigInt, PrimeField};
 use lazy_static::lazy_static;
 use mina_hasher::Fp;
-use mina_signer::NetworkId;
 
-use crate::{errors::MinaTxError, transactions::zkapp_tx::Field};
-
+#[cfg(not(feature = "mesa-hardfork"))]
 pub const TXN_VERSION_CURRENT: u32 = 3; // Used in Emptiable
+
+#[cfg(feature = "mesa-hardfork")]
+pub const TXN_VERSION_CURRENT: u32 = 4; // Used in Emptiable
 
 // Constant value for a dummy verification key, if an account update is not proved and instead signed
 // then we use this constant hash value to indicate that no verification key is associated with the account update.
@@ -46,28 +53,37 @@ pub const ZK_ACTION_STATE_EMPTY: &str = "MinaZkappActionStateEmptyElt";
 
 pub const MINA_ZKAPP_URI: &str = "MinaZkappUri";
 
+#[cfg(not(feature = "mesa-hardfork"))]
 pub(crate) const APP_STATE_LENGTH: usize = 8;
+
+#[cfg(feature = "mesa-hardfork")]
+pub(crate) const APP_STATE_LENGTH: usize = 32;
 
 // Enum to represent the prefix used for hashing zkapp body based on network
 pub enum ZkAppBodyPrefix {
     Mainnet,
     Testnet,
+    Custom(String),
 }
 
 impl From<NetworkId> for ZkAppBodyPrefix {
     fn from(network: NetworkId) -> Self {
         match network {
-            NetworkId::MAINNET => ZkAppBodyPrefix::Mainnet,
-            NetworkId::TESTNET => ZkAppBodyPrefix::Testnet,
+            NetworkId::Mainnet => ZkAppBodyPrefix::Mainnet,
+            NetworkId::Testnet => ZkAppBodyPrefix::Testnet,
+            NetworkId::Custom(s) => ZkAppBodyPrefix::Custom(s),
         }
     }
 }
 
-impl From<ZkAppBodyPrefix> for &'static str {
+impl From<ZkAppBodyPrefix> for Cow<'static, str> {
     fn from(value: ZkAppBodyPrefix) -> Self {
         match value {
-            ZkAppBodyPrefix::Mainnet => ZK_APP_BODY_MAINNET,
-            ZkAppBodyPrefix::Testnet => ZK_APP_BODY_TESTNET,
+            ZkAppBodyPrefix::Mainnet => Cow::Borrowed(ZK_APP_BODY_MAINNET),
+            ZkAppBodyPrefix::Testnet => Cow::Borrowed(ZK_APP_BODY_TESTNET),
+            ZkAppBodyPrefix::Custom(s) => {
+                Cow::Owned(NetworkId::create_custom_prefix(&(s + "ZkappBody")))
+            }
         }
     }
 }

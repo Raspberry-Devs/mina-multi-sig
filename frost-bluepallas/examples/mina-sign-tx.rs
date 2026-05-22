@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     .set_memo_str("Hello Mina x FROST from the Rasp")
     .unwrap();
 
-    let tx = TransactionEnvelope::new_legacy(mina_signer::NetworkId::TESTNET, tx);
+    let tx = TransactionEnvelope::new_legacy(mina_tx::NetworkId::Testnet, tx);
 
     println!(
         "Unsigned Transaction: {}",
@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //let tx = tx.set_memo_str("Hello World!");
     let signing_key = translate_minask(&mina_keypair)?;
 
-    let msg = tx.to_pallas_message().serialize();
+    let msg = tx.to_pallas_message().serialize().unwrap();
 
     // Sign the transaction with FROST
     let (sig, vk) = frost_bluepallas::signing_utilities::generate_signature_from_sk::<
@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let chall = frost_bluepallas::BluePallas::<PallasMessage>::challenge(sig.R(), &vk, &msg)?;
     println!("Challenge: {:?}", chall);
 
-    let mut ctx = mina_signer::create_legacy(mina_signer::NetworkId::TESTNET);
+    let mut ctx = mina_signer::create_legacy(mina_tx::NetworkId::Testnet);
     let res = ctx.verify(&mina_sig, &mina_keypair.public, &tx);
     if res {
         println!("Mina signature verification succeeded");

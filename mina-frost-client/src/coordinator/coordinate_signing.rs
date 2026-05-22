@@ -65,7 +65,7 @@ pub async fn coordinate_signing(
     // Aggregate signatures using frost_bluepallas modified behaviour
     let group_signature = {
         let transaction = TransactionEnvelope::deserialize(signing_package.message())?;
-        let pallas_message_bytes = transaction.to_pallas_message().serialize();
+        let pallas_message_bytes = transaction.to_pallas_message().serialize()?;
         let signing_package_for_crypto = SigningPackage::new(commitments, &pallas_message_bytes);
         frost_bluepallas::aggregate(
             &signing_package_for_crypto,
