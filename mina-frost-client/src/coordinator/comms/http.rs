@@ -318,8 +318,8 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
 mod tests {
     use std::collections::BTreeMap;
 
-    use crate::api::{self, SendSigningPackageArgs};
     use super::MAX_CHUNK_PLAINTEXT;
+    use crate::api::{self, SendSigningPackageArgs};
     use crate::cipher::Cipher;
     use frost_bluepallas::keys::generate_with_dealer;
     use frost_core::keys::{IdentifierList, KeyPackage};
