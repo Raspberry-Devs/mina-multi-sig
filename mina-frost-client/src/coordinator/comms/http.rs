@@ -28,6 +28,10 @@ use crate::{
 use super::super::config::Config;
 use super::Comms;
 
+/// Noise_K handshake overhead: 32-byte ephemeral key + 16-byte AEAD tag.
+const NOISE_K_OVERHEAD: usize = 48;
+const MAX_CHUNK_PLAINTEXT: usize = api::MAX_MSG_SIZE - NOISE_K_OVERHEAD;
+
 pub struct HTTPComms<C: Ciphersuite> {
     client: Client,
     session_id: Option<Uuid>,
@@ -202,8 +206,7 @@ impl<C: Ciphersuite + 'static> Comms<C> for HTTPComms<C> {
         // in a single frostd message. The first message sent to each recipient is
         // a 4-byte big-endian chunk count header, followed by the encrypted chunks.
         let serialized = serde_json::to_vec(&send_signing_package_config)?;
-        let max_chunk_plaintext = api::MAX_MSG_SIZE - 48; // Noise_K overhead
-        let plaintext_chunks: Vec<&[u8]> = serialized.chunks(max_chunk_plaintext).collect();
+        let plaintext_chunks: Vec<&[u8]> = serialized.chunks(MAX_CHUNK_PLAINTEXT).collect();
         let num_chunks = plaintext_chunks.len() as u32;
 
         let pubkeys: Vec<_> = self.pubkeys.keys().cloned().collect();
@@ -316,6 +319,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use crate::api::{self, SendSigningPackageArgs};
+    use super::MAX_CHUNK_PLAINTEXT;
     use crate::cipher::Cipher;
     use frost_bluepallas::keys::generate_with_dealer;
     use frost_core::keys::{IdentifierList, KeyPackage};
@@ -427,14 +431,12 @@ mod tests {
             "../../../../mina-tx/tests/data/deploy-v0.0.4-unsigned.json"
         ));
 
-        // Noise_K handshake overhead: 48 bytes (32 ephemeral + 16 AEAD tag)
-        let max_chunk_plaintext = api::MAX_MSG_SIZE - 48;
-        let chunks: Vec<&[u8]> = serialized.chunks(max_chunk_plaintext).collect();
+        let chunks: Vec<&[u8]> = serialized.chunks(MAX_CHUNK_PLAINTEXT).collect();
         eprintln!(
             "Deploy tx: {} bytes, {} chunks (max {} bytes each)",
             serialized.len(),
             chunks.len(),
-            max_chunk_plaintext
+            MAX_CHUNK_PLAINTEXT
         );
 
         let (privkey_a, pubkey_a) = Cipher::generate_keypair().unwrap();

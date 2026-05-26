@@ -210,12 +210,10 @@ where
 
         eprint!("Waiting for coordinator to send signing package...");
 
-        // Receive SigningPackage from Coordinator.
-        // The coordinator sends a chunk count header followed by N encrypted chunks.
-        // We collect all chunks, decrypt each in order, and reassemble the payload.
-
-        // First: receive the chunk count header
-        let num_chunks: u32 = loop {
+        // The coordinator sends a 4-byte big-endian chunk count header, then N
+        // encrypted chunks. Poll until the header arrives, capturing any chunks
+        // that arrived in the same batch as leftovers.
+        let (num_chunks, leftover) = loop {
             let r = self
                 .client
                 .receive(&api::ReceiveArgs {
@@ -233,57 +231,25 @@ where
                     .as_slice()
                     .try_into()
                     .map_err(|_| eyre::eyre!("invalid chunk count header"))?;
-                // If there were additional messages in this batch, queue them
-                // for chunk collection below.
-                let remaining: Vec<_> = r.msgs[1..].to_vec();
-                if !remaining.is_empty() {
-                    // Process remaining messages as chunks inline
-                    let mut reassembled = Vec::new();
-                    let expected = u32::from_be_bytes(header) as usize;
-                    let mut collected = 0;
-                    for m in remaining {
-                        let decrypted = cipher.decrypt(m)?;
-                        reassembled.extend_from_slice(&decrypted.msg);
-                        collected += 1;
-                        if collected == expected {
-                            break;
-                        }
-                    }
-                    // If we still need more chunks, keep polling
-                    while collected < expected {
-                        let r = self
-                            .client
-                            .receive(&api::ReceiveArgs {
-                                session_id,
-                                as_coordinator: false,
-                            })
-                            .await?;
-                        for m in r.msgs {
-                            let decrypted = cipher.decrypt(m)?;
-                            reassembled.extend_from_slice(&decrypted.msg);
-                            collected += 1;
-                            if collected == expected {
-                                break;
-                            }
-                        }
-                        if collected < expected {
-                            tokio::time::sleep(Duration::from_secs(2)).await;
-                            eprint!(".");
-                        }
-                    }
-                    eprintln!("\nSigning package received ({} chunks)", collected);
-                    let r: SendSigningPackageArgs<C> = serde_json::from_slice(&reassembled)?;
-                    return Ok(r);
-                }
-                break u32::from_be_bytes(header);
+                break (u32::from_be_bytes(header) as usize, r.msgs[1..].to_vec());
             }
         };
 
-        // Collect the expected number of chunks
+        // Collect all chunks: drain any that arrived with the header, then poll
+        // for the rest.
         let mut reassembled = Vec::new();
-        let mut collected = 0usize;
-        let expected = num_chunks as usize;
-        while collected < expected {
+        let mut collected = 0;
+
+        for m in leftover {
+            let decrypted = cipher.decrypt(m)?;
+            reassembled.extend_from_slice(&decrypted.msg);
+            collected += 1;
+            if collected == num_chunks {
+                break;
+            }
+        }
+
+        while collected < num_chunks {
             let r = self
                 .client
                 .receive(&api::ReceiveArgs {
@@ -295,11 +261,11 @@ where
                 let decrypted = cipher.decrypt(m)?;
                 reassembled.extend_from_slice(&decrypted.msg);
                 collected += 1;
-                if collected == expected {
+                if collected == num_chunks {
                     break;
                 }
             }
-            if collected < expected {
+            if collected < num_chunks {
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 eprint!(".");
             }
@@ -307,7 +273,6 @@ where
         eprintln!("\nSigning package received ({} chunks)", collected);
 
         let r: SendSigningPackageArgs<C> = serde_json::from_slice(&reassembled)?;
-
         Ok(r)
     }
 
