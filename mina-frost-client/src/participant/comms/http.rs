@@ -13,9 +13,12 @@ use frost_core::{round1::SigningCommitments, round2::SignatureShare, Ciphersuite
 use rand::thread_rng;
 use snow::{HandshakeState, TransportState};
 
-use crate::api::{self, SendSigningPackageArgs, Uuid};
 use crate::cipher::Cipher;
 use crate::client::Client;
+use crate::{
+    api::{self, SendSigningPackageArgs, Uuid},
+    participant::comms::CHUNK_HEADER_LEN,
+};
 
 use super::super::config::Config;
 use super::Comms;
@@ -226,7 +229,7 @@ where
                 eprint!(".");
             } else {
                 let msg = cipher.decrypt(r.msgs[0].clone())?;
-                let header: [u8; 4] = msg
+                let header: [u8; CHUNK_HEADER_LEN] = msg
                     .msg
                     .as_slice()
                     .try_into()
