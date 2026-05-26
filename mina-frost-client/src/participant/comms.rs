@@ -19,6 +19,11 @@ use frost::{
     Identifier,
 };
 
+/// The length of the header for each chunk of data sent to the server.
+/// This is used as a fix when sending large messages to the server,
+/// particularly with large Mina contract deployments
+pub(crate) const CHUNK_HEADER_LEN: usize = 4;
+
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "self::serde")]
 #[serde(bound = "C: Ciphersuite")]
