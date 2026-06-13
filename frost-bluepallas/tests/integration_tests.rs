@@ -10,7 +10,6 @@ fn check_zero_key_fails() {
     frost_core::tests::ciphersuite_generic::check_zero_key_fails::<Suite>();
 }
 
-#[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_sign_with_dkg() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
@@ -66,7 +65,6 @@ fn check_rts() {
     frost_core::tests::repairable::check_rts::<Suite, _>(rng);
 }
 
-#[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_refresh_shares_with_dealer() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
@@ -123,14 +121,12 @@ fn check_refresh_shares_with_dealer_fails_with_invalid_identifier() {
     >(&identifiers, error, rng);
 }
 
-#[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_refresh_shares_with_dkg() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
     frost_core::tests::refresh::check_refresh_shares_with_dkg::<Suite, _>(rng);
 }
 
-#[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_sign_with_dealer() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
@@ -269,7 +265,6 @@ fn check_identifier_generation() -> Result<(), Error<PallasMessage>> {
     Ok(())
 }
 
-#[ignore = "upstream frost-core v3.0.0-rc.0 issue #1015: signature share verification bug"]
 #[test]
 fn check_sign_with_dealer_and_identifiers() {
     let rng = rand_chacha::ChaChaRng::seed_from_u64(0);
