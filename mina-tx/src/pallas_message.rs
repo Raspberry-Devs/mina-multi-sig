@@ -107,7 +107,7 @@ impl PallasMessage {
                         "Custom network ID exceeds maximum length".into(),
                     ));
                 }
-                if input.len() < 3 + name_len {
+                if input.len() <= 3 + name_len {
                     return Err(crate::errors::MinaTxError::DeSerializationError(
                         "PallasMessage too short for custom network ID name".into(),
                     ));
@@ -447,6 +447,29 @@ mod tests {
             b'c',
             b'd', // only 4 of the 10 promised bytes
         ];
+        assert!(matches!(
+            PallasMessage::deserialize(&bytes),
+            Err(crate::errors::MinaTxError::DeSerializationError(_))
+        ));
+    }
+
+    #[test]
+    fn test_deserialize_rejects_custom_network_name_with_no_legacy_flag_byte() {
+        // Regression test: the custom-network name body is fully present, but the
+        // input ends exactly at `3 + name_len`, leaving no byte for the is_legacy
+        // flag. The deserializer must reject this instead of panicking when it
+        // indexes `input[offset]` (offset == input.len()). See the off-by-one fix
+        // changing the bound check from `<` to `<=`.
+        let name = b"devnet";
+        let mut bytes = vec![
+            PALLAS_MESSAGE_VERSION,
+            0x02, // Custom
+            name.len() as u8,
+        ];
+        bytes.extend_from_slice(name);
+        // bytes.len() == 3 + name_len, i.e. exactly the offset of the legacy flag.
+        assert_eq!(bytes.len(), 3 + name.len());
+
         assert!(matches!(
             PallasMessage::deserialize(&bytes),
             Err(crate::errors::MinaTxError::DeSerializationError(_))
