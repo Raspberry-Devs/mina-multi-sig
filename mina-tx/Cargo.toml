@@ -7,7 +7,7 @@ rust-version = "1.92"
 [dependencies]
 frost-bluepallas = { path = "../frost-bluepallas", optional = true }
 frost-core = { workspace = true, optional = true }
-ark-ec = { workspace = true, optional = true }
+ark-ec.workspace = true
 mina-curves.workspace = true
 mina-hasher.workspace = true
 mina-signer.workspace = true
@@ -31,6 +31,6 @@ reqwest = { workspace = true, features = ["blocking"] }
 
 [features]
 default = []
-frost-bluepallas-compat = ["dep:frost-bluepallas", "dep:frost-core", "dep:ark-ec"]
+frost-bluepallas-compat = ["dep:frost-bluepallas", "dep:frost-core"]
 test-utils = []
 mesa-hardfork = []
