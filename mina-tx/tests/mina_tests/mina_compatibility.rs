@@ -77,7 +77,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         mina_msg.clone(),
         network_id.clone(),
         true,
-    );
+    )?;
     let chall = BluePallas::<PallasMessage>::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
 
     // As of now this should be trivially true because the implementations are the same
@@ -93,7 +93,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         ctx.verify(&mina_sig, &mina_pk, &mina_msg)
     );
 
-    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id, true);
+    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id, true)?;
 
     let sv = CurvePoint::generator()
         .mul_bigint(mina_sig.s.into_bigint())

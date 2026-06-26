@@ -10,7 +10,7 @@ extern crate alloc;
 use alloc::{borrow::Cow, collections::BTreeMap};
 use core::marker::PhantomData;
 
-use ark_ec::{models::CurveConfig, CurveGroup, PrimeGroup};
+use ark_ec::{models::CurveConfig, AffineRepr, CurveGroup, PrimeGroup};
 
 use ark_ff::{fields::Field as ArkField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
@@ -210,7 +210,15 @@ where
         // Compute the group commitment from signing commitments produced in round one.
         let commit = compute_group_commitment(signing_package, binding_factor_list)?;
 
-        if commit.to_element().into_affine().y.into_bigint().is_even() {
+        let commit_affine = commit.to_element().into_affine();
+
+        if commit_affine.is_zero() {
+            return Err(frost_core::Error::GroupError(
+                frost_core::GroupError::InvalidIdentityElement,
+            ));
+        }
+
+        if commit_affine.y.into_bigint().is_even() {
             return Ok(Cow::Borrowed(signing_package));
         }
 
@@ -240,7 +248,15 @@ where
         // Compute the group commitment from signing commitments produced in round one.
         let commit = compute_group_commitment(signing_package, binding_factor_list)?;
 
-        if commit.to_element().into_affine().y.into_bigint().is_even() {
+        let commit_affine = commit.to_element().into_affine();
+
+        if commit_affine.is_zero() {
+            return Err(frost_core::Error::GroupError(
+                frost_core::GroupError::InvalidIdentityElement,
+            ));
+        }
+
+        if commit_affine.y.into_bigint().is_even() {
             return Ok((
                 Cow::Borrowed(signing_package),
                 Cow::Borrowed(signing_nonces),
