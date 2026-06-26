@@ -23,9 +23,6 @@ pub enum BluePallasError {
 
     /// Invalid Memo provided
     InvalidMemo(String),
-
-    /// Malformed Group Element
-    MalformedGroupElement,
 }
 
 impl fmt::Display for BluePallasError {
@@ -42,7 +39,6 @@ impl fmt::Display for BluePallasError {
                 write!(f, "Failed to save signature: {}", msg)
             }
             BluePallasError::InvalidMemo(msg) => write!(f, "Invalid memo: {}", msg),
-            BluePallasError::MalformedGroupElement => write!(f, "Malformed group element"),
         }
     }
 }

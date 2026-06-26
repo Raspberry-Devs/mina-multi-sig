@@ -200,7 +200,11 @@ impl Hashable for PallasMessage {
 pub fn translate_pk(
     fr_pk: &VerifyingKey<BluePallasSuite>,
 ) -> Result<PubKey, crate::errors::MinaTxError> {
-    Ok(PubKey::from_point_unsafe(fr_pk.to_element().into_affine()))
+    let affine = fr_pk.to_element().into_affine();
+    if affine.is_zero() {
+        return Err(crate::errors::MinaTxError::MalformedGroupElement);
+    }
+    Ok(PubKey::from_point_unsafe(affine))
 }
 
 /// Convert FROST signature to Mina signature.

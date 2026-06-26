@@ -16,7 +16,7 @@ use ark_ff::{fields::Field as ArkField, UniformRand};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 pub use frost_core::{self as frost, Ciphersuite, Field, FieldError, Group, GroupError};
 use frost_core::{compute_group_commitment, BindingFactorList};
-use mina_curves::pasta::{PallasParameters, ProjectivePallas};
+use mina_curves::pasta::{Pallas, PallasParameters, ProjectivePallas};
 
 use num_traits::identities::Zero;
 use rand_core::{CryptoRng, RngCore};
@@ -157,6 +157,32 @@ impl<M> Clone for BluePallas<M> {
     }
 }
 
+/// Computes the group commitment from round-one signing commitments and rejects the
+/// identity element.
+///
+/// Mina's signing flow reads the commitment's affine coordinates directly (bypassing the
+/// serialization-time identity check that frost-core performs), so the identity must be
+/// rejected explicitly here before any coordinate is inspected. Returns the affine point
+/// so callers can apply Mina's y-coordinate evenness rule.
+fn group_commitment_affine<M>(
+    signing_package: &frost_core::SigningPackage<BluePallas<M>>,
+    binding_factor_list: &BindingFactorList<BluePallas<M>>,
+) -> Result<Pallas, frost_core::Error<BluePallas<M>>>
+where
+    M: ChallengeMessage,
+{
+    let commit = compute_group_commitment(signing_package, binding_factor_list)?;
+    let commit_affine = commit.to_element().into_affine();
+
+    if commit_affine.is_zero() {
+        return Err(frost_core::Error::GroupError(
+            frost_core::GroupError::InvalidIdentityElement,
+        ));
+    }
+
+    Ok(commit_affine)
+}
+
 impl<M> Ciphersuite for BluePallas<M>
 where
     M: ChallengeMessage,
@@ -207,16 +233,7 @@ where
         binding_factor_list: &'a BindingFactorList<Self>,
     ) -> Result<Cow<'a, frost_core::SigningPackage<Self>>, frost_core::Error<Self>> {
         use ark_ff::{BigInteger, PrimeField};
-        // Compute the group commitment from signing commitments produced in round one.
-        let commit = compute_group_commitment(signing_package, binding_factor_list)?;
-
-        let commit_affine = commit.to_element().into_affine();
-
-        if commit_affine.is_zero() {
-            return Err(frost_core::Error::GroupError(
-                frost_core::GroupError::InvalidIdentityElement,
-            ));
-        }
+        let commit_affine = group_commitment_affine(signing_package, binding_factor_list)?;
 
         if commit_affine.y.into_bigint().is_even() {
             return Ok(Cow::Borrowed(signing_package));
@@ -245,16 +262,7 @@ where
         frost_core::Error<Self>,
     > {
         use ark_ff::{BigInteger, PrimeField};
-        // Compute the group commitment from signing commitments produced in round one.
-        let commit = compute_group_commitment(signing_package, binding_factor_list)?;
-
-        let commit_affine = commit.to_element().into_affine();
-
-        if commit_affine.is_zero() {
-            return Err(frost_core::Error::GroupError(
-                frost_core::GroupError::InvalidIdentityElement,
-            ));
-        }
+        let commit_affine = group_commitment_affine(signing_package, binding_factor_list)?;
 
         if commit_affine.y.into_bigint().is_even() {
             return Ok((
