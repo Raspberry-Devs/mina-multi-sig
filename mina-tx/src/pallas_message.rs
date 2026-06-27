@@ -1,9 +1,14 @@
 //! Mina transaction challenge message representation for BluePallas signing.
 
 use alloc::{string::String, vec::Vec};
+use ark_ec::AffineRepr;
 #[cfg(feature = "frost-bluepallas-compat")]
 use ark_ec::CurveGroup;
 use ark_ff::PrimeField;
+
+#[cfg(feature = "frost-bluepallas-compat")]
+use ark_ff::{BigInteger, Zero};
+
 #[cfg(feature = "frost-bluepallas-compat")]
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::{Hashable, Hasher, ROInput};
@@ -195,7 +200,11 @@ impl Hashable for PallasMessage {
 pub fn translate_pk(
     fr_pk: &VerifyingKey<BluePallasSuite>,
 ) -> Result<PubKey, crate::errors::MinaTxError> {
-    Ok(PubKey::from_point_unsafe(fr_pk.to_element().into_affine()))
+    let affine = fr_pk.to_element().into_affine();
+    if affine.is_zero() {
+        return Err(crate::errors::MinaTxError::MalformedGroupElement);
+    }
+    Ok(PubKey::from_point_unsafe(affine))
 }
 
 /// Convert FROST signature to Mina signature.
@@ -203,7 +212,13 @@ pub fn translate_pk(
 pub fn translate_sig(
     fr_sig: &FrSig<BluePallasSuite>,
 ) -> Result<MinaSig, crate::errors::MinaTxError> {
-    let rx = fr_sig.R().into_affine().x;
+    let r = fr_sig.R();
+
+    if r.is_zero() || r.into_affine().y.into_bigint().is_odd() {
+        return Err(crate::errors::MinaTxError::MalformedGroupElement);
+    }
+
+    let rx = r.into_affine().x;
     let z: Scalar<BluePallasSuite> = *fr_sig.z();
 
     Ok(MinaSig { rx, s: z })
@@ -227,7 +242,7 @@ pub fn message_hash<H>(
     input: H,
     network_id: NetworkId,
     is_legacy: bool,
-) -> ScalarField
+) -> Result<ScalarField, MinaTxError>
 where
     H: Hashable<D = NetworkId>,
 {
@@ -258,10 +273,15 @@ where
         }
     }
 
+    let pub_key_point = pub_key.point();
+    if pub_key_point.is_zero() {
+        return Err(MinaTxError::MalformedGroupElement);
+    }
+
     let schnorr_input = Message::<H> {
         input,
-        pub_key_x: pub_key.point().x,
-        pub_key_y: pub_key.point().y,
+        pub_key_x: pub_key_point.x,
+        pub_key_y: pub_key_point.y,
         rx,
     };
 
@@ -273,7 +293,7 @@ where
         hasher.hash(&schnorr_input)
     };
 
-    ScalarField::from(scalar_output.into_bigint())
+    Ok(ScalarField::from(scalar_output.into_bigint()))
 }
 
 #[cfg(feature = "frost-bluepallas-compat")]
@@ -285,6 +305,11 @@ impl frost_bluepallas::ChallengeMessage for PallasMessage {
     ) -> Result<frost_core::Challenge<BluePallasSuite>, frost_core::Error<BluePallasSuite>> {
         let mina_pk =
             translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
+
+        if r.into_affine().is_zero() {
+            return Err(frost_core::FieldError::MalformedScalar.into());
+        }
+
         let rx = r.into_affine().x;
 
         // This fall-through into from_raw_bytes_default allows us to pass FROST tests which use arbitrary byte messages
@@ -293,7 +318,8 @@ impl frost_bluepallas::ChallengeMessage for PallasMessage {
         let network_id = msg.network_id();
         let is_legacy = msg.is_legacy();
 
-        let scalar = message_hash(&mina_pk, rx, msg, network_id, is_legacy);
+        let scalar = message_hash(&mina_pk, rx, msg, network_id, is_legacy)
+            .map_err(|_| frost_core::FieldError::MalformedScalar)?;
         Ok(frost_core::Challenge::from_scalar(scalar))
     }
 }
