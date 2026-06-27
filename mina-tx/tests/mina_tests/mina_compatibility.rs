@@ -257,6 +257,99 @@ fn translate_sig_rejects_identity_commitment() {
     );
 }
 
+/// Builds a curve point whose affine y-coordinate has the requested parity.
+///
+/// For any non-identity point `P = (x, y)` over the Pallas base field, `-P = (x, -y)`,
+/// and exactly one of `y` / `-y` is odd (the base field modulus is odd, so `y` and
+/// `p - y` differ in parity). We therefore start from the generator and negate it when
+/// its y-coordinate does not already have the parity we want.
+fn generator_with_y_parity(want_odd: bool) -> frost_core::Element<Suite> {
+    let g = PallasGroup::generator();
+    let y_is_odd = g
+        .into_affine()
+        .y()
+        .expect("generator must have a y-coordinate")
+        .into_bigint()
+        .is_odd();
+
+    if y_is_odd == want_odd {
+        g
+    } else {
+        g.neg()
+    }
+}
+
+#[test]
+fn translate_sig_rejects_odd_y_commitment() {
+    use mina_tx::errors::MinaTxError;
+    use num_traits::Zero;
+
+    // Mina stores only R.x and reconstructs R with an even y-coordinate. A FROST signature
+    // whose R has an odd y-coordinate would silently convert into a different (invalid) Mina
+    // signature if we only kept R.x. Such a signature must be rejected instead.
+    let odd_r = generator_with_y_parity(true);
+    assert!(
+        odd_r
+            .into_affine()
+            .y()
+            .expect("R must have a y-coordinate")
+            .into_bigint()
+            .is_odd(),
+        "test fixture must have an odd y-coordinate"
+    );
+
+    let odd_sig = frost_core::Signature::<Suite>::new(odd_r, mina_signer::ScalarField::zero());
+
+    assert!(
+        matches!(
+            translate_sig(&odd_sig),
+            Err(MinaTxError::MalformedGroupElement)
+        ),
+        "translate_sig must reject a commitment R with an odd y-coordinate"
+    );
+
+    // The `Sig: TryFrom<FrSig>` conversion in bluepallas_compat.rs must reject it too.
+    assert!(
+        matches!(
+            mina_tx::Sig::try_from(odd_sig),
+            Err(MinaTxError::MalformedGroupElement)
+        ),
+        "Sig::try_from must reject a commitment R with an odd y-coordinate"
+    );
+}
+
+#[test]
+fn translate_sig_accepts_even_y_commitment() {
+    use num_traits::Zero;
+
+    // Sanity check that the parity guard is specific to odd y-coordinates and does not
+    // blanket-reject otherwise valid commitments with an even y-coordinate.
+    let even_r = generator_with_y_parity(false);
+    assert!(
+        even_r
+            .into_affine()
+            .y()
+            .expect("R must have a y-coordinate")
+            .into_bigint()
+            .is_even(),
+        "test fixture must have an even y-coordinate"
+    );
+
+    let even_sig = frost_core::Signature::<Suite>::new(even_r, mina_signer::ScalarField::zero());
+
+    let mina_sig = translate_sig(&even_sig).expect("even y-coordinate commitment must be accepted");
+    assert_eq!(
+        mina_sig.rx,
+        even_r.into_affine().x,
+        "translate_sig must keep R.x for an even y-coordinate commitment"
+    );
+
+    assert!(
+        mina_tx::Sig::try_from(even_sig).is_ok(),
+        "Sig::try_from must accept a commitment R with an even y-coordinate"
+    );
+}
+
 #[test]
 fn message_hash_rejects_identity_public_key() {
     use mina_tx::errors::MinaTxError;
