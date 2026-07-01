@@ -287,9 +287,18 @@ impl frost_bluepallas::ChallengeMessage for PallasMessage {
             translate_pk(verifying_key).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let rx = r.into_affine().x;
 
-        // This fall-through into from_raw_bytes_default allows us to pass FROST tests which use arbitrary byte messages
+        // Malformed / non-`PallasMessage` inputs are rejected in normal builds so that a
+        // caller can never accidentally sign raw bytes under the Testnet/legacy defaults of
+        // `from_raw_bytes_default`. The permissive fall-through is compiled in only when the
+        // `raw-message-fallback` feature is enabled, which is done exclusively by test/dev
+        // builds so that frost-core's generic test harness (which signs fixed arbitrary byte
+        // strings) can still run.
+        #[cfg(feature = "raw-message-fallback")]
         let msg =
             Self::deserialize(message).unwrap_or_else(|_| Self::from_raw_bytes_default(message));
+        #[cfg(not(feature = "raw-message-fallback"))]
+        let msg =
+            Self::deserialize(message).map_err(|_| frost_core::FieldError::MalformedScalar)?;
         let network_id = msg.network_id();
         let is_legacy = msg.is_legacy();
 
