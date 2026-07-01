@@ -166,7 +166,7 @@ where
     type Group = PallasGroup;
     type HashOutput = [u8; HASH_SIZE];
 
-    type SignatureSerialization = [u8; HASH_SIZE];
+    type SignatureSerialization = [u8; GROUP_SIZE + FIELD_SIZE];
     fn H1(m: &[u8]) -> <<Self::Group as Group>::Field as Field>::Scalar {
         hash_to_scalar(&[CONTEXT_STRING.as_bytes(), b"rho", m])
     }
