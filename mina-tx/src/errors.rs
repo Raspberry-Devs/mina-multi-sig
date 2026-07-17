@@ -34,6 +34,9 @@ pub enum MinaTxError {
 
     /// Unknown transaction type during deserialization
     UnknownTransactionType(String),
+
+    /// Malformed Group Element
+    MalformedGroupElement,
 }
 
 impl fmt::Display for MinaTxError {
@@ -58,6 +61,7 @@ impl fmt::Display for MinaTxError {
             MinaTxError::UnknownTransactionType(msg) => {
                 write!(f, "Unknown transaction type: {}", msg)
             }
+            MinaTxError::MalformedGroupElement => write!(f, "Malformed group element"),
         }
     }
 }

@@ -77,7 +77,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         mina_msg.clone(),
         network_id.clone(),
         true,
-    );
+    )?;
     let chall = BluePallas::<PallasMessage>::challenge(fr_sig.R(), &fr_pk, &fr_msg)?;
 
     // As of now this should be trivially true because the implementations are the same
@@ -93,7 +93,7 @@ fn frost_sign_mina_verify() -> Result<(), Box<dyn std::error::Error>> {
         ctx.verify(&mina_sig, &mina_pk, &mina_msg)
     );
 
-    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id, true);
+    let ev = message_hash(&mina_pk, mina_sig.rx, mina_msg.clone(), network_id, true)?;
 
     let sv = CurvePoint::generator()
         .mul_bigint(mina_sig.s.into_bigint())
@@ -233,4 +233,60 @@ fn delegation_mina_compatibility() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+#[test]
+fn translate_sig_rejects_identity_commitment() {
+    use mina_tx::errors::MinaTxError;
+    use num_traits::Zero;
+
+    // A signature whose commitment R is the point at infinity must be rejected rather than
+    // silently reading R.x = 0 from the affine coordinates. The scalar `z` is irrelevant
+    // to this check, so any value works.
+    let identity_sig = frost_core::Signature::<Suite>::new(
+        frost_bluepallas::PallasGroup::identity(),
+        mina_signer::ScalarField::zero(),
+    );
+
+    assert!(
+        matches!(
+            translate_sig(&identity_sig),
+            Err(MinaTxError::MalformedGroupElement)
+        ),
+        "translate_sig must reject the identity commitment"
+    );
+}
+
+#[test]
+fn message_hash_rejects_identity_public_key() {
+    use mina_tx::errors::MinaTxError;
+    use num_traits::Zero;
+
+    // A public key at the point at infinity must be rejected rather than silently reading
+    // pub_key_x = pub_key_y = 0.
+    let identity_pk = PubKey::from_point_unsafe(CurvePoint::zero());
+
+    let tx = LegacyTransaction::new_payment(
+        PubKey::from_address("B62qqM5PCrqATE21oWhkY4UkrzT9XpUjsdgMk5MBbEmuAjPBdjN91mZ")
+            .expect("invalid address"),
+        PubKey::from_address("B62qqM5PCrqATE21oWhkY4UkrzT9XpUjsdgMk5MBbEmuAjPBdjN91mZ")
+            .expect("invalid address"),
+        1000000,
+        20000,
+        16,
+    );
+    let msg = TransactionEnvelope::new_legacy(NetworkId::Testnet, tx).to_pallas_message();
+
+    let result = message_hash(
+        &identity_pk,
+        mina_signer::BaseField::zero(),
+        msg,
+        NetworkId::Testnet,
+        true,
+    );
+
+    assert!(
+        matches!(result, Err(MinaTxError::MalformedGroupElement)),
+        "message_hash must reject an identity public key"
+    );
 }
