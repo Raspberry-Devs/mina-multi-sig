@@ -3,7 +3,7 @@
 //! Keep crypto bridge code here so core transaction modules stay clean.
 
 use ark_ec::{AffineRepr, CurveGroup};
-use ark_ff::PrimeField;
+use ark_ff::{BigInteger, PrimeField};
 use frost_bluepallas::BluePallas;
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
 use mina_hasher::Hashable;
@@ -21,9 +21,18 @@ impl TryFrom<FrSig<BluePallasSuite>> for Sig {
     type Error = MinaTxError;
 
     fn try_from(value: FrSig<BluePallasSuite>) -> Result<Sig, Self::Error> {
-        let x = value
-            .R()
-            .into_affine()
+        let r_affine = value.R().into_affine();
+
+        if r_affine
+            .y()
+            .ok_or(MinaTxError::MalformedGroupElement)?
+            .into_bigint()
+            .is_odd()
+        {
+            return Err(MinaTxError::MalformedGroupElement);
+        }
+
+        let x = r_affine
             .x()
             .ok_or_else(|| {
                 MinaTxError::InvalidSignature("Failed to convert x coordinate to bigint".into())

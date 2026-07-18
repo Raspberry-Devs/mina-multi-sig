@@ -7,7 +7,7 @@ use ark_ec::CurveGroup;
 use ark_ff::PrimeField;
 
 #[cfg(feature = "frost-bluepallas-compat")]
-use ark_ff::Zero;
+use ark_ff::{BigInteger, Zero};
 
 #[cfg(feature = "frost-bluepallas-compat")]
 use frost_core::{Scalar, Signature as FrSig, VerifyingKey};
@@ -212,11 +212,13 @@ pub fn translate_pk(
 pub fn translate_sig(
     fr_sig: &FrSig<BluePallasSuite>,
 ) -> Result<MinaSig, crate::errors::MinaTxError> {
-    if fr_sig.R().is_zero() {
+    let r = fr_sig.R();
+
+    if r.is_zero() || r.into_affine().y.into_bigint().is_odd() {
         return Err(crate::errors::MinaTxError::MalformedGroupElement);
     }
 
-    let rx = fr_sig.R().into_affine().x;
+    let rx = r.into_affine().x;
     let z: Scalar<BluePallasSuite> = *fr_sig.z();
 
     Ok(MinaSig { rx, s: z })
