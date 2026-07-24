@@ -8,7 +8,7 @@ https://frost.zfnd.org/zcash/ywallet-demo.html
 
 ## ⚠️ Security Warning
 
-**This code has not been audited and should be used with extreme caution. Do not use in production environments or with real funds. This is experimental software intended for research and development purposes only.**
+**This client crate was not covered by the security audit (see the [audit report](../audits/VAR_Nori_260615_multisig_V2.pdf), which covers `frost-bluepallas` and the `bluepallas_compat` and `pallas_message` modules of `mina-tx`). It should be used with extreme caution. Even audited code may still contain bugs and security vulnerabilities. Use it at your own risk. The authors and contributors take no responsibility for any loss or damage resulting from the use of this code.**
 
 ## Setting up the `frostd` server
 See `zcash` guide [here](https://frost.zfnd.org/zcash/server.html)

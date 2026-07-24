@@ -4,7 +4,7 @@ A FROST (Flexible Round-Optimized Schnorr Threshold Signatures) implementation f
 
 ## ⚠️ Security Warning
 
-**This code has not been audited and should be used with extreme caution. Do not use in production environments or with real funds. This is experimental software intended for research and development purposes only.**
+**This crate has undergone a security audit, available [here](../audits/VAR_Nori_260615_multisig_V2.pdf). Even audited code may still contain bugs and security vulnerabilities, so it should be used with caution. Use it at your own risk. The authors and contributors take no responsibility for any loss or damage resulting from the use of this code.**
 
 ## Overview
 
