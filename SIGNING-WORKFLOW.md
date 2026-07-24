@@ -4,7 +4,7 @@ This guide walks you through signing Mina transactions using FROST threshold sig
 
 ## ⚠️ Security Warning
 
-**This repository has not undergone a security audit. It may contain bugs and security vulnerabilities. Use it at your own risk. The authors and contributors take no responsibility for any loss or damage resulting from the use of this code.**
+**The `frost-bluepallas` crate, along with the `bluepallas_compat` and `pallas_message` modules of `mina-tx`, have undergone a security audit, available [here](audits/VAR_Nori_260615_multisig_V2.pdf). The rest of the repository (including the remainder of `mina-tx` and all of `mina-frost-client`) was not covered by the audit. Even audited code may still contain bugs and security vulnerabilities. Use it at your own risk. The authors and contributors take no responsibility for any loss or damage resulting from the use of this code.**
 
 ---
 
